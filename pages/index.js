@@ -154,6 +154,7 @@ export default function Home() {
 
         <PremiumWalletCard
           walletSnapshot={walletSnapshot}
+          activityItems={mergedActivity}
           onCopy={handleCopyAddress}
           copied={copied}
         />
@@ -176,6 +177,9 @@ export default function Home() {
                 <WalletIntelligencePanel
                   walletSnapshot={walletSnapshot}
                   activityItems={mergedActivity}
+                  onSelectView={handleSelectView}
+                  onReceive={() => setReceiveOpen(true)}
+                  onAiOpen={() => setAssistantOpen(true)}
                 />
               </>
             ) : activeView === "activity" ? (

@@ -3,6 +3,14 @@ function parseAmount(item) {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
+function shortenValue(value) {
+  if (!value || value.length < 14) {
+    return value || "Unknown";
+  }
+
+  return `${value.slice(0, 8)}...${value.slice(-6)}`;
+}
+
 function getWeeklyTrend(items) {
   const now = Date.now();
   const weekMs = 7 * 24 * 60 * 60 * 1000;
@@ -22,6 +30,97 @@ function getWeeklyTrend(items) {
 
   const change = Math.round(((thisWeek.length - previousWeek.length) / Math.max(previousWeek.length, 1)) * 100);
   return `AI detected wallet activity changed by ${change}% this week.`;
+}
+
+function getDirection(item) {
+  return item?.kind === "bridge_received" ? "Bridged" : item?.kind === "sent" ? "Sent" : "Received";
+}
+
+function RecentActivityPreview({ items = [], onOpenActivity }) {
+  const recentItems = items.slice(0, 4);
+
+  return (
+    <article className="card analytics-card recent-activity-preview">
+      <div className="section-heading">
+        <div>
+          <p className="section-kicker">Recent Activity</p>
+          <h2>Live wallet feed</h2>
+        </div>
+        <button type="button" className="button button-secondary" onClick={onOpenActivity}>
+          View all
+        </button>
+      </div>
+
+      {recentItems.length ? (
+        <div className="recent-activity-list">
+          {recentItems.map((item) => (
+            <div key={item.id} className="recent-activity-row">
+              <span className={`activity-token-icon activity-token-icon-${item.kind || "other"}`}>
+                {item.kind === "sent" ? "UP" : item.kind === "received" ? "DN" : "BR"}
+              </span>
+              <div>
+                <strong>{item.type || getDirection(item)}</strong>
+                <small>{item.txHashShort || shortenValue(item.txHash)}</small>
+              </div>
+              <div>
+                <strong>{item.amount || "Tracked"}</strong>
+                <small>{item.timeLabel || "Recently"}</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state empty-state-compact">
+          <strong>No wallet activity yet.</strong>
+          <p>Sent, received, and bridged USDC will appear here from real activity.</p>
+        </div>
+      )}
+    </article>
+  );
+}
+
+function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
+  const actions = [
+    {
+      id: "send",
+      label: "Send",
+      helper: "Transfer Arc USDC",
+      action: () => onSelectView?.("send")
+    },
+    {
+      id: "receive",
+      label: "Receive",
+      helper: "Show QR address",
+      action: onReceive
+    },
+    {
+      id: "bridge",
+      label: "Bridge",
+      helper: "Move USDC to Arc",
+      action: () => onSelectView?.("bridge")
+    },
+    {
+      id: "ai",
+      label: "Ask AI",
+      helper: "Wallet guidance",
+      action: onAiOpen
+    }
+  ];
+
+  return (
+    <article className="card analytics-card command-center-card">
+      <p className="section-kicker">Command Center</p>
+      <h2>One-tap wallet actions</h2>
+      <div className="command-grid">
+        {actions.map((action) => (
+          <button key={action.id} type="button" onClick={action.action}>
+            <span>{action.label}</span>
+            <small>{action.helper}</small>
+          </button>
+        ))}
+      </div>
+    </article>
+  );
 }
 
 function buildMonthlyBars(items) {
@@ -48,7 +147,13 @@ function buildMonthlyBars(items) {
   }));
 }
 
-export default function WalletIntelligencePanel({ activityItems = [], walletSnapshot }) {
+export default function WalletIntelligencePanel({
+  activityItems = [],
+  walletSnapshot,
+  onSelectView,
+  onReceive,
+  onAiOpen
+}) {
   const sentItems = activityItems.filter((item) => item.kind === "sent");
   const receivedItems = activityItems.filter((item) =>
     item.kind === "received" || item.kind === "bridge_received"
@@ -69,6 +174,17 @@ export default function WalletIntelligencePanel({ activityItems = [], walletSnap
           <p>{getWeeklyTrend(activityItems)}</p>
         </div>
       </article>
+
+      <QuickActionCommandCenter
+        onSelectView={onSelectView}
+        onReceive={onReceive}
+        onAiOpen={onAiOpen}
+      />
+
+      <RecentActivityPreview
+        items={activityItems}
+        onOpenActivity={() => onSelectView?.("activity")}
+      />
 
       <article className="card analytics-card">
         <div className="section-heading">

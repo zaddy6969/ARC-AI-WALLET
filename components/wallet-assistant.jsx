@@ -23,6 +23,22 @@ function MessageBubble({ role, content }) {
   );
 }
 
+function ThinkingBubble() {
+  return (
+    <div className="assistant-message assistant-message-assistant assistant-message-thinking">
+      <span className="field-label">Wallet Copilot</span>
+      <p>
+        Thinking
+        <span className="typing-dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+      </p>
+    </div>
+  );
+}
+
 function InsightCard({ item }) {
   return (
     <article className={`insight-card insight-card-${item.tone || "neutral"}`}>
@@ -87,6 +103,7 @@ export default function WalletAssistant({
   const [notice, setNotice] = useState("Wallet Copilot Ready");
   const [actions, setActions] = useState([]);
   const autoAnalyzeAddressRef = useRef("");
+  const threadRef = useRef(null);
 
   const context = useMemo(
     () => ({
@@ -167,6 +184,13 @@ export default function WalletAssistant({
       void askAssistant("Analyze my wallet");
     }
   }, [walletSnapshot?.address, walletSnapshot?.isSignedIn]);
+
+  useEffect(() => {
+    threadRef.current?.scrollTo({
+      top: threadRef.current.scrollHeight,
+      behavior: "smooth"
+    });
+  }, [messages, loading]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -252,7 +276,7 @@ export default function WalletAssistant({
         </div>
       ) : null}
 
-      <div className="assistant-thread">
+      <div className="assistant-thread" ref={threadRef}>
         {messages.map((message, index) => (
           <MessageBubble
             key={`${message.role}-${index}`}
@@ -260,6 +284,7 @@ export default function WalletAssistant({
             content={message.content}
           />
         ))}
+        {loading ? <ThinkingBubble /> : null}
       </div>
 
       <form className="assistant-form" onSubmit={handleSubmit}>
