@@ -15,6 +15,48 @@ function shortenValue(value) {
   return `${value.slice(0, 8)}...${value.slice(-6)}`;
 }
 
+function normalizeAddress(value) {
+  return typeof value === "string" ? value.toLowerCase() : "";
+}
+
+function isSameAddress(left, right) {
+  const normalizedLeft = normalizeAddress(left);
+  const normalizedRight = normalizeAddress(right);
+
+  return Boolean(normalizedLeft && normalizedRight && normalizedLeft === normalizedRight);
+}
+
+function getActivityDirection(item, walletAddress) {
+  const sender = item?.sender || item?.from || "";
+  const receiver = item?.receiver || item?.to || item?.recipient || "";
+
+  if (isSameAddress(sender, walletAddress)) {
+    return "sent";
+  }
+
+  if (item?.kind === "bridge_received") {
+    return "bridge_received";
+  }
+
+  if (isSameAddress(receiver, walletAddress)) {
+    return "received";
+  }
+
+  return item?.kind || "other";
+}
+
+function getCounterparty(item, walletAddress, direction) {
+  if (direction === "sent") {
+    return item?.receiver || item?.to || item?.recipient || item?.counterparty || "";
+  }
+
+  if (direction === "received") {
+    return item?.sender || item?.from || item?.counterparty || "";
+  }
+
+  return item?.recipient || item?.counterparty || item?.receiver || item?.to || "";
+}
+
 function formatActivityDate(value, fallback) {
   const date = new Date(value || "");
 
@@ -28,7 +70,9 @@ function formatActivityDate(value, fallback) {
   }).format(date);
 }
 
-function ActivityCard({ item }) {
+function ActivityCard({ item, walletAddress }) {
+  const direction = getActivityDirection(item, walletAddress);
+  const counterparty = getCounterparty(item, walletAddress, direction);
   const sourceCopy =
     item.source === "merged"
       ? "Matched to a confirmed onchain wallet transaction"
@@ -36,19 +80,19 @@ function ActivityCard({ item }) {
         ? "Saved from an in-app wallet action"
         : "Tracked from live Arc onchain activity";
   const counterpartyLabel =
-    item.kind === "sent"
+    direction === "sent"
       ? "Recipient"
-      : item.kind === "received"
+      : direction === "received"
         ? "From"
-        : item.kind === "bridge_received"
+        : direction === "bridge_received"
           ? "Destination"
           : "Counterparty";
 
   return (
     <article className="activity-card">
       <div className="activity-card-head">
-        <div className={`activity-token-icon activity-token-icon-${item.kind || "other"}`}>
-          {item.kind === "sent" ? "UP" : item.kind === "received" ? "DN" : "BR"}
+        <div className={`activity-token-icon activity-token-icon-${direction}`}>
+          {direction === "sent" ? "UP" : direction === "received" ? "DN" : "BR"}
         </div>
         <div className="activity-card-copy">
           <strong>{item.type}</strong>
@@ -68,8 +112,8 @@ function ActivityCard({ item }) {
       </div>
       <div className="activity-card-footer">
         <span>
-          {item.recipient
-            ? `${counterpartyLabel}: ${shortenValue(item.recipient)}`
+          {counterparty
+            ? `${counterpartyLabel}: ${shortenValue(counterparty)}`
             : sourceCopy}
         </span>
         {item.explorerUrl ? (
@@ -90,18 +134,22 @@ export default function TransactionActivity({
   onRefresh
 }) {
   const isSignedIn = walletSnapshot?.isSignedIn;
+  const walletAddress = walletSnapshot?.address || "";
   const [activeFilter, setActiveFilter] = useState("all");
   const filteredItems = useMemo(() => {
     if (activeFilter === "all") {
       return items;
     }
 
-    if (activeFilter === "received") {
-      return items.filter((item) => item.kind === "received");
-    }
-
-    return items.filter((item) => item.kind === activeFilter);
-  }, [activeFilter, items]);
+    return items.filter(
+      (item) => getActivityDirection(item, walletAddress) === activeFilter
+    );
+  }, [activeFilter, items, walletAddress]);
+  const emptyFilterCopy = {
+    sent: "No sent USDC activity found.",
+    received: "No received USDC activity found.",
+    bridge_received: "No bridged USDC activity found."
+  };
 
   return (
     <section className="card">
@@ -170,13 +218,20 @@ export default function TransactionActivity({
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="empty-state">
-          <strong>No {activeFilter.replace("_", " ")} activity found.</strong>
+          <strong>
+            {emptyFilterCopy[activeFilter] ||
+              `No ${activeFilter.replace("_", " ")} activity found.`}
+          </strong>
           <p>Try another filter or refresh after your next Arc transaction.</p>
         </div>
       ) : (
         <div className="activity-feed">
           {filteredItems.map((item) => (
-            <ActivityCard key={item.id} item={item} />
+            <ActivityCard
+              key={item.id}
+              item={item}
+              walletAddress={walletAddress}
+            />
           ))}
         </div>
       )}
