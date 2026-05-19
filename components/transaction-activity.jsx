@@ -1,3 +1,12 @@
+import { useMemo, useState } from "react";
+
+const FILTERS = [
+  { id: "all", label: "All" },
+  { id: "sent", label: "Sent" },
+  { id: "received", label: "Received" },
+  { id: "bridge_received", label: "Bridged" }
+];
+
 function shortenValue(value) {
   if (!value || value.length < 14) {
     return value || "";
@@ -38,6 +47,9 @@ function ActivityCard({ item }) {
   return (
     <article className="activity-card">
       <div className="activity-card-head">
+        <div className={`activity-token-icon activity-token-icon-${item.kind || "other"}`}>
+          {item.kind === "sent" ? "UP" : item.kind === "received" ? "DN" : "BR"}
+        </div>
         <div className="activity-card-copy">
           <strong>{item.type}</strong>
           <span>{item.summary || "Wallet activity recorded."}</span>
@@ -49,7 +61,9 @@ function ActivityCard({ item }) {
       </div>
       <div className="activity-card-meta">
         <span>{formatActivityDate(item.createdAt, item.timeLabel)}</span>
-        <span>{item.status || "Confirmed"}</span>
+        <span className={`activity-status activity-status-${String(item.status || "confirmed").toLowerCase()}`}>
+          {item.status || "Confirmed"}
+        </span>
         {item.txHashShort ? <span>{item.txHashShort}</span> : null}
       </div>
       <div className="activity-card-footer">
@@ -76,6 +90,18 @@ export default function TransactionActivity({
   onRefresh
 }) {
   const isSignedIn = walletSnapshot?.isSignedIn;
+  const [activeFilter, setActiveFilter] = useState("all");
+  const filteredItems = useMemo(() => {
+    if (activeFilter === "all") {
+      return items;
+    }
+
+    if (activeFilter === "received") {
+      return items.filter((item) => item.kind === "received");
+    }
+
+    return items.filter((item) => item.kind === activeFilter);
+  }, [activeFilter, items]);
 
   return (
     <section className="card">
@@ -107,6 +133,21 @@ export default function TransactionActivity({
         </div>
       </div>
 
+      {isSignedIn ? (
+        <div className="activity-filter-row">
+          {FILTERS.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              className={`activity-filter-chip ${activeFilter === filter.id ? "activity-filter-chip-active" : ""}`}
+              onClick={() => setActiveFilter(filter.id)}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {!isSignedIn ? (
         <div className="empty-state">
           <strong>Connect wallet to view activity.</strong>
@@ -127,9 +168,14 @@ export default function TransactionActivity({
             records them on Arc Testnet.
           </p>
         </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="empty-state">
+          <strong>No {activeFilter.replace("_", " ")} activity found.</strong>
+          <p>Try another filter or refresh after your next Arc transaction.</p>
+        </div>
       ) : (
         <div className="activity-feed">
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <ActivityCard key={item.id} item={item} />
           ))}
         </div>

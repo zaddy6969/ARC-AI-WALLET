@@ -3,11 +3,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { buildWalletInsights } from "../lib/wallet-copilot";
 
 const quickPrompts = [
-  "Show my connected wallet",
+  "Send 5 USDC",
   "Check my USDC balance",
-  "Show my portfolio",
-  "Show previous activity",
-  "Explain how to send USDC",
+  "Show last transactions",
+  "Bridge assets",
+  "Portfolio summary",
+  "Analyze wallet activity",
   "Explain how this wallet solves user problems"
 ];
 
@@ -174,10 +175,17 @@ export default function WalletAssistant({
 
   return (
     <section className="card">
-      <div className="section-heading">
+      <div className="assistant-hero">
+        <div className="ai-orb-avatar" aria-hidden="true">
+          <span />
+        </div>
         <div>
           <p className="section-kicker">AI Assistant</p>
-          <h2>Simple wallet guidance built around Arc App Kit</h2>
+          <h2>Arc wallet copilot</h2>
+          <p className="helper-copy">
+            Ask for balance checks, transaction explanations, bridge guidance,
+            and plain-English wallet intelligence.
+          </p>
         </div>
         <span className="status-badge">
           {loading
@@ -264,8 +272,11 @@ export default function WalletAssistant({
         />
         <div className="assistant-form-row">
           <span className="helper-copy">
-            Ask things like "Analyze my wallet" or "Explain Arc USDC gas."
+            Mic ready soon. Type a command like "Analyze my wallet" today.
           </span>
+          <button type="button" className="button button-secondary" disabled title="Voice commands coming soon">
+            Mic
+          </button>
           <button type="submit" className="button button-primary" disabled={loading}>
             {loading ? "Thinking..." : "Ask Copilot"}
           </button>

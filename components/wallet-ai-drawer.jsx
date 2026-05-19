@@ -17,7 +17,8 @@ export default function WalletAiDrawer({
         onClick={open ? onClose : onOpen}
         aria-expanded={open}
       >
-        AI
+        <span className="ai-fab-orb" />
+        <span>AI</span>
       </button>
 
       <AnimatePresence>

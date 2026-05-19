@@ -2,9 +2,11 @@ import Head from "next/head";
 import { useEffect, useRef, useState } from "react";
 import AppShell from "../components/app-shell";
 import BridgeToArcPanel from "../components/bridge-to-arc-panel";
+import PremiumWalletCard from "../components/premium-wallet-card";
 import SendUsdcPanel from "../components/send-usdc-panel";
 import TransactionActivity from "../components/transaction-activity";
 import WalletAiDrawer from "../components/wallet-ai-drawer";
+import WalletIntelligencePanel from "../components/wallet-intelligence-panel";
 import WalletLoginScreen from "../components/wallet-login-screen";
 import WalletSidebar from "../components/wallet-sidebar";
 import ReceiveModal from "../components/wallet/ReceiveModal";
@@ -14,7 +16,7 @@ import { useWalletAppState } from "../lib/use-wallet-app-state";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://arc-ai-wallet.vercel.app";
-const SUPPORTED_VIEWS = new Set(["send", "receive", "bridge", "activity"]);
+const SUPPORTED_VIEWS = new Set(["dashboard", "send", "receive", "bridge", "activity", "settings"]);
 
 function WelcomeOverlay() {
   return (
@@ -35,10 +37,11 @@ export default function Home() {
     refreshActivity,
     updateLocalActivityByHash
   } = useWalletAppState();
-  const [activeView, setActiveView] = useState("send");
+  const [activeView, setActiveView] = useState("dashboard");
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [copied, setCopied] = useState(false);
   const wasSignedInRef = useRef(false);
 
   useEffect(() => {
@@ -90,6 +93,18 @@ export default function Home() {
     }
   };
 
+  const handleCopyAddress = async () => {
+    if (!walletSnapshot.address) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(walletSnapshot.address);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
+
   if (!walletSnapshot.isSignedIn) {
     return (
       <>
@@ -122,7 +137,7 @@ export default function Home() {
       <AppShell>
         {showWelcome ? <WelcomeOverlay /> : null}
 
-        <section className="wallet-dashboard-hero card">
+        <section className="wallet-dashboard-hero">
           <div>
             <p className="section-kicker">Arc AI Wallet</p>
             <h1>Welcome to your AI-powered wallet built on Arc.</h1>
@@ -137,9 +152,10 @@ export default function Home() {
           </div>
         </section>
 
-        <WalletConnect
+        <PremiumWalletCard
           walletSnapshot={walletSnapshot}
-          onReceiveClick={() => setReceiveOpen(true)}
+          onCopy={handleCopyAddress}
+          copied={copied}
         />
 
         <div className="wallet-workspace">
@@ -147,16 +163,33 @@ export default function Home() {
             activeView={activeView}
             onSelect={handleSelectView}
             onReceive={() => setReceiveOpen(true)}
+            onAiOpen={() => setAssistantOpen(true)}
           />
 
           <div className="wallet-main-panel">
-            {activeView === "activity" ? (
+            {activeView === "dashboard" ? (
+              <>
+                <WalletConnect
+                  walletSnapshot={walletSnapshot}
+                  onReceiveClick={() => setReceiveOpen(true)}
+                />
+                <WalletIntelligencePanel
+                  walletSnapshot={walletSnapshot}
+                  activityItems={mergedActivity}
+                />
+              </>
+            ) : activeView === "activity" ? (
               <TransactionActivity
                 walletSnapshot={walletSnapshot}
                 items={mergedActivity}
                 liveStatus={liveActivityStatus}
                 liveError={liveActivityError}
                 onRefresh={refreshActivity}
+              />
+            ) : activeView === "settings" ? (
+              <WalletConnect
+                walletSnapshot={walletSnapshot}
+                onReceiveClick={() => setReceiveOpen(true)}
               />
             ) : activeView === "bridge" ? (
               <BridgeToArcPanel
