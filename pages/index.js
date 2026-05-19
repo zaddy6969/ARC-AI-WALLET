@@ -4,11 +4,11 @@ import AppShell from "../components/app-shell";
 import BridgeToArcPanel from "../components/bridge-to-arc-panel";
 import {
   NftComingSoonCard,
-  PortfolioPanel,
-  SwapComingSoonCard
+  PortfolioPanel
 } from "../components/wallet-feature-panels";
 import PremiumWalletCard from "../components/premium-wallet-card";
 import SendUsdcPanel from "../components/send-usdc-panel";
+import SwapUsdcPanel from "../components/swap-usdc-panel";
 import TransactionActivity from "../components/transaction-activity";
 import WalletAiDrawer from "../components/wallet-ai-drawer";
 import WalletIntelligencePanel from "../components/wallet-intelligence-panel";
@@ -211,7 +211,10 @@ export default function Home() {
                 activityItems={mergedActivity}
               />
             ) : activeView === "swap" ? (
-              <SwapComingSoonCard />
+              <SwapUsdcPanel
+                walletSnapshot={walletSnapshot}
+                onActivitySaved={saveLocalActivity}
+              />
             ) : activeView === "nft" ? (
               <NftComingSoonCard />
             ) : activeView === "settings" ? (

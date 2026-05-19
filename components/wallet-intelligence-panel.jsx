@@ -96,7 +96,7 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
     {
       id: "swap",
       label: "Swap",
-      helper: "Coming soon",
+      helper: "Arc App Kit swaps",
       action: () => onSelectView?.("swap")
     },
     {

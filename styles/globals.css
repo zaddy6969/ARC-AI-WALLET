@@ -2424,6 +2424,34 @@ body::after {
   font-size: 1.4rem;
 }
 
+.swap-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.swap-panel::after {
+  content: "";
+  position: absolute;
+  inset: auto -12% -34% auto;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(97, 216, 255, 0.14), transparent 70%);
+  pointer-events: none;
+}
+
+.swap-route-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.swap-amount-field {
+  grid-column: 1 / -1;
+}
+
 .nft-mini-card {
   min-height: 240px;
   display: grid;
@@ -2963,6 +2991,7 @@ body::after {
   .wallet-live-metrics,
   .command-grid,
   .recent-activity-row,
+  .swap-route-grid,
   .portfolio-os-asset,
   .portfolio-os-metrics {
     grid-template-columns: 1fr;

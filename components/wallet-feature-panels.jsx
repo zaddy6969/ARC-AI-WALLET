@@ -33,18 +33,8 @@ export function NftComingSoonCard() {
   return (
     <ComingSoonPanel
       kicker="NFT"
-      title="NFT Marketplace & Gallery — Coming Soon"
+      title="NFT Marketplace & Gallery - Coming Soon"
       description="Collect, view, and trade NFTs directly from your ARC AI Wallet soon."
-    />
-  );
-}
-
-export function SwapComingSoonCard() {
-  return (
-    <ComingSoonPanel
-      kicker="Swap"
-      title="AI-guided swaps — Coming Soon"
-      description="Swap will be enabled only when a production-ready Arc route is available. No fake quotes or demo swaps are shown."
     />
   );
 }
