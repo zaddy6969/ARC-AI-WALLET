@@ -1,9 +1,19 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { arcTestnet } from "../lib/arc-chain";
 
-export default function WalletLoginScreen() {
+export default function WalletLoginScreen({
+  providerError = "",
+  providerUnavailable = false
+}) {
   const [connectError, setConnectError] = useState("");
+  const [fallbackReady, setFallbackReady] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setFallbackReady(true), 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   return (
     <main className="login-page-shell">
@@ -24,39 +34,66 @@ export default function WalletLoginScreen() {
           activity on Arc Testnet.
         </p>
 
-        <ConnectButton.Custom>
-          {({ mounted, openConnectModal }) => {
-            const handleConnect = () => {
-              setConnectError("");
-
-              if (!mounted || typeof openConnectModal !== "function") {
+        {providerUnavailable ? (
+          <>
+            <button
+              type="button"
+              className="button button-primary login-connect-button"
+              onClick={() =>
                 setConnectError(
-                  "Wallet connection is still initializing. Please try again in a moment."
-                );
-                return;
+                  providerError ||
+                    "Wallet connection is temporarily unavailable. Refresh or check your browser wallet."
+                )
               }
+            >
+              Connect Wallet
+            </button>
+            {connectError || providerError ? (
+              <p className="helper-copy login-connect-error" role="alert">
+                {connectError || providerError}
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <ConnectButton.Custom>
+            {({ mounted, openConnectModal }) => {
+              const canOpenWallet =
+                typeof openConnectModal === "function" &&
+                (mounted || fallbackReady);
+              const handleConnect = () => {
+                setConnectError("");
 
-              openConnectModal();
-            };
+                if (typeof openConnectModal !== "function") {
+                  setConnectError(
+                    providerError ||
+                      "Wallet connection is temporarily unavailable. Refresh or check your browser wallet."
+                  );
+                  return;
+                }
 
-            return (
-              <>
-                <button
-                  type="button"
-                  className="button button-primary login-connect-button"
-                  onClick={handleConnect}
-                >
-                  Connect Wallet
-                </button>
-                {connectError ? (
-                  <p className="helper-copy login-connect-error" role="alert">
-                    {connectError}
-                  </p>
-                ) : null}
-              </>
-            );
-          }}
-        </ConnectButton.Custom>
+                openConnectModal();
+              };
+
+              return (
+                <>
+                  <button
+                    type="button"
+                    className="button button-primary login-connect-button"
+                    onClick={handleConnect}
+                    aria-busy={!canOpenWallet}
+                  >
+                    Connect Wallet
+                  </button>
+                  {connectError ? (
+                    <p className="helper-copy login-connect-error" role="alert">
+                      {connectError}
+                    </p>
+                  ) : null}
+                </>
+              );
+            }}
+          </ConnectButton.Custom>
+        )}
 
         <div className="login-meta-row">
           <span className="status-badge status-good">{arcTestnet.name}</span>

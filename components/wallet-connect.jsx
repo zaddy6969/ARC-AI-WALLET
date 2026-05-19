@@ -1,5 +1,5 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ARC_TESTNET_INFO_ITEMS, arcTestnet } from "../lib/arc-chain";
 
 function truncateAddress(address) {
@@ -24,6 +24,14 @@ function formatUsdBalance(balance) {
 }
 
 export function WalletConnectCta({ className = "hero-actions" }) {
+  const [fallbackReady, setFallbackReady] = useState(false);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setFallbackReady(true), 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <ConnectButton.Custom>
       {({
@@ -35,9 +43,9 @@ export function WalletConnectCta({ className = "hero-actions" }) {
         openChainModal,
         openConnectModal
       }) => {
-        const ready = mounted && authenticationStatus !== "loading";
+        const ready =
+          (mounted || fallbackReady) && authenticationStatus !== "loading";
         const connected =
-          ready &&
           account &&
           chain &&
           (!authenticationStatus ||
@@ -46,16 +54,22 @@ export function WalletConnectCta({ className = "hero-actions" }) {
 
         const handleClick = () => {
           if (!connected) {
-            openConnectModal();
+            if (typeof openConnectModal === "function") {
+              openConnectModal();
+            }
             return;
           }
 
           if (!onArc) {
-            openChainModal();
+            if (typeof openChainModal === "function") {
+              openChainModal();
+            }
             return;
           }
 
-          openAccountModal();
+          if (typeof openAccountModal === "function") {
+            openAccountModal();
+          }
         };
 
         return (
@@ -63,7 +77,7 @@ export function WalletConnectCta({ className = "hero-actions" }) {
             <button
               type="button"
               className="button button-primary"
-              disabled={!ready}
+              aria-busy={!ready}
               onClick={handleClick}
             >
               {!connected
@@ -81,6 +95,7 @@ export function WalletConnectCta({ className = "hero-actions" }) {
 
 export default function WalletConnect({ walletSnapshot, onReceiveClick }) {
   const [copied, setCopied] = useState(false);
+  const [fallbackReady, setFallbackReady] = useState(false);
   const {
     address,
     isSignedIn,
@@ -104,6 +119,12 @@ export default function WalletConnect({ walletSnapshot, onReceiveClick }) {
     } catch {}
   };
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setFallbackReady(true), 3000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <ConnectButton.Custom>
       {({
@@ -114,9 +135,9 @@ export default function WalletConnect({ walletSnapshot, onReceiveClick }) {
         openChainModal,
         openConnectModal
       }) => {
-        const ready = mounted && authenticationStatus !== "loading";
+        const ready =
+          (mounted || fallbackReady) && authenticationStatus !== "loading";
         const connected =
-          ready &&
           account &&
           chain &&
           (!authenticationStatus ||
@@ -153,7 +174,12 @@ export default function WalletConnect({ walletSnapshot, onReceiveClick }) {
                 <button
                   type="button"
                   className="button button-primary"
-                  onClick={openConnectModal}
+                  aria-busy={!ready}
+                  onClick={() => {
+                    if (typeof openConnectModal === "function") {
+                      openConnectModal();
+                    }
+                  }}
                 >
                   Connect Wallet
                 </button>
@@ -213,7 +239,11 @@ export default function WalletConnect({ walletSnapshot, onReceiveClick }) {
                     <button
                       type="button"
                       className="button button-primary"
-                      onClick={openChainModal}
+                      onClick={() => {
+                        if (typeof openChainModal === "function") {
+                          openChainModal();
+                        }
+                      }}
                     >
                       Switch to Arc Testnet
                     </button>

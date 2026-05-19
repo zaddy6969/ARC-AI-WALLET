@@ -17,28 +17,17 @@ import {
   hasWalletConnectProjectId,
   walletConnectProjectId
 } from "../lib/arc-chain";
+import WalletLoginScreen from "./wallet-login-screen";
 
 function ProviderFallback({ message }) {
   return (
-    <main className="login-page-shell">
-      <span className="login-blob login-blob-left" />
-      <span className="login-blob login-blob-right" />
-      <section className="login-card-premium">
-        <p className="login-built-label">Built on Arc</p>
-        <h1>Arc AI Wallet</h1>
-        <p className="login-tagline">
-          Send, bridge, and manage USDC on Arc with AI.
-        </p>
-        <p className="login-description">
-          Wallet connection is temporarily unavailable, but the app loaded
-          safely. Check Vercel environment variables and refresh.
-        </p>
-        <div className="empty-state empty-state-compact">
-          <strong>Wallet provider fallback</strong>
-          <p>{message || "Unable to initialize wallet provider."}</p>
-        </div>
-      </section>
-    </main>
+    <WalletLoginScreen
+      providerUnavailable
+      providerError={
+        message ||
+        "Wallet provider initialization failed, but the app is still available."
+      }
+    />
   );
 }
 

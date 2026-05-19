@@ -205,7 +205,7 @@ export default function ReceiveModal({
                 />
               ) : (
                 <div className="receive-qr-loading">
-                  <strong>Loading wallet address...</strong>
+                  <strong>Connect wallet to show address</strong>
                   <p>Connect your wallet to generate a QR code.</p>
                 </div>
               )}
