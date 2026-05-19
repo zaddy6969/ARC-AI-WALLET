@@ -1,7 +1,10 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useState } from "react";
 import { arcTestnet } from "../lib/arc-chain";
 
 export default function WalletLoginScreen() {
+  const [connectError, setConnectError] = useState("");
+
   return (
     <main className="login-page-shell">
       <span className="login-blob login-blob-left" />
@@ -22,18 +25,35 @@ export default function WalletLoginScreen() {
         </p>
 
         <ConnectButton.Custom>
-          {({ authenticationStatus, mounted, openConnectModal }) => {
-            const ready = mounted && authenticationStatus !== "loading";
+          {({ mounted, openConnectModal }) => {
+            const handleConnect = () => {
+              setConnectError("");
+
+              if (!mounted || typeof openConnectModal !== "function") {
+                setConnectError(
+                  "Wallet connection is still initializing. Please try again in a moment."
+                );
+                return;
+              }
+
+              openConnectModal();
+            };
 
             return (
-              <button
-                type="button"
-                className="button button-primary login-connect-button"
-                disabled={!ready}
-                onClick={openConnectModal}
-              >
-                {ready ? "Connect Wallet" : "Loading wallet..."}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="button button-primary login-connect-button"
+                  onClick={handleConnect}
+                >
+                  Connect Wallet
+                </button>
+                {connectError ? (
+                  <p className="helper-copy login-connect-error" role="alert">
+                    {connectError}
+                  </p>
+                ) : null}
+              </>
             );
           }}
         </ConnectButton.Custom>

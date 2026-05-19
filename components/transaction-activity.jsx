@@ -121,10 +121,10 @@ export default function TransactionActivity({
         </div>
       ) : items.length === 0 ? (
         <div className="empty-state">
-          <strong>No transactions found for this wallet yet.</strong>
+          <strong>Your Arc wallet activity will appear here.</strong>
           <p>
-            Real sent, received, and bridge events will appear here after your
-            wallet records them onchain.
+            Real sent and received USDC transfers will appear after your wallet
+            records them on Arc Testnet.
           </p>
         </div>
       ) : (

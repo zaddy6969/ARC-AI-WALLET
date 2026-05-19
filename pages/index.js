@@ -14,7 +14,7 @@ import { useWalletAppState } from "../lib/use-wallet-app-state";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://arc-ai-wallet.vercel.app";
-const SUPPORTED_VIEWS = new Set(["send", "bridge", "activity"]);
+const SUPPORTED_VIEWS = new Set(["send", "receive", "bridge", "activity"]);
 
 function WelcomeOverlay() {
   return (
@@ -46,6 +46,11 @@ export default function Home() {
       const nextHash = String(window.location.hash || "").replace(/^#/, "");
 
       if (SUPPORTED_VIEWS.has(nextHash)) {
+        if (nextHash === "receive") {
+          setReceiveOpen(true);
+          return;
+        }
+
         setActiveView(nextHash);
       }
     };

@@ -241,6 +241,8 @@ export default function SendUsdcPanel({
           kind: "sent",
           amount: `${amount} USDC`,
           chain: arcTestnet.name,
+          sender: walletSnapshot.address,
+          receiver: recipient,
           recipient,
           status: "Pending",
           txHash: transaction.hash,

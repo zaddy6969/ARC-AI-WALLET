@@ -14,13 +14,27 @@ export default async function handler(req, res) {
   try {
     const activity = await getWalletActivity(address);
 
+    if (process.env.NODE_ENV !== "production") {
+      console.info("[arc-wallet-activity]", "api-response", {
+        address,
+        fetchedCount: activity.length
+      });
+    }
+
     res.setHeader(
       "Cache-Control",
       "public, s-maxage=15, stale-while-revalidate=45"
     );
 
     return res.status(200).json({ activity });
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[arc-wallet-activity]", "api-error", {
+        address,
+        message: error instanceof Error ? error.message : "Unknown RPC error"
+      });
+    }
+
     return res.status(503).json({
       error: "Activity temporarily unavailable. Please try again later."
     });
