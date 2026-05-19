@@ -2276,6 +2276,171 @@ body::after {
   text-align: right;
 }
 
+.coming-soon-panel,
+.portfolio-os-panel,
+.nft-mini-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.coming-soon-panel {
+  min-height: 360px;
+  display: grid;
+  align-content: end;
+  gap: 18px;
+  padding: clamp(24px, 5vw, 38px);
+  background:
+    radial-gradient(circle at 78% 16%, rgba(142, 107, 255, 0.2), transparent 28%),
+    radial-gradient(circle at 12% 84%, rgba(97, 216, 255, 0.14), transparent 30%),
+    linear-gradient(145deg, rgba(12, 18, 32, 0.94), rgba(5, 9, 18, 0.95));
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.coming-soon-panel:hover,
+.nft-mini-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(142, 107, 255, 0.34);
+  box-shadow:
+    0 32px 110px rgba(0, 0, 0, 0.5),
+    0 0 52px rgba(142, 107, 255, 0.12);
+}
+
+.coming-soon-panel h2,
+.portfolio-os-panel h2,
+.nft-mini-card h2 {
+  margin: 4px 0 8px;
+  letter-spacing: -0.05em;
+}
+
+.coming-soon-panel p,
+.nft-mini-card p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.coming-soon-orb {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  width: 132px;
+  height: 132px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.9), rgba(97, 216, 255, 0.78) 24%, rgba(142, 107, 255, 0.62) 62%, transparent 72%);
+  box-shadow:
+    0 0 44px rgba(97, 216, 255, 0.24),
+    0 0 90px rgba(142, 107, 255, 0.18);
+  opacity: 0.78;
+  animation: aiOrbPulse 3.8s ease-in-out infinite;
+}
+
+.coming-soon-orb::after {
+  content: "";
+  position: absolute;
+  inset: 30%;
+  border-radius: inherit;
+  background: rgba(5, 8, 17, 0.9);
+}
+
+.portfolio-os-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.portfolio-os-balance {
+  display: grid;
+  gap: 6px;
+  padding: 22px;
+  border-radius: 26px;
+  border: 1px solid rgba(137, 188, 255, 0.14);
+  background:
+    radial-gradient(circle at 80% 20%, rgba(97, 216, 255, 0.14), transparent 28%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.portfolio-os-balance span,
+.portfolio-os-balance small,
+.portfolio-os-metrics span {
+  color: var(--muted);
+}
+
+.portfolio-os-balance strong {
+  font-size: clamp(2.2rem, 7vw, 4.6rem);
+  line-height: 0.95;
+  letter-spacing: -0.08em;
+  background: linear-gradient(135deg, #ffffff, #8ee4ff 48%, #a68cff);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.portfolio-os-asset {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(137, 188, 255, 0.13);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.asset-logo {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #61d8ff, #8e6bff);
+  color: #06131d;
+  font-weight: 900;
+}
+
+.portfolio-os-asset div,
+.portfolio-os-metrics div {
+  display: grid;
+  gap: 4px;
+}
+
+.portfolio-os-asset small {
+  color: var(--muted);
+}
+
+.portfolio-os-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.portfolio-os-metrics div {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(137, 188, 255, 0.12);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.portfolio-os-metrics strong {
+  font-size: 1.4rem;
+}
+
+.nft-mini-card {
+  min-height: 240px;
+  display: grid;
+  align-content: end;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(142, 107, 255, 0.18), transparent 30%),
+    linear-gradient(145deg, rgba(12, 18, 32, 0.92), rgba(7, 11, 22, 0.92));
+}
+
+.nft-mini-card .coming-soon-orb {
+  width: 92px;
+  height: 92px;
+  top: 18px;
+  right: 18px;
+}
+
 .ai-orb-large {
   width: 88px;
   height: 88px;
@@ -2797,7 +2962,9 @@ body::after {
 
   .wallet-live-metrics,
   .command-grid,
-  .recent-activity-row {
+  .recent-activity-row,
+  .portfolio-os-asset,
+  .portfolio-os-metrics {
     grid-template-columns: 1fr;
   }
 

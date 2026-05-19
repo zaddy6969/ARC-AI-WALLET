@@ -2,10 +2,13 @@ const ACTIONS = [
   { id: "dashboard", label: "Dashboard", icon: "D" },
   { id: "send", label: "Send", icon: "S" },
   { id: "receive", label: "Receive", icon: "R" },
+  { id: "swap", label: "Swap", icon: "X" },
   { id: "bridge", label: "Bridge", icon: "B" },
   { id: "activity", label: "Activity", icon: "A" },
+  { id: "portfolio", label: "Portfolio", icon: "P" },
+  { id: "nft", label: "NFT", icon: "N" },
   { id: "ai", label: "AI Assistant", icon: "AI" },
-  { id: "settings", label: "Settings", icon: "N" }
+  { id: "settings", label: "Settings", icon: "G" }
 ];
 
 export default function WalletSidebar({

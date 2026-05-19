@@ -2,6 +2,11 @@ import Head from "next/head";
 import { useEffect, useRef, useState } from "react";
 import AppShell from "../components/app-shell";
 import BridgeToArcPanel from "../components/bridge-to-arc-panel";
+import {
+  NftComingSoonCard,
+  PortfolioPanel,
+  SwapComingSoonCard
+} from "../components/wallet-feature-panels";
 import PremiumWalletCard from "../components/premium-wallet-card";
 import SendUsdcPanel from "../components/send-usdc-panel";
 import TransactionActivity from "../components/transaction-activity";
@@ -16,7 +21,17 @@ import { useWalletAppState } from "../lib/use-wallet-app-state";
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://arc-ai-wallet.vercel.app";
-const SUPPORTED_VIEWS = new Set(["dashboard", "send", "receive", "bridge", "activity", "settings"]);
+const SUPPORTED_VIEWS = new Set([
+  "dashboard",
+  "send",
+  "receive",
+  "swap",
+  "bridge",
+  "activity",
+  "portfolio",
+  "nft",
+  "settings"
+]);
 
 function WelcomeOverlay() {
   return (
@@ -190,6 +205,15 @@ export default function Home() {
                 liveError={liveActivityError}
                 onRefresh={refreshActivity}
               />
+            ) : activeView === "portfolio" ? (
+              <PortfolioPanel
+                walletSnapshot={walletSnapshot}
+                activityItems={mergedActivity}
+              />
+            ) : activeView === "swap" ? (
+              <SwapComingSoonCard />
+            ) : activeView === "nft" ? (
+              <NftComingSoonCard />
             ) : activeView === "settings" ? (
               <WalletConnect
                 walletSnapshot={walletSnapshot}

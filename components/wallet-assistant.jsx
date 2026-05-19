@@ -4,12 +4,13 @@ import { buildWalletInsights } from "../lib/wallet-copilot";
 
 const quickPrompts = [
   "Send 5 USDC",
-  "Check my USDC balance",
-  "Show last transactions",
+  "Show my balance",
+  "Show my activity",
+  "Explain my last transaction",
   "Bridge assets",
+  "Swap USDC",
   "Portfolio summary",
-  "Analyze wallet activity",
-  "Explain how this wallet solves user problems"
+  "Analyze wallet activity"
 ];
 
 function MessageBubble({ role, content }) {
@@ -207,8 +208,8 @@ export default function WalletAssistant({
           <p className="section-kicker">AI Assistant</p>
           <h2>Arc wallet copilot</h2>
           <p className="helper-copy">
-            Ask for balance checks, transaction explanations, bridge guidance,
-            and plain-English wallet intelligence.
+            Type commands like "Send 5 USDC", "Show my balance", or
+            "Explain my last transaction" for plain-English wallet help.
           </p>
         </div>
         <span className="status-badge">
@@ -292,7 +293,7 @@ export default function WalletAssistant({
           className="assistant-input"
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder="Ask about Send, Bridge, Receive, or your wallet activity..."
+          placeholder='Type a command like "Send 5 USDC" or "Show my activity"...'
           rows={4}
         />
         <div className="assistant-form-row">
