@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import AppShell from "../components/app-shell";
 import BridgeToArcPanel from "../components/bridge-to-arc-panel";
 import {
-  NftComingSoonCard,
   PortfolioPanel
 } from "../components/wallet-feature-panels";
 import PremiumWalletCard from "../components/premium-wallet-card";
@@ -29,7 +28,6 @@ const SUPPORTED_VIEWS = new Set([
   "bridge",
   "activity",
   "portfolio",
-  "nft",
   "settings"
 ]);
 
@@ -227,8 +225,6 @@ export default function Home() {
                 walletSnapshot={walletSnapshot}
                 onActivitySaved={saveLocalActivity}
               />
-            ) : activeView === "nft" ? (
-              <NftComingSoonCard />
             ) : activeView === "settings" ? (
               <WalletConnect
                 walletSnapshot={walletSnapshot}

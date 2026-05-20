@@ -46,7 +46,7 @@ function buildActivityBars(activityItems = []) {
     ...bucket,
     height: activityItems.length
       ? Math.max(16, Math.round((bucket.value / max) * 100))
-      : 18 + ((index * 13) % 52)
+      : 8
   }));
 }
 

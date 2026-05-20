@@ -10,35 +10,6 @@ function formatUsd(value) {
   }).format(value)}`;
 }
 
-export function ComingSoonPanel({
-  kicker,
-  title,
-  description,
-  badge = "Coming Soon"
-}) {
-  return (
-    <section className="card coming-soon-panel">
-      <span className="coming-soon-orb" aria-hidden="true" />
-      <div>
-        <p className="section-kicker">{kicker}</p>
-        <h2>{title}</h2>
-        <p>{description}</p>
-      </div>
-      <span className="status-badge">{badge}</span>
-    </section>
-  );
-}
-
-export function NftComingSoonCard() {
-  return (
-    <ComingSoonPanel
-      kicker="NFT"
-      title="NFT Marketplace & Gallery - Coming Soon"
-      description="Collect, view, and trade NFTs directly from your ARC AI Wallet soon."
-    />
-  );
-}
-
 export function PortfolioPanel({ walletSnapshot, activityItems = [] }) {
   const balanceValue = parseBalance(walletSnapshot?.usdcBalance);
   const sentCount = activityItems.filter((item) => item.kind === "sent").length;

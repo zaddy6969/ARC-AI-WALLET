@@ -175,7 +175,8 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
   const estimateOutput = getEstimatedOutput(estimate);
   const feeSummary = getSwapFeeSummary(estimate);
   const usdcBalance = parseBalanceValue(walletSnapshot?.usdcBalance);
-  const hasEnoughUsdc = tokenIn !== "USDC" || Number(amountIn) <= usdcBalance;
+  const balanceReady = walletSnapshot?.balanceStatus === "ready";
+  const hasEnoughUsdc = tokenIn !== "USDC" || !balanceReady || Number(amountIn) <= usdcBalance;
   const txHash = useMemo(() => getSwapTxHash(swapResult), [swapResult]);
   const explorerUrl = useMemo(() => getSwapExplorerUrl(swapResult), [swapResult]);
 
@@ -385,6 +386,8 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
                   ? "Choose two different tokens."
                   : !amountLooksValid
                     ? "Enter a valid amount."
+                    : tokenIn === "USDC" && !balanceReady
+                      ? "USDC balance is still syncing. Try again in a moment."
                     : !hasEnoughUsdc
                       ? `Insufficient USDC balance. Available: ${walletSnapshot?.usdcBalance || "0 USDC"}.`
                     : estimateOutput

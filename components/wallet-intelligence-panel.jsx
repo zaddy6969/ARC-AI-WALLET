@@ -33,6 +33,10 @@ function getWeeklyTrend(items) {
 }
 
 function getDirection(item) {
+  if (item?.kind === "swap") {
+    return "Swapped";
+  }
+
   return item?.kind === "bridge_received" ? "Bridged" : item?.kind === "sent" ? "Sent" : "Received";
 }
 
@@ -56,7 +60,7 @@ function RecentActivityPreview({ items = [], onOpenActivity }) {
           {recentItems.map((item) => (
             <div key={item.id} className="recent-activity-row">
               <span className={`activity-token-icon activity-token-icon-${item.kind || "other"}`}>
-                {item.kind === "sent" ? "UP" : item.kind === "received" ? "DN" : "BR"}
+                {item.kind === "sent" ? "UP" : item.kind === "received" ? "DN" : item.kind === "swap" ? "SW" : "BR"}
               </span>
               <div>
                 <strong>{item.type || getDirection(item)}</strong>
@@ -72,7 +76,7 @@ function RecentActivityPreview({ items = [], onOpenActivity }) {
       ) : (
         <div className="empty-state empty-state-compact">
           <strong>No wallet activity yet.</strong>
-          <p>Sent, received, and bridged USDC will appear here from real activity.</p>
+          <p>Sent, received, swapped, and bridged USDC will appear here from real activity.</p>
         </div>
       )}
     </article>
@@ -197,25 +201,6 @@ export default function WalletIntelligencePanel({
         items={activityItems}
         onOpenActivity={() => onSelectView?.("activity")}
       />
-
-      <article
-        className="card analytics-card nft-mini-card"
-        onClick={() => onSelectView?.("nft")}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            onSelectView?.("nft");
-          }
-        }}
-      >
-        <span className="coming-soon-orb" aria-hidden="true" />
-        <p className="section-kicker">NFT</p>
-        <h2>NFT Marketplace & Gallery — Coming Soon</h2>
-        <p className="helper-copy">
-          Collect, view, and trade NFTs directly from your ARC AI Wallet soon.
-        </p>
-      </article>
 
       <article className="card analytics-card">
         <div className="section-heading">

@@ -122,10 +122,6 @@ export default function SendUsdcPanel({
       throw new Error("Wallet not connected.");
     }
 
-    if (needsArcSwitch) {
-      throw new Error("Wrong network, please switch to Arc Testnet.");
-    }
-
     if (!recipientValid) {
       throw new Error("Invalid wallet address.");
     }
@@ -149,7 +145,7 @@ export default function SendUsdcPanel({
   };
 
   const estimateFee = async ({ silent = false } = {}) => {
-    if (!recipientValid || !amountValid || !isSignedIn || needsArcSwitch || !connector) {
+    if (!recipientValid || !amountValid || !isSignedIn || !connector) {
       return;
     }
 
@@ -159,6 +155,10 @@ export default function SendUsdcPanel({
     setError("");
 
     try {
+      if (needsArcSwitch) {
+        await ensureArcNetwork();
+      }
+
       const { contract, provider, parsedAmount } = await validateTransfer();
       const gasLimit = await contract.transfer.estimateGas(recipient, parsedAmount);
       const feeData = await provider.getFeeData();
@@ -230,6 +230,10 @@ export default function SendUsdcPanel({
     setResult(null);
 
     try {
+      if (needsArcSwitch) {
+        await ensureArcNetwork();
+      }
+
       const { contract, parsedAmount } = await validateTransfer();
       const transaction = await contract.transfer(recipient, parsedAmount);
       setResult({ hash: transaction.hash });
