@@ -116,6 +116,12 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
       action: () => onSelectView?.("portfolio")
     },
     {
+      id: "nft",
+      label: "NFT",
+      helper: "Gallery preview",
+      action: () => onSelectView?.("nft")
+    },
+    {
       id: "ai",
       label: "Ask AI",
       helper: "Wallet guidance",
@@ -201,6 +207,25 @@ export default function WalletIntelligencePanel({
         items={activityItems}
         onOpenActivity={() => onSelectView?.("activity")}
       />
+
+      <article
+        className="card analytics-card nft-mini-card"
+        onClick={() => onSelectView?.("nft")}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            onSelectView?.("nft");
+          }
+        }}
+      >
+        <span className="coming-soon-orb" aria-hidden="true" />
+        <p className="section-kicker">NFT</p>
+        <h2>NFT Marketplace & Gallery - Coming Soon</h2>
+        <p className="helper-copy">
+          Collect, view, and trade NFTs directly from your ARC AI Wallet soon.
+        </p>
+      </article>
 
       <article className="card analytics-card">
         <div className="section-heading">

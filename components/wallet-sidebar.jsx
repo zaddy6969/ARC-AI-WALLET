@@ -4,7 +4,8 @@ const ACTIONS = [
   { id: "swap", label: "Swap", icon: "X" },
   { id: "bridge", label: "Bridge", icon: "B" },
   { id: "activity", label: "Activity", icon: "A" },
-  { id: "portfolio", label: "Portfolio", icon: "P" }
+  { id: "portfolio", label: "Portfolio", icon: "P" },
+  { id: "nft", label: "NFT", icon: "N" }
 ];
 
 export default function WalletSidebar({
