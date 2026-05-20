@@ -5,6 +5,11 @@ import { arcTestnet } from "../lib/arc-chain";
 import { createWalletActionRecord } from "../lib/local-activity";
 
 const SWAP_TOKENS = ["USDC", "EURC", "cirBTC"];
+const SLIPPAGE_OPTIONS = [
+  { label: "0.5%", value: 50 },
+  { label: "1%", value: 100 },
+  { label: "3%", value: 300 }
+];
 
 function normalizeAmount(value) {
   return String(value || "").replace(/[^\d.]/g, "");
@@ -13,6 +18,11 @@ function normalizeAmount(value) {
 function isValidAmount(value) {
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric > 0;
+}
+
+function parseBalanceValue(balance) {
+  const numeric = Number(String(balance || "").replace(/[^\d.]/g, ""));
+  return Number.isFinite(numeric) ? numeric : 0;
 }
 
 function shortHash(hash) {
@@ -61,6 +71,29 @@ function getEstimatedOutput(estimate) {
   );
 }
 
+function getSwapFeeSummary(estimate) {
+  const fees = Array.isArray(estimate?.fees) ? estimate.fees : [];
+
+  if (!fees.length) {
+    return "";
+  }
+
+  return fees
+    .map((fee) => {
+      if (fee?.amount && fee?.token) {
+        return `${fee.amount} ${fee.token}`;
+      }
+
+      if (fee?.amount) {
+        return String(fee.amount);
+      }
+
+      return fee?.type || "";
+    })
+    .filter(Boolean)
+    .join(" + ");
+}
+
 async function loadKitKey() {
   const response = await fetch("/api/app-kit-config");
   const payload = await response.json();
@@ -79,6 +112,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
   const [tokenIn, setTokenIn] = useState("USDC");
   const [tokenOut, setTokenOut] = useState("EURC");
   const [amountIn, setAmountIn] = useState("1.00");
+  const [slippageBps, setSlippageBps] = useState(100);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [estimate, setEstimate] = useState(null);
@@ -89,6 +123,9 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
   const amountLooksValid = isValidAmount(amountIn);
   const tokensValid = tokenIn !== tokenOut;
   const estimateOutput = getEstimatedOutput(estimate);
+  const feeSummary = getSwapFeeSummary(estimate);
+  const usdcBalance = parseBalanceValue(walletSnapshot?.usdcBalance);
+  const hasEnoughUsdc = tokenIn !== "USDC" || Number(amountIn) <= usdcBalance;
   const txHash = useMemo(() => getSwapTxHash(swapResult), [swapResult]);
   const explorerUrl = useMemo(() => getSwapExplorerUrl(swapResult), [swapResult]);
 
@@ -97,7 +134,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
     setSwapResult(null);
     setError("");
     setStatus("idle");
-  }, [tokenIn, tokenOut, amountIn]);
+  }, [tokenIn, tokenOut, amountIn, slippageBps]);
 
   const ensureArcNetwork = async () => {
     if (chainId === arcTestnet.id || !switchChainAsync) {
@@ -120,6 +157,10 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
       throw new Error("Choose two different tokens.");
     }
 
+    if (!hasEnoughUsdc) {
+      throw new Error("Insufficient USDC balance for this swap.");
+    }
+
     await ensureArcNetwork();
 
     const [provider, kitKey] = await Promise.all([
@@ -139,7 +180,8 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
         tokenOut,
         amountIn,
         config: {
-          kitKey
+          kitKey,
+          slippageBps
         }
       }
     };
@@ -189,7 +231,8 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
           metadata: {
             tokenIn,
             tokenOut,
-            estimateOutput: estimateOutput || `${tokenOut} output confirmed in wallet`
+            estimateOutput: estimateOutput || `${tokenOut} output confirmed in wallet`,
+            slippageBps
           }
         })
       );
@@ -259,6 +302,21 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
                 className="composer-input"
               />
             </label>
+
+            <label className="composer-field swap-amount-field">
+              <span className="field-label">Slippage tolerance</span>
+              <select
+                value={slippageBps}
+                onChange={(event) => setSlippageBps(Number(event.target.value))}
+                className="composer-input"
+              >
+                {SLIPPAGE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <div className="empty-state empty-state-compact">
@@ -270,10 +328,13 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
                   ? "Choose two different tokens."
                   : !amountLooksValid
                     ? "Enter a valid amount."
+                    : !hasEnoughUsdc
+                      ? `Insufficient USDC balance. Available: ${walletSnapshot?.usdcBalance || "0 USDC"}.`
                     : estimateOutput
                       ? `Estimated output: ${estimateOutput}`
                       : "Estimate the live swap route before confirming in your wallet."}
             </p>
+            {feeSummary ? <small>Estimated fees: {feeSummary}</small> : null}
           </div>
 
           <div className="composer-actions">
@@ -284,6 +345,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
               disabled={
                 !tokensValid ||
                 !amountLooksValid ||
+                !hasEnoughUsdc ||
                 status === "estimating" ||
                 status === "swapping" ||
                 isSwitchingChain
@@ -298,6 +360,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
               disabled={
                 !tokensValid ||
                 !amountLooksValid ||
+                !hasEnoughUsdc ||
                 !estimate ||
                 needsArcSwitch ||
                 status === "estimating" ||
@@ -322,7 +385,9 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
         <div className="empty-state empty-state-compact">
           <strong>{status === "success" ? "Swap submitted" : "Swap result"}</strong>
           <p>
-            {amountIn} {tokenIn} to {tokenOut}
+            {status === "success"
+              ? `Your ${amountIn} ${tokenIn} swap was submitted on Arc Testnet.`
+              : `${amountIn} ${tokenIn} to ${tokenOut}`}
           </p>
           {txHash ? <code>{shortHash(txHash)}</code> : null}
           {explorerUrl ? (
