@@ -57,6 +57,14 @@ function getSwapExplorerUrl(result) {
   return stepWithUrl?.explorerUrl || "";
 }
 
+function getSwapSender(result, fallbackAddress) {
+  return result?.fromAddress || result?.sender || result?.from || fallbackAddress || "";
+}
+
+function getSwapReceiver(result, fallbackAddress) {
+  return result?.toAddress || result?.receiver || result?.to || fallbackAddress || "";
+}
+
 function getEstimatedOutput(estimate) {
   if (estimate?.estimatedOutput?.amount) {
     return `${estimate.estimatedOutput.amount} ${estimate.estimatedOutput.token || ""}`.trim();
@@ -259,23 +267,28 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
       setStatus(result?.state === "error" ? "error" : "success");
 
       const hash = getSwapTxHash(result);
-      const url = getSwapExplorerUrl(result);
+      const url = getSwapExplorerUrl(result) || (hash ? `${arcTestnet.blockExplorers.default.url}/tx/${hash}` : "");
+      const outputAmount = result?.amountOut
+        ? `${result.amountOut} ${tokenOut}`
+        : estimateOutput || `${tokenOut} output confirmed in wallet`;
 
       onActivitySaved?.(
         createWalletActionRecord({
           walletAddress: walletSnapshot.address,
           type: "Swap",
           kind: "swap",
-          amount: `${amountIn} ${tokenIn}`,
+          amount: `${amountIn} ${tokenIn} -> ${outputAmount}`,
           chain: arcTestnet.name,
           status: result?.state === "error" ? "Failed" : "Confirmed",
+          sender: getSwapSender(result, walletSnapshot.address),
+          receiver: getSwapReceiver(result, walletSnapshot.address),
           txHash: hash,
           explorerUrl: url,
-          summary: `Swapped ${amountIn} ${tokenIn} for ${tokenOut} on Arc Testnet.`,
+          summary: `Swapped ${amountIn} ${tokenIn} for ${outputAmount} on Arc Testnet.`,
           metadata: {
             tokenIn,
             tokenOut,
-            estimateOutput: estimateOutput || `${tokenOut} output confirmed in wallet`,
+            estimateOutput: outputAmount,
             slippageBps
           }
         })

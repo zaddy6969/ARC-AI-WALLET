@@ -4,6 +4,7 @@ const FILTERS = [
   { id: "all", label: "All" },
   { id: "sent", label: "Sent" },
   { id: "received", label: "Received" },
+  { id: "swap", label: "Swapped" },
   { id: "bridge_received", label: "Bridged" }
 ];
 
@@ -27,6 +28,10 @@ function isSameAddress(left, right) {
 }
 
 function getActivityDirection(item, walletAddress) {
+  if (item?.kind === "swap" || String(item?.type || "").toLowerCase() === "swap") {
+    return "swap";
+  }
+
   const sender = item?.sender || item?.from || "";
   const receiver = item?.receiver || item?.to || item?.recipient || "";
 
@@ -46,6 +51,10 @@ function getActivityDirection(item, walletAddress) {
 }
 
 function getCounterparty(item, walletAddress, direction) {
+  if (direction === "swap") {
+    return item?.metadata?.tokenOut || item?.receiver || item?.to || item?.counterparty || "";
+  }
+
   if (direction === "sent") {
     return item?.receiver || item?.to || item?.recipient || item?.counterparty || "";
   }
@@ -84,15 +93,25 @@ function ActivityCard({ item, walletAddress }) {
       ? "Recipient"
       : direction === "received"
         ? "From"
-        : direction === "bridge_received"
-          ? "Destination"
-          : "Counterparty";
+        : direction === "swap"
+          ? "Output"
+          : direction === "bridge_received"
+            ? "Destination"
+            : "Counterparty";
+  const iconLabel =
+    direction === "sent"
+      ? "UP"
+      : direction === "received"
+        ? "DN"
+        : direction === "swap"
+          ? "SW"
+          : "BR";
 
   return (
     <article className="activity-card">
       <div className="activity-card-head">
         <div className={`activity-token-icon activity-token-icon-${direction}`}>
-          {direction === "sent" ? "UP" : direction === "received" ? "DN" : "BR"}
+          {iconLabel}
         </div>
         <div className="activity-card-copy">
           <strong>{item.type}</strong>
@@ -148,6 +167,7 @@ export default function TransactionActivity({
   const emptyFilterCopy = {
     sent: "No sent USDC activity found.",
     received: "No received USDC activity found.",
+    swap: "No swap activity found.",
     bridge_received: "No bridged USDC activity found."
   };
 
