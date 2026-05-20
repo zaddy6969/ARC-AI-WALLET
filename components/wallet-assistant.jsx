@@ -105,6 +105,13 @@ export default function WalletAssistant({
   const [actions, setActions] = useState([]);
   const autoAnalyzeAddressRef = useRef("");
   const threadRef = useRef(null);
+  const requestRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      requestRef.current?.abort();
+    };
+  }, []);
 
   const context = useMemo(
     () => ({
@@ -137,6 +144,8 @@ export default function WalletAssistant({
     setQuestion("");
     setLoading(true);
     setError("");
+    requestRef.current?.abort();
+    requestRef.current = new AbortController();
 
     try {
       const response = await fetch("/api/ai", {
@@ -144,6 +153,7 @@ export default function WalletAssistant({
         headers: {
           "Content-Type": "application/json"
         },
+        signal: requestRef.current.signal,
         body: JSON.stringify({
           question: trimmed,
           messages: nextMessages.slice(-6),
@@ -151,7 +161,13 @@ export default function WalletAssistant({
           stream: false
         })
       });
-      const payload = await response.json();
+      let payload = {};
+
+      try {
+        payload = await response.json();
+      } catch {
+        payload = {};
+      }
 
       if (!response.ok) {
         throw new Error(payload.error || "Wallet Copilot is unavailable.");
@@ -168,7 +184,11 @@ export default function WalletAssistant({
       ]);
       setNotice(payload.notice || "Wallet Copilot Ready");
       setActions(Array.isArray(payload.actions) ? payload.actions : []);
-    } catch {
+    } catch (nextError) {
+      if (nextError?.name === "AbortError") {
+        return;
+      }
+
       setError("Wallet Copilot is temporarily unavailable. Please try again.");
     } finally {
       setLoading(false);

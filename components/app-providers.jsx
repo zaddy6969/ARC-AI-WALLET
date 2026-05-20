@@ -108,7 +108,18 @@ const rainbowTheme = darkTheme({
 });
 
 export default function AppProviders({ children }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            refetchOnWindowFocus: false,
+            retry: 1,
+            staleTime: 10_000
+          }
+        }
+      })
+  );
   const walletConfigState = useMemo(() => {
     try {
       return { config: createWalletConfig(), error: null };

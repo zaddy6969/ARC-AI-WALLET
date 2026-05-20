@@ -58,6 +58,15 @@ export default function Home() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [copied, setCopied] = useState(false);
   const wasSignedInRef = useRef(false);
+  const copyTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const syncViewFromHash = () => {
@@ -116,7 +125,10 @@ export default function Home() {
     try {
       await navigator.clipboard.writeText(walletSnapshot.address);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
     } catch {}
   };
 

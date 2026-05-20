@@ -1,5 +1,5 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ARC_TESTNET_INFO_ITEMS, arcTestnet } from "../lib/arc-chain";
 
 function truncateAddress(address) {
@@ -96,6 +96,7 @@ export function WalletConnectCta({ className = "hero-actions" }) {
 export default function WalletConnect({ walletSnapshot, onReceiveClick }) {
   const [copied, setCopied] = useState(false);
   const [fallbackReady, setFallbackReady] = useState(false);
+  const copyTimeoutRef = useRef(null);
   const {
     address,
     isSignedIn,
@@ -115,14 +116,23 @@ export default function WalletConnect({ walletSnapshot, onReceiveClick }) {
     try {
       await navigator.clipboard.writeText(address);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current);
+      }
+      copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
     } catch {}
   };
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => setFallbackReady(true), 3000);
 
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      window.clearTimeout(timeoutId);
+
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current);
+      }
+    };
   }, []);
 
   return (

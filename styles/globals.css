@@ -54,6 +54,22 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.button,
+.sidebar-action,
+.activity-filter-chip,
+.prompt-chip,
+.command-grid button,
+.recent-activity-row,
+.activity-card,
+.summary-card,
+.insight-card,
+.premium-wallet-card,
+.receive-modal,
+.ai-drawer {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
 .page-shell {
   width: 100%;
   min-height: 100vh;
@@ -310,6 +326,7 @@ button:disabled {
 
 .wallet-main-panel {
   min-width: 0;
+  contain: layout paint;
 }
 
 .ai-fab {
@@ -664,6 +681,7 @@ button:disabled {
   border: 1px solid transparent;
   cursor: pointer;
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+  will-change: transform;
 }
 
 .button:hover {
@@ -1558,6 +1576,15 @@ button:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
   .login-logo-stage::before,
   .login-logo-stage::after,
   .login-logo-orb,
@@ -2677,6 +2704,7 @@ body::after {
 .activity-card {
   grid-template-columns: 1fr;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  will-change: transform;
 }
 
 .activity-card:hover {
