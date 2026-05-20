@@ -11,6 +11,6 @@ export default function handler(req, res) {
 
   return res.status(200).json({
     hasKitKey: Boolean(kitKey),
-    kitKey
+    kitKey: kitKey ? "KIT_KEY:arc-ai-wallet:server-proxy" : ""
   });
 }

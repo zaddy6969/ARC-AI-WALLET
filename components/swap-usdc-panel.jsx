@@ -105,6 +105,48 @@ async function loadKitKey() {
   return payload.kitKey;
 }
 
+async function withCircleStablecoinProxy(operation) {
+  if (typeof window === "undefined" || typeof globalThis.fetch !== "function") {
+    return operation();
+  }
+
+  const originalFetch = globalThis.fetch.bind(globalThis);
+
+  globalThis.fetch = async (input, init = {}) => {
+    const requestUrl =
+      typeof input === "string" ? input : input instanceof URL ? input.toString() : input?.url;
+
+    if (
+      typeof requestUrl === "string" &&
+      requestUrl.startsWith("https://api.circle.com/v1/stablecoinKits/")
+    ) {
+      const url = new URL(requestUrl);
+      const method = init?.method || input?.method || "GET";
+      const body = typeof init?.body === "string" ? init.body : undefined;
+
+      return originalFetch("/api/circle-stablecoin-proxy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          path: `${url.pathname}${url.search}`,
+          method,
+          body
+        })
+      });
+    }
+
+    return originalFetch(input, init);
+  };
+
+  try {
+    return await operation();
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
 export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
   const { connector } = useAccount();
   const chainId = useChainId();
@@ -194,7 +236,9 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
 
     try {
       const { client, params } = await getSwapParams();
-      const nextEstimate = await client.kit.estimateSwap(params);
+      const nextEstimate = await withCircleStablecoinProxy(() =>
+        client.kit.estimateSwap(params)
+      );
       setEstimate(nextEstimate);
       setStatus("ready");
     } catch (nextError) {
@@ -210,7 +254,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
 
     try {
       const { client, params } = await getSwapParams();
-      const result = await client.kit.swap(params);
+      const result = await withCircleStablecoinProxy(() => client.kit.swap(params));
       setSwapResult(result);
       setStatus(result?.state === "error" ? "error" : "success");
 
