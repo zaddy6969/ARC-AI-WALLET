@@ -318,11 +318,8 @@ export default function WalletAssistant({
         />
         <div className="assistant-form-row">
           <span className="helper-copy">
-            Mic ready soon. Type a command like "Analyze my wallet" today.
+            Type a command like "Analyze my wallet" or "Show my balance".
           </span>
-          <button type="button" className="button button-secondary" disabled title="Voice commands coming soon">
-            Mic
-          </button>
           <button type="submit" className="button button-primary" disabled={loading}>
             {loading ? "Thinking..." : "Ask Copilot"}
           </button>
