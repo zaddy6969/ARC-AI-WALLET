@@ -34,6 +34,16 @@ function getActivityDirection(item, walletAddress) {
 
   const sender = item?.sender || item?.from || "";
   const receiver = item?.receiver || item?.to || item?.recipient || "";
+  const explicitKind = String(item?.kind || "").toLowerCase();
+  const explicitType = String(item?.type || "").toLowerCase();
+
+  if (
+    !sender &&
+    isSameAddress(item?.walletAddress, walletAddress) &&
+    (explicitKind === "sent" || explicitType.startsWith("sent"))
+  ) {
+    return "sent";
+  }
 
   if (isSameAddress(sender, walletAddress)) {
     return "sent";
@@ -47,7 +57,7 @@ function getActivityDirection(item, walletAddress) {
     return "received";
   }
 
-  return item?.kind || "other";
+  return explicitKind || "other";
 }
 
 function getCounterparty(item, walletAddress, direction) {
@@ -79,9 +89,47 @@ function formatActivityDate(value, fallback) {
   }).format(date);
 }
 
+function getActivityTitle(item, direction) {
+  if (direction === "sent") {
+    return "Sent USDC";
+  }
+
+  if (direction === "received") {
+    return "Received USDC";
+  }
+
+  if (direction === "swap") {
+    return "Swapped USDC";
+  }
+
+  if (direction === "bridge_received") {
+    return "Bridged USDC";
+  }
+
+  return item.type || "Wallet activity";
+}
+
+function getActivitySummary(item, direction, counterparty) {
+  if (direction === "sent") {
+    return counterparty
+      ? `Sent ${item.amount || "USDC"} to ${shortenValue(counterparty)} on Arc Testnet.`
+      : item.summary || "Sent USDC on Arc Testnet.";
+  }
+
+  if (direction === "received") {
+    return counterparty
+      ? `Received ${item.amount || "USDC"} from ${shortenValue(counterparty)} on Arc Testnet.`
+      : item.summary || "Received USDC on Arc Testnet.";
+  }
+
+  return item.summary || "Wallet activity recorded.";
+}
+
 function ActivityCard({ item, walletAddress }) {
   const direction = getActivityDirection(item, walletAddress);
   const counterparty = getCounterparty(item, walletAddress, direction);
+  const displayTitle = getActivityTitle(item, direction);
+  const displaySummary = getActivitySummary(item, direction, counterparty);
   const sourceCopy =
     item.source === "merged"
       ? "Matched to a confirmed onchain wallet transaction"
@@ -114,8 +162,8 @@ function ActivityCard({ item, walletAddress }) {
           {iconLabel}
         </div>
         <div className="activity-card-copy">
-          <strong>{item.type}</strong>
-          <span>{item.summary || "Wallet activity recorded."}</span>
+          <strong>{displayTitle}</strong>
+          <span>{displaySummary}</span>
         </div>
         <div className="activity-card-amount">
           <strong>{item.amount || "Tracked event"}</strong>
