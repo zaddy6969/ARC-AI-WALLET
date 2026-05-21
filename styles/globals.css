@@ -2161,6 +2161,12 @@ body::after {
   letter-spacing: -0.02em;
 }
 
+.dock-icon svg {
+  width: 17px;
+  height: 17px;
+  filter: drop-shadow(0 0 8px rgba(97, 216, 255, 0.28));
+}
+
 .sidebar-action-active {
   background:
     linear-gradient(135deg, rgba(97, 216, 255, 0.18), rgba(142, 107, 255, 0.16)),
