@@ -8,7 +8,7 @@ const ACTIONS = [
   { id: "nft", label: "NFT", icon: "nft" }
 ];
 
-function FeatureIcon({ name }) {
+export function FeatureIcon({ name }) {
   const commonProps = {
     viewBox: "0 0 24 24",
     fill: "none",
@@ -20,6 +20,28 @@ function FeatureIcon({ name }) {
   };
 
   switch (name) {
+    case "receive":
+      return (
+        <svg {...commonProps}>
+          <path d="M12 4v12" />
+          <path d="m7 11 5 5 5-5" />
+          <path d="M5 20h14" />
+        </svg>
+      );
+    case "ai":
+      return (
+        <svg {...commonProps}>
+          <path d="M12 3v3" />
+          <path d="M12 18v3" />
+          <path d="M3 12h3" />
+          <path d="M18 12h3" />
+          <path d="m5.6 5.6 2.1 2.1" />
+          <path d="m16.3 16.3 2.1 2.1" />
+          <path d="m18.4 5.6-2.1 2.1" />
+          <path d="m7.7 16.3-2.1 2.1" />
+          <circle cx="12" cy="12" r="3.5" />
+        </svg>
+      );
     case "send":
       return (
         <svg {...commonProps}>

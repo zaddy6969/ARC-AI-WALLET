@@ -1,3 +1,5 @@
+import { FeatureIcon } from "./wallet-sidebar";
+
 function parseAmount(item) {
   const numeric = Number(String(item?.amount || "").replace(/[^\d.-]/g, ""));
   return Number.isFinite(numeric) ? numeric : 0;
@@ -88,42 +90,49 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
     {
       id: "send",
       label: "Send",
+      icon: "send",
       helper: "Transfer Arc USDC",
       action: () => onSelectView?.("send")
     },
     {
       id: "receive",
       label: "Receive",
+      icon: "receive",
       helper: "Show QR address",
       action: onReceive
     },
     {
       id: "swap",
       label: "Swap",
+      icon: "swap",
       helper: "Arc App Kit swaps",
       action: () => onSelectView?.("swap")
     },
     {
       id: "bridge",
       label: "Bridge",
+      icon: "bridge",
       helper: "Move USDC to Arc",
       action: () => onSelectView?.("bridge")
     },
     {
       id: "portfolio",
       label: "Portfolio",
+      icon: "portfolio",
       helper: "USDC overview",
       action: () => onSelectView?.("portfolio")
     },
     {
       id: "nft",
       label: "NFT",
+      icon: "nft",
       helper: "Gallery preview",
       action: () => onSelectView?.("nft")
     },
     {
       id: "ai",
       label: "Ask AI",
+      icon: "ai",
       helper: "Wallet guidance",
       action: onAiOpen
     }
@@ -136,8 +145,13 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
       <div className="command-grid">
         {actions.map((action) => (
           <button key={action.id} type="button" onClick={action.action}>
-            <span>{action.label}</span>
-            <small>{action.helper}</small>
+            <span className="command-icon-orb">
+              <FeatureIcon name={action.icon} />
+            </span>
+            <span className="command-card-copy">
+              <strong>{action.label}</strong>
+              <small>{action.helper}</small>
+            </span>
           </button>
         ))}
       </div>
