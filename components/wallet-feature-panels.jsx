@@ -82,13 +82,13 @@ export function PortfolioPanel({ walletSnapshot, activityItems = [] }) {
               <strong>{asset.symbol}</strong>
               <small>
                 {asset.status === "not-configured"
-                  ? "Supported by Arc App Kit swap/faucet; balance address not configured."
+                  ? "Token address unavailable for this environment."
                   : asset.description}
               </small>
             </div>
             <strong>
               {asset.status === "not-configured"
-                ? "Config needed"
+                ? "Unavailable"
                 : asset.balance || "0.00 " + asset.symbol}
             </strong>
           </div>
