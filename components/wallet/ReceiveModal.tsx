@@ -17,6 +17,8 @@ type FeedbackState =
     }
   | null;
 
+const RECEIVE_ASSETS = ["USDC", "EURC", "cirBTC"];
+
 function shortenAddress(address?: string) {
   if (!address) {
     return "";
@@ -193,6 +195,12 @@ export default function ReceiveModal({
               </span>
             </div>
 
+            <div className="receive-asset-row" aria-label="Supported receive assets">
+              {RECEIVE_ASSETS.map((asset) => (
+                <span key={asset}>{asset}</span>
+              ))}
+            </div>
+
             <div className="receive-qr-shell">
               {hasAddress ? (
                 <QRCodeSVG
@@ -225,6 +233,14 @@ export default function ReceiveModal({
               >
                 Copy Address
               </button>
+              <a
+                className="button button-secondary"
+                href="https://faucet.circle.com"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open Faucet
+              </a>
               {canShare ? (
                 <button
                   type="button"
@@ -238,10 +254,11 @@ export default function ReceiveModal({
             </div>
 
             <div className="receive-warning">
-              <strong>Only send supported assets on ARC network.</strong>
+              <strong>Receive USDC, EURC, and cirBTC on this same Arc address.</strong>
               <p>
-                Sending unsupported assets or using the wrong network can result in
-                funds not showing up in this wallet view.
+                In the Circle faucet, choose Arc Testnet and then select USDC,
+                EURC, or cirBTC. Sending unsupported assets or using the wrong
+                network can result in funds not showing up in this wallet view.
               </p>
             </div>
 

@@ -1319,6 +1319,27 @@ button:disabled {
   font-size: 0.86rem;
 }
 
+.receive-asset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.receive-asset-row span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(97, 216, 255, 0.2);
+  background: linear-gradient(135deg, rgba(97, 216, 255, 0.12), rgba(142, 107, 255, 0.1));
+  color: #dceeff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
 .receive-qr-shell {
   display: grid;
   place-items: center;

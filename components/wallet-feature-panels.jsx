@@ -40,7 +40,16 @@ export function NftComingSoonCard() {
 }
 
 export function PortfolioPanel({ walletSnapshot, activityItems = [] }) {
-  const balanceValue = parseBalance(walletSnapshot?.usdcBalance);
+  const assets = Array.isArray(walletSnapshot?.assets)
+    ? walletSnapshot.assets
+    : [];
+  const visibleAssets = assets.filter(
+    (asset) => asset.status !== "not-configured" || asset.symbol === "cirBTC"
+  );
+  const balanceValue = assets.reduce(
+    (total, asset) => total + (Number(asset.valueUsd) || 0),
+    0
+  ) || parseBalance(walletSnapshot?.usdcBalance);
   const sentCount = activityItems.filter((item) => item.kind === "sent").length;
   const receivedCount = activityItems.filter(
     (item) => item.kind === "received" || item.kind === "bridge_received"
@@ -53,23 +62,37 @@ export function PortfolioPanel({ walletSnapshot, activityItems = [] }) {
           <p className="section-kicker">Portfolio</p>
           <h2>Real Arc wallet portfolio</h2>
         </div>
-        <span className="status-badge status-good">USDC live</span>
+        <span className="status-badge status-good">Arc assets live</span>
       </div>
 
       <div className="portfolio-os-grid">
         <div className="portfolio-os-balance">
           <span>Total value</span>
           <strong>{formatUsd(balanceValue)}</strong>
-          <small>{walletSnapshot?.usdcBalance || "USDC balance is syncing from Arc."}</small>
+          <small>
+            {walletSnapshot?.balanceStatus === "loading"
+              ? "Arc asset balances are syncing."
+              : "USDC and EURC read directly from Arc Testnet."}
+          </small>
         </div>
-        <div className="portfolio-os-asset">
-          <span className="asset-logo">U</span>
-          <div>
-            <strong>USDC</strong>
-            <small>Arc Testnet gas and payment asset</small>
+        {visibleAssets.map((asset) => (
+          <div className="portfolio-os-asset" key={asset.symbol}>
+            <span className="asset-logo">{asset.accent || asset.symbol.slice(0, 1)}</span>
+            <div>
+              <strong>{asset.symbol}</strong>
+              <small>
+                {asset.status === "not-configured"
+                  ? "Supported by Arc App Kit swap/faucet; balance address not configured."
+                  : asset.description}
+              </small>
+            </div>
+            <strong>
+              {asset.status === "not-configured"
+                ? "Config needed"
+                : asset.balance || "0.00 " + asset.symbol}
+            </strong>
           </div>
-          <strong>{walletSnapshot?.usdcBalance || "Syncing"}</strong>
-        </div>
+        ))}
         <div className="portfolio-os-metrics">
           <div>
             <span>Sent</span>
