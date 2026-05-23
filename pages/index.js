@@ -15,7 +15,6 @@ import WalletIntelligencePanel from "../components/wallet-intelligence-panel";
 import WalletLoginScreen from "../components/wallet-login-screen";
 import WalletSidebar from "../components/wallet-sidebar";
 import ReceiveModal from "../components/wallet/ReceiveModal";
-import WalletConnect from "../components/wallet-connect";
 import { arcTestnet } from "../lib/arc-chain";
 import { useWalletAppState } from "../lib/use-wallet-app-state";
 
@@ -196,19 +195,13 @@ export default function Home() {
 
           <div className="wallet-main-panel">
             {activeView === "dashboard" ? (
-              <>
-                <WalletConnect
-                  walletSnapshot={walletSnapshot}
-                  onReceiveClick={() => setReceiveOpen(true)}
-                />
-                <WalletIntelligencePanel
-                  walletSnapshot={walletSnapshot}
-                  activityItems={mergedActivity}
-                  onSelectView={handleSelectView}
-                  onReceive={() => setReceiveOpen(true)}
-                  onAiOpen={() => setAssistantOpen(true)}
-                />
-              </>
+              <WalletIntelligencePanel
+                walletSnapshot={walletSnapshot}
+                activityItems={mergedActivity}
+                onSelectView={handleSelectView}
+                onReceive={() => setReceiveOpen(true)}
+                onAiOpen={() => setAssistantOpen(true)}
+              />
             ) : activeView === "activity" ? (
               <TransactionActivity
                 walletSnapshot={walletSnapshot}
@@ -230,9 +223,12 @@ export default function Home() {
                 onActivitySaved={saveLocalActivity}
               />
             ) : activeView === "settings" ? (
-              <WalletConnect
+              <WalletIntelligencePanel
                 walletSnapshot={walletSnapshot}
-                onReceiveClick={() => setReceiveOpen(true)}
+                activityItems={mergedActivity}
+                onSelectView={handleSelectView}
+                onReceive={() => setReceiveOpen(true)}
+                onAiOpen={() => setAssistantOpen(true)}
               />
             ) : activeView === "bridge" ? (
               <BridgeToArcPanel
