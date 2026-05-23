@@ -13,6 +13,35 @@ function parseBalance(balance) {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
+function getPortfolioValue(walletSnapshot) {
+  const assets = Array.isArray(walletSnapshot?.assets)
+    ? walletSnapshot.assets
+    : [];
+  const assetValue = assets.reduce(
+    (total, asset) => total + (Number(asset?.valueUsd) || 0),
+    0
+  );
+
+  return assetValue || parseBalance(walletSnapshot?.usdcBalance);
+}
+
+function getBalanceSummary(walletSnapshot) {
+  const assets = Array.isArray(walletSnapshot?.assets)
+    ? walletSnapshot.assets
+    : [];
+  const readyAssets = assets.filter(
+    (asset) => asset?.status === "ready" && Number(asset?.balanceValue) > 0
+  );
+
+  if (!readyAssets.length) {
+    return walletSnapshot?.usdcBalance || "Connect wallet to sync assets";
+  }
+
+  return readyAssets
+    .map((asset) => `${asset.balance}`)
+    .join(" + ");
+}
+
 function formatUsd(value) {
   return `$${new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -78,7 +107,8 @@ export default function PremiumWalletCard({
   onCopy,
   copied
 }) {
-  const balanceValue = parseBalance(walletSnapshot?.usdcBalance);
+  const balanceValue = getPortfolioValue(walletSnapshot);
+  const balanceSummary = getBalanceSummary(walletSnapshot);
   const isConnected = Boolean(walletSnapshot?.isSignedIn);
   const onArc = Boolean(walletSnapshot?.onArc);
   const bars = buildActivityBars(activityItems);
@@ -114,7 +144,7 @@ export default function PremiumWalletCard({
         <div className="premium-wallet-balance">
           <span>Total balance</span>
           <strong className="balance-counter">{formatUsd(balanceValue)}</strong>
-          <small>{walletSnapshot?.usdcBalance || "Connect wallet to sync USDC"}</small>
+          <small>{balanceSummary}</small>
         </div>
 
         <div className="wallet-live-console" aria-label="AI wallet status">
