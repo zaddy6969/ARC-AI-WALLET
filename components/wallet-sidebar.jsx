@@ -1,11 +1,9 @@
 const ACTIONS = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
   { id: "send", label: "Send", icon: "send" },
-  { id: "swap", label: "Swap", icon: "swap" },
-  { id: "bridge", label: "Bridge", icon: "bridge" },
-  { id: "activity", label: "Activity", icon: "activity" },
+  { id: "receive", label: "Receive", icon: "receive" },
   { id: "portfolio", label: "Portfolio", icon: "portfolio" },
-  { id: "nft", label: "NFT", icon: "nft" }
+  { id: "activity", label: "Activity", icon: "activity" }
 ];
 
 export function FeatureIcon({ name }) {
@@ -114,13 +112,21 @@ export default function WalletSidebar({
       <nav aria-label="Wallet actions">
         {ACTIONS.map((action) => {
           const isActive = action.id === activeView;
+          const handleClick = () => {
+            if (action.id === "receive") {
+              onReceive?.();
+              return;
+            }
+
+            onSelect(action.id);
+          };
 
           return (
             <button
               key={action.id}
               type="button"
               className={`sidebar-action ${isActive ? "sidebar-action-active" : ""}`}
-              onClick={() => onSelect(action.id)}
+              onClick={handleClick}
             >
               <span className="dock-icon">
                 <FeatureIcon name={action.icon} />
