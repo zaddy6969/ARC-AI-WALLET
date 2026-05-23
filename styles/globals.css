@@ -2254,14 +2254,17 @@ body::after {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
   gap: 18px;
+  grid-auto-flow: dense;
 }
 
 .ai-insight-hero {
   grid-column: span 2;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
+  min-height: 190px;
   background:
     radial-gradient(circle at 16% 20%, rgba(97, 216, 255, 0.14), transparent 24%),
+    radial-gradient(circle at 88% 18%, rgba(142, 107, 255, 0.12), transparent 26%),
     linear-gradient(145deg, rgba(12, 18, 32, 0.92), rgba(7, 11, 22, 0.92));
 }
 
@@ -2280,6 +2283,7 @@ body::after {
 .command-center-card {
   position: relative;
   overflow: hidden;
+  align-self: stretch;
 }
 
 .command-center-card::after {
@@ -2308,7 +2312,7 @@ body::after {
 }
 
 .command-grid button {
-  min-height: 98px;
+  min-height: 106px;
   position: relative;
   display: flex;
   align-items: flex-end;
@@ -2387,6 +2391,14 @@ body::after {
 
 .recent-activity-preview {
   min-height: 100%;
+}
+
+.dashboard-priority-card {
+  grid-row: span 2;
+}
+
+.dashboard-final-card {
+  grid-column: 1 / -1;
 }
 
 .recent-activity-list {
@@ -2617,7 +2629,7 @@ body::after {
 }
 
 .nft-mini-card {
-  min-height: 240px;
+  min-height: 210px;
   display: grid;
   align-content: end;
   cursor: pointer;
@@ -2678,7 +2690,23 @@ body::after {
 }
 
 .allocation-card {
+  position: relative;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(97, 216, 255, 0.12), transparent 26%),
+    radial-gradient(circle at 92% 78%, rgba(142, 107, 255, 0.12), transparent 30%),
+    linear-gradient(145deg, rgba(12, 18, 32, 0.94), rgba(7, 11, 22, 0.94));
+}
+
+.allocation-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -80px -100px auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(97, 216, 255, 0.14), transparent 70%);
+  pointer-events: none;
 }
 
 .allocation-card-compact {
@@ -2686,8 +2714,10 @@ body::after {
 }
 
 .allocation-content {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(142px, auto) minmax(0, 1fr);
   align-items: center;
   gap: 20px;
 }
@@ -3172,8 +3202,17 @@ body::after {
     grid-template-columns: 1fr;
   }
 
-  .ai-insight-hero {
+  .ai-insight-hero,
+  .dashboard-final-card {
     grid-column: auto;
+  }
+
+  .dashboard-priority-card {
+    grid-row: auto;
+  }
+
+  .allocation-content {
+    grid-template-columns: 1fr;
   }
 
   .floating-wallet-dock nav {

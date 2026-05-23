@@ -53,7 +53,7 @@ export default function PortfolioAllocation({ walletSnapshot, compact = false })
   const { totalUnits, background } = getChartSegments(chartAssets);
 
   return (
-    <article className={`card analytics-card allocation-card ${compact ? "allocation-card-compact" : ""}`}>
+    <article className={`card analytics-card allocation-card ${compact ? "allocation-card-compact dashboard-priority-card" : ""}`}>
       <div className="section-heading">
         <div>
           <p className="section-kicker">Portfolio Allocation</p>

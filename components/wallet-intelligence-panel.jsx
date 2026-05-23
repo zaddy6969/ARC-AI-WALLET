@@ -120,15 +120,8 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
       id: "portfolio",
       label: "Portfolio",
       icon: "portfolio",
-      helper: "USDC overview",
+      helper: "Asset mix",
       action: () => onSelectView?.("portfolio")
-    },
-    {
-      id: "nft",
-      label: "NFT",
-      icon: "nft",
-      helper: "Gallery preview",
-      action: () => onSelectView?.("nft")
     },
     {
       id: "ai",
@@ -212,6 +205,8 @@ export default function WalletIntelligencePanel({
         </div>
       </article>
 
+      <PortfolioAllocation walletSnapshot={walletSnapshot} compact />
+
       <QuickActionCommandCenter
         onSelectView={onSelectView}
         onReceive={onReceive}
@@ -222,25 +217,6 @@ export default function WalletIntelligencePanel({
         items={activityItems}
         onOpenActivity={() => onSelectView?.("activity")}
       />
-
-      <article
-        className="card analytics-card nft-mini-card"
-        onClick={() => onSelectView?.("nft")}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            onSelectView?.("nft");
-          }
-        }}
-      >
-        <span className="coming-soon-orb" aria-hidden="true" />
-        <p className="section-kicker">NFT</p>
-        <h2>NFT Marketplace & Gallery - Coming Soon</h2>
-        <p className="helper-copy">
-          Collect, view, and trade NFTs directly from your ARC AI Wallet soon.
-        </p>
-      </article>
 
       <article className="card analytics-card">
         <div className="section-heading">
@@ -257,8 +233,6 @@ export default function WalletIntelligencePanel({
         </div>
       </article>
 
-      <PortfolioAllocation walletSnapshot={walletSnapshot} compact />
-
       <article className="card analytics-card">
         <p className="section-kicker">Flow Summary</p>
         <div className="flow-metrics">
@@ -271,6 +245,25 @@ export default function WalletIntelligencePanel({
             <strong>{receivedValue.toFixed(2)} USDC</strong>
           </div>
         </div>
+      </article>
+
+      <article
+        className="card analytics-card nft-mini-card dashboard-final-card"
+        onClick={() => onSelectView?.("nft")}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            onSelectView?.("nft");
+          }
+        }}
+      >
+        <span className="coming-soon-orb" aria-hidden="true" />
+        <p className="section-kicker">NFT</p>
+        <h2>NFT Marketplace & Gallery - Coming Soon</h2>
+        <p className="helper-copy">
+          Collect, view, and trade NFTs directly from your ARC AI Wallet soon.
+        </p>
       </article>
     </section>
   );
