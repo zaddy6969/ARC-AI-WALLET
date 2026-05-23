@@ -198,10 +198,6 @@ export default function PremiumWalletCard({
         <div>
           <NetworkSwitcher compact />
         </div>
-        <div>
-          <span className="field-label">Gas</span>
-          <strong>USDC</strong>
-        </div>
       </div>
     </section>
   );

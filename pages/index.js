@@ -167,14 +167,6 @@ export default function Home() {
           <div>
             <p className="section-kicker">Arc AI Wallet</p>
             <h1>Welcome to your AI-powered wallet built on Arc.</h1>
-            <p>
-              A focused USDC wallet for Arc: send, receive, review activity, and
-              ask the copilot when a blockchain action needs plain language.
-            </p>
-          </div>
-          <div className="hero-meta">
-            <span>{arcTestnet.name}</span>
-            <span>USDC gas</span>
           </div>
         </section>
 
