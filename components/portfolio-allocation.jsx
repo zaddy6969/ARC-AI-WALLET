@@ -44,27 +44,64 @@ function getChartSegments(assets) {
   };
 }
 
-export default function PortfolioAllocation({ walletSnapshot, compact = false }) {
+function getCenterLabel(fundedAssets) {
+  if (!fundedAssets.length) {
+    return "ARC";
+  }
+
+  if (fundedAssets.length === 1) {
+    return fundedAssets[0].symbol;
+  }
+
+  return `${fundedAssets.length} ASSETS`;
+}
+
+export default function PortfolioAllocation({
+  walletSnapshot,
+  compact = false,
+  onOpenPortfolio
+}) {
   const assets = getAssets(walletSnapshot);
   const readyAssets = assets.filter((asset) => asset.status === "ready");
   const fundedAssets = readyAssets.filter((asset) => asset.balanceValue > 0);
   const displayAssets = readyAssets.length ? readyAssets : assets;
   const chartAssets = fundedAssets.length ? fundedAssets : readyAssets;
   const { totalUnits, background } = getChartSegments(chartAssets);
+  const isInteractive = typeof onOpenPortfolio === "function";
+
+  const handleKeyDown = (event) => {
+    if (!isInteractive) {
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onOpenPortfolio();
+    }
+  };
 
   return (
-    <article className={`card analytics-card allocation-card ${compact ? "allocation-card-compact dashboard-priority-card" : ""}`}>
+    <article
+      className={`card analytics-card allocation-card ${compact ? "allocation-card-compact dashboard-priority-card" : ""} ${isInteractive ? "allocation-card-interactive" : ""}`}
+      onClick={isInteractive ? onOpenPortfolio : undefined}
+      onKeyDown={handleKeyDown}
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      aria-label={isInteractive ? "Open portfolio details" : undefined}
+    >
       <div className="section-heading">
         <div>
           <p className="section-kicker">Portfolio Allocation</p>
           <h2>Arc asset mix</h2>
         </div>
-        <span className="status-badge">{displayAssets.length} assets</span>
+        <span className="status-badge">
+          {isInteractive ? "Tap to open" : `${displayAssets.length} assets`}
+        </span>
       </div>
 
       <div className="allocation-content">
         <div className="allocation-ring" style={{ "--allocation-chart": background }}>
-          <span>{fundedAssets[0]?.symbol || "ARC"}</span>
+          <span>{getCenterLabel(fundedAssets)}</span>
         </div>
 
         <div className="allocation-asset-list">
@@ -90,11 +127,13 @@ export default function PortfolioAllocation({ walletSnapshot, compact = false })
         </div>
       </div>
 
-      <p className="helper-copy">
-        {walletSnapshot?.isSignedIn
-          ? "Allocation is generated from real Arc Testnet USDC, EURC, and cirBTC balances."
-          : "Connect wallet to generate allocation from real balances."}
-      </p>
+      {!compact ? (
+        <p className="helper-copy">
+          {walletSnapshot?.isSignedIn
+            ? "Allocation is generated from real Arc Testnet USDC, EURC, and cirBTC balances."
+            : "Connect wallet to generate allocation from real balances."}
+        </p>
+      ) : null}
     </article>
   );
 }

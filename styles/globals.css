@@ -2405,7 +2405,7 @@ body::after {
 }
 
 .dashboard-priority-card {
-  grid-row: span 2;
+  grid-row: auto;
 }
 
 .dashboard-final-card {
@@ -2683,8 +2683,8 @@ body::after {
 }
 
 .allocation-ring {
-  width: 172px;
-  height: 172px;
+  width: 150px;
+  height: 150px;
   display: grid;
   place-items: center;
   margin: 0 auto;
@@ -2696,6 +2696,9 @@ body::after {
 }
 
 .allocation-ring span {
+  max-width: 86px;
+  text-align: center;
+  font-size: 0.86rem;
   font-weight: 900;
   letter-spacing: 0.12em;
 }
@@ -2707,6 +2710,21 @@ body::after {
     radial-gradient(circle at 18% 12%, rgba(97, 216, 255, 0.12), transparent 26%),
     radial-gradient(circle at 92% 78%, rgba(142, 107, 255, 0.12), transparent 30%),
     linear-gradient(145deg, rgba(12, 18, 32, 0.94), rgba(7, 11, 22, 0.94));
+}
+
+.allocation-card-interactive {
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.allocation-card-interactive:hover,
+.allocation-card-interactive:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(97, 216, 255, 0.32);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.22),
+    0 0 42px rgba(97, 216, 255, 0.08);
+  outline: none;
 }
 
 .allocation-card::after {
@@ -2721,21 +2739,21 @@ body::after {
 }
 
 .allocation-card-compact {
-  min-height: 100%;
+  min-height: 0;
 }
 
 .allocation-content {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(142px, auto) minmax(0, 1fr);
+  grid-template-columns: minmax(132px, 0.72fr) minmax(0, 1.28fr);
   align-items: center;
-  gap: 20px;
+  gap: 18px;
 }
 
 .allocation-asset-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .allocation-asset-row {
@@ -2743,7 +2761,7 @@ body::after {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 9px 11px;
   border-radius: 16px;
   border: 1px solid rgba(137, 188, 255, 0.12);
   background: rgba(255, 255, 255, 0.035);

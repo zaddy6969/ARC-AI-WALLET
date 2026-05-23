@@ -205,7 +205,11 @@ export default function WalletIntelligencePanel({
         </div>
       </article>
 
-      <PortfolioAllocation walletSnapshot={walletSnapshot} compact />
+      <PortfolioAllocation
+        walletSnapshot={walletSnapshot}
+        compact
+        onOpenPortfolio={() => onSelectView?.("portfolio")}
+      />
 
       <QuickActionCommandCenter
         onSelectView={onSelectView}
