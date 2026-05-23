@@ -1,6 +1,7 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useEffect, useRef, useState } from "react";
 import { ARC_TESTNET_INFO_ITEMS, arcTestnet } from "../lib/arc-chain";
+import NetworkSwitcher from "./network-switcher";
 
 function truncateAddress(address) {
   if (!address) {
@@ -208,6 +209,9 @@ export default function WalletConnect({ walletSnapshot, onReceiveClick }) {
                   <div className="wallet-summary-item">
                     <span className="field-label">Network status</span>
                     <strong>{arcReady ? "Arc ready" : "Switch to Arc Testnet"}</strong>
+                  </div>
+                  <div className="wallet-summary-item">
+                    <NetworkSwitcher />
                   </div>
                   <div className="wallet-summary-item">
                     <span className="field-label">Arc wallet balance</span>

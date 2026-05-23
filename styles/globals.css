@@ -870,6 +870,52 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.network-switcher {
+  display: grid;
+  gap: 7px;
+}
+
+.network-switcher label {
+  display: grid;
+  gap: 8px;
+}
+
+.network-switcher select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 36px 9px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(137, 188, 255, 0.18);
+  background: rgba(5, 10, 20, 0.68);
+  color: #eef5ff;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.network-switcher select:hover,
+.network-switcher select:focus {
+  border-color: rgba(97, 216, 255, 0.42);
+  box-shadow: 0 0 0 3px rgba(97, 216, 255, 0.08);
+}
+
+.network-switcher select:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.network-switcher small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.network-switcher-compact select {
+  min-height: 38px;
+  max-width: 220px;
+}
+
 .status-badge {
   font-size: 0.76rem;
   color: #dbe7ff;

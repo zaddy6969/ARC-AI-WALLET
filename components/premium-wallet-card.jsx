@@ -1,4 +1,5 @@
 import { arcTestnet } from "../lib/arc-chain";
+import NetworkSwitcher from "./network-switcher";
 
 function shortenAddress(address) {
   if (!address) {
@@ -190,7 +191,12 @@ export default function PremiumWalletCard({
         </div>
         <div>
           <span className="field-label">Network</span>
-          <strong className="network-pulse-label">{arcTestnet.name}</strong>
+          <strong className="network-pulse-label">
+            {walletSnapshot?.onArc ? arcTestnet.name : "Switch network"}
+          </strong>
+        </div>
+        <div>
+          <NetworkSwitcher compact />
         </div>
         <div>
           <span className="field-label">Gas</span>
