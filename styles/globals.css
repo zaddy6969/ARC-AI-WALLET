@@ -2318,6 +2318,124 @@ body::after {
   color: var(--muted);
 }
 
+.faucet-card,
+.supported-chains-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.faucet-card::after,
+.supported-chains-card::after {
+  content: "";
+  position: absolute;
+  inset: auto auto -90px -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(97, 216, 255, 0.14), transparent 70%);
+  pointer-events: none;
+}
+
+.faucet-asset-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.faucet-asset-card {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-height: 132px;
+  padding: 18px 12px;
+  border-radius: 24px;
+  border: 1px solid rgba(137, 188, 255, 0.16);
+  background:
+    linear-gradient(145deg, rgba(97, 216, 255, 0.09), rgba(142, 107, 255, 0.07)),
+    rgba(255, 255, 255, 0.035);
+  text-align: center;
+}
+
+.faucet-asset-card span {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 1px solid rgba(137, 188, 255, 0.26);
+  background: linear-gradient(135deg, rgba(20, 95, 202, 0.96), rgba(142, 107, 255, 0.88));
+  color: #f5fbff;
+  font-size: 1.55rem;
+  font-weight: 900;
+  box-shadow: 0 14px 34px rgba(97, 216, 255, 0.16);
+}
+
+.faucet-asset-card strong {
+  font-size: 1rem;
+}
+
+.faucet-asset-card small {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.faucet-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.supported-chain-list {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.supported-chain-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(137, 188, 255, 0.12);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.supported-chain-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.supported-chain-row small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.supported-chain-row span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(97, 216, 255, 0.18);
+  background: rgba(97, 216, 255, 0.08);
+  color: #ccefff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .recent-activity-preview {
   min-height: 100%;
 }
@@ -3069,6 +3187,7 @@ body::after {
 
   .wallet-live-metrics,
   .command-grid,
+  .faucet-asset-grid,
   .recent-activity-row,
   .swap-route-grid,
   .portfolio-os-asset,

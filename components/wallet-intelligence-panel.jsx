@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { FeatureIcon } from "./wallet-sidebar";
+import { SUPPORTED_WALLET_NETWORKS } from "../lib/arc-chain";
 
 function parseAmount(item) {
   const numeric = Number(String(item?.amount || "").replace(/[^\d.-]/g, ""));
@@ -159,6 +161,99 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
   );
 }
 
+function CircleFaucetCard({ walletSnapshot }) {
+  const [copied, setCopied] = useState(false);
+  const address = walletSnapshot?.address || "";
+  const faucetAssets = [
+    { symbol: "USDC", label: "Dollar stablecoin", icon: "$" },
+    { symbol: "EURC", label: "Euro stablecoin", icon: "€" },
+    { symbol: "cirBTC", label: "Testnet Bitcoin flow", icon: "₿" }
+  ];
+
+  const handleCopy = async () => {
+    if (!address) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {}
+  };
+
+  return (
+    <article className="card analytics-card faucet-card">
+      <div className="section-heading">
+        <div>
+          <p className="section-kicker">Circle Faucet</p>
+          <h2>Testnet funds for Arc flows</h2>
+        </div>
+        <span className="status-badge status-good">USDC / EURC / cirBTC</span>
+      </div>
+
+      <p className="helper-copy">
+        Get testnet USDC, EURC, and cirBTC from Circle to test receive,
+        swap, bridge, and app flows with your connected wallet.
+      </p>
+
+      <div className="faucet-asset-grid">
+        {faucetAssets.map((asset) => (
+          <div className="faucet-asset-card" key={asset.symbol}>
+            <span>{asset.icon}</span>
+            <strong>{asset.symbol}</strong>
+            <small>{asset.label}</small>
+          </div>
+        ))}
+      </div>
+
+      <div className="faucet-actions">
+        <a
+          className="button button-primary"
+          href="https://faucet.circle.com"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open Circle Faucet
+        </a>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={handleCopy}
+          disabled={!address}
+        >
+          {copied ? "Address copied" : "Copy wallet address"}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function SupportedChainsCard() {
+  return (
+    <article className="card analytics-card supported-chains-card">
+      <div className="section-heading">
+        <div>
+          <p className="section-kicker">Networks</p>
+          <h2>Multi-chain wallet support</h2>
+        </div>
+        <span className="status-badge">{SUPPORTED_WALLET_NETWORKS.length} chains</span>
+      </div>
+      <div className="supported-chain-list">
+        {SUPPORTED_WALLET_NETWORKS.map((chain) => (
+          <div className="supported-chain-row" key={chain.name}>
+            <div>
+              <strong>{chain.name}</strong>
+              <small>{chain.helper}</small>
+            </div>
+            <span>{chain.status}</span>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
 function buildMonthlyBars(items) {
   const buckets = Array.from({ length: 8 }, (_, index) => ({
     id: index,
@@ -216,6 +311,10 @@ export default function WalletIntelligencePanel({
         onReceive={onReceive}
         onAiOpen={onAiOpen}
       />
+
+      <CircleFaucetCard walletSnapshot={walletSnapshot} />
+
+      <SupportedChainsCard />
 
       <RecentActivityPreview
         items={activityItems}
