@@ -1,3 +1,4 @@
+import PortfolioAllocation from "./portfolio-allocation";
 import { FeatureIcon } from "./wallet-sidebar";
 
 function parseAmount(item) {
@@ -256,17 +257,7 @@ export default function WalletIntelligencePanel({
         </div>
       </article>
 
-      <article className="card analytics-card">
-        <p className="section-kicker">Portfolio Allocation</p>
-        <div className="allocation-ring" style={{ "--allocation": "100%" }}>
-          <span>USDC</span>
-        </div>
-        <p className="helper-copy">
-          {walletSnapshot?.isSignedIn
-            ? "Current tracked wallet allocation is focused on Arc Testnet USDC."
-            : "Connect wallet to generate allocation from real balances."}
-        </p>
-      </article>
+      <PortfolioAllocation walletSnapshot={walletSnapshot} compact />
 
       <article className="card analytics-card">
         <p className="section-kicker">Flow Summary</p>

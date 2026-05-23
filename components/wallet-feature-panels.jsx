@@ -1,3 +1,5 @@
+import PortfolioAllocation from "./portfolio-allocation";
+
 function parseBalance(balance) {
   const numeric = Number(String(balance || "").replace(/[^\d.-]/g, ""));
   return Number.isFinite(numeric) ? numeric : 0;
@@ -75,6 +77,7 @@ export function PortfolioPanel({ walletSnapshot, activityItems = [] }) {
               : "USDC and EURC read directly from Arc Testnet."}
           </small>
         </div>
+        <PortfolioAllocation walletSnapshot={walletSnapshot} />
         {visibleAssets.map((asset) => (
           <div className="portfolio-os-asset" key={asset.symbol}>
             <span className="asset-logo">{asset.accent || asset.symbol.slice(0, 1)}</span>
