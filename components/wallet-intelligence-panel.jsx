@@ -43,13 +43,30 @@ function RecentActivityPreview({ items = [], onOpenActivity }) {
   const recentItems = items.slice(0, 4);
 
   return (
-    <article className="card analytics-card recent-activity-preview">
+    <article
+      className="card analytics-card recent-activity-preview dashboard-click-card"
+      onClick={onOpenActivity}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          onOpenActivity?.();
+        }
+      }}
+    >
       <div className="section-heading">
         <div>
           <p className="section-kicker">Recent Activity</p>
           <h2>Live wallet feed</h2>
         </div>
-        <button type="button" className="button button-secondary" onClick={onOpenActivity}>
+        <button
+          type="button"
+          className="button button-secondary"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenActivity?.();
+          }}
+        >
           View all
         </button>
       </div>

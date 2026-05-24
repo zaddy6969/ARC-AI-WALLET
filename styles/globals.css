@@ -2471,7 +2471,7 @@ body::after {
 .wallet-intelligence-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
-  gap: 18px;
+  gap: 14px;
   grid-auto-flow: dense;
 }
 
@@ -2503,6 +2503,8 @@ body::after {
   overflow: hidden;
   align-self: stretch;
   grid-column: 1 / -1;
+  gap: 14px;
+  padding: 20px;
   background:
     radial-gradient(circle at 18% 8%, rgba(97, 216, 255, 0.14), transparent 28%),
     radial-gradient(circle at 88% 86%, rgba(142, 107, 255, 0.13), transparent 32%),
@@ -2539,7 +2541,7 @@ body::after {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .command-center-card h2,
@@ -2552,19 +2554,19 @@ body::after {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .command-grid button {
-  min-height: 150px;
+  min-height: 112px;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-content: space-between;
-  gap: 14px;
-  padding: 16px;
-  border-radius: 24px;
+  gap: 10px;
+  padding: 13px;
+  border-radius: 20px;
   border: 1px solid rgba(137, 188, 255, 0.14);
   background:
     radial-gradient(circle at 100% 0%, rgba(97, 216, 255, 0.12), transparent 34%),
@@ -2574,22 +2576,6 @@ body::after {
   text-align: left;
   cursor: pointer;
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.command-grid button:nth-child(1),
-.command-grid button:nth-child(2) {
-  grid-column: span 3;
-}
-
-.command-grid button:nth-child(3),
-.command-grid button:nth-child(4),
-.command-grid button:nth-child(5),
-.command-grid button:nth-child(6) {
-  grid-column: span 2;
-}
-
-.command-grid button:nth-child(7) {
-  grid-column: span 4;
 }
 
 .command-grid button::before {
@@ -2614,12 +2600,12 @@ body::after {
   position: relative;
   z-index: 1;
   width: fit-content;
-  padding: 6px 9px;
+  padding: 5px 8px;
   border-radius: 999px;
   border: 1px solid rgba(97, 216, 255, 0.16);
   background: rgba(97, 216, 255, 0.08);
   color: #cfefff;
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -2630,8 +2616,8 @@ body::after {
   z-index: 1;
   display: inline-grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   flex: 0 0 auto;
   border-radius: 18px;
   border: 1px solid rgba(137, 188, 255, 0.22);
@@ -2645,8 +2631,8 @@ body::after {
 }
 
 .command-icon-orb svg {
-  width: 22px;
-  height: 22px;
+  width: 19px;
+  height: 19px;
   filter: drop-shadow(0 0 10px rgba(97, 216, 255, 0.32));
 }
 
@@ -2655,10 +2641,11 @@ body::after {
   z-index: 1;
   grid-column: 1 / -1;
   display: grid;
-  gap: 7px;
+  gap: 4px;
 }
 
 .command-card-copy strong {
+  font-size: 0.95rem;
   font-weight: 900;
   letter-spacing: -0.03em;
 }
@@ -2670,7 +2657,7 @@ body::after {
 
 .command-card-copy em {
   color: #9edfff;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-style: normal;
   font-weight: 800;
 }
@@ -3592,6 +3579,10 @@ body::after {
 
   .floating-wallet-dock nav {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .command-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .wallet-sidebar {
