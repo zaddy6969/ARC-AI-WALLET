@@ -102,6 +102,24 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
       action: onReceive
     },
     {
+      id: "swap",
+      label: "Swap",
+      icon: "swap",
+      helper: "Arc App Kit route",
+      status: "Live",
+      command: "Swap stablecoins",
+      action: () => onSelectView?.("swap")
+    },
+    {
+      id: "bridge",
+      label: "Bridge",
+      icon: "bridge",
+      helper: "Move USDC to Arc",
+      status: "Live",
+      command: "Bridge assets",
+      action: () => onSelectView?.("bridge")
+    },
+    {
       id: "portfolio",
       label: "Portfolio",
       icon: "portfolio",

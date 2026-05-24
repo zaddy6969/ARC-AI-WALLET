@@ -2377,6 +2377,11 @@ body::after {
   grid-column: span 2;
 }
 
+.command-grid button:nth-child(6),
+.command-grid button:nth-child(7) {
+  grid-column: span 3;
+}
+
 .command-grid button::before {
   content: "";
   position: absolute;
