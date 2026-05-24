@@ -350,8 +350,8 @@ button:disabled {
 .app-nav-bar {
   position: relative;
   isolation: isolate;
-  width: min(100%, 1120px);
-  min-height: 78px;
+  width: min(100%, 1280px);
+  min-height: 74px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -369,6 +369,74 @@ button:disabled {
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
   overflow: hidden;
   backdrop-filter: blur(22px);
+}
+
+.app-nav-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app-nav-value,
+.app-nav-wallet-pill,
+.app-nav-icon-button,
+.app-nav-avatar {
+  border: 1px solid rgba(137, 188, 255, 0.15);
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.app-nav-value {
+  display: grid;
+  gap: 2px;
+  min-width: 118px;
+  padding: 9px 13px;
+  border-radius: 18px;
+}
+
+.app-nav-value span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.app-nav-value strong,
+.app-nav-wallet-pill {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.app-nav-wallet-pill {
+  max-width: 132px;
+  padding: 11px 13px;
+  border-radius: 999px;
+  color: #dceeff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-nav-icon-button,
+.app-nav-avatar {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #eaf6ff;
+}
+
+.app-nav-icon-button {
+  cursor: pointer;
+}
+
+.app-nav-avatar {
+  background: linear-gradient(135deg, rgba(97, 216, 255, 0.18), rgba(142, 107, 255, 0.18));
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
 .app-nav-bar::before {
@@ -470,8 +538,8 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 46px;
-  padding: 10px 16px;
+  min-height: 42px;
+  padding: 9px 14px;
   border-radius: 999px;
   border: 1px solid rgba(125, 211, 174, 0.2);
   background:
@@ -500,7 +568,7 @@ button:disabled {
 
 .wallet-sidebar nav {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .sidebar-action {
@@ -509,9 +577,9 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 48px;
-  padding: 12px 14px;
-  border-radius: 18px;
+  min-height: 46px;
+  padding: 9px 10px;
+  border-radius: 16px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.035);
   color: var(--text);
@@ -1077,6 +1145,38 @@ button:disabled {
 .activity-row strong {
   font-family: "IBM Plex Mono", monospace;
   overflow-wrap: anywhere;
+}
+
+.wallet-sidebar-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(125, 211, 174, 0.16);
+  background: rgba(125, 211, 174, 0.07);
+}
+
+.wallet-sidebar-status .status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--success);
+  box-shadow: 0 0 16px rgba(125, 211, 174, 0.6);
+}
+
+.wallet-sidebar-status div {
+  display: grid;
+  gap: 2px;
+}
+
+.wallet-sidebar-status strong {
+  font-size: 0.82rem;
+}
+
+.wallet-sidebar-status small {
+  color: var(--muted);
 }
 
 .network-switcher {
@@ -2433,8 +2533,8 @@ body::after {
 }
 
 .floating-wallet-dock {
-  padding: 14px;
-  border-radius: 32px;
+  padding: 10px;
+  border-radius: 26px;
   border: 1px solid rgba(137, 188, 255, 0.14);
   background:
     radial-gradient(circle at 10% 0%, rgba(97, 216, 255, 0.12), transparent 34%),
@@ -2446,15 +2546,15 @@ body::after {
 }
 
 .floating-wallet-dock nav {
-  gap: 10px;
+  gap: 8px;
 }
 
 .floating-wallet-dock .sidebar-action {
-  min-height: 62px;
+  min-height: 50px;
   justify-content: flex-start;
-  gap: 13px;
-  padding: 14px 16px;
-  border-radius: 22px;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 18px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
     rgba(255, 255, 255, 0.025);
@@ -2470,8 +2570,8 @@ body::after {
 .dock-icon {
   display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
   border-radius: 15px;
   border: 1px solid rgba(137, 188, 255, 0.14);
@@ -2483,8 +2583,8 @@ body::after {
 }
 
 .dock-icon svg {
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
   filter: drop-shadow(0 0 8px rgba(97, 216, 255, 0.28));
 }
 
@@ -2499,7 +2599,7 @@ body::after {
 }
 
 .wallet-workspace {
-  grid-template-columns: 238px minmax(0, 1fr);
+  grid-template-columns: 188px minmax(0, 1fr);
 }
 
 .wallet-main-panel {
@@ -2509,7 +2609,7 @@ body::after {
 
 .wallet-intelligence-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
   gap: 14px;
   grid-auto-flow: dense;
 }
@@ -2537,21 +2637,28 @@ body::after {
   line-height: 1.7;
 }
 
-.command-center-card {
+.quick-actions-card,
+.ai-copilot-card,
+.market-overview-card,
+.portfolio-insights-card {
   position: relative;
   overflow: hidden;
   align-self: stretch;
+}
+
+.quick-actions-card {
   grid-column: 2;
-  grid-row: span 2;
-  gap: 12px;
-  padding: 16px;
+  gap: 14px;
   background:
     radial-gradient(circle at 18% 8%, rgba(97, 216, 255, 0.14), transparent 28%),
     radial-gradient(circle at 88% 86%, rgba(142, 107, 255, 0.13), transparent 32%),
     linear-gradient(145deg, rgba(12, 18, 32, 0.94), rgba(7, 11, 22, 0.94));
 }
 
-.command-center-card::before {
+.quick-actions-card::before,
+.ai-copilot-card::before,
+.market-overview-card::before,
+.portfolio-insights-card::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -2563,7 +2670,10 @@ body::after {
   pointer-events: none;
 }
 
-.command-center-card::after {
+.quick-actions-card::after,
+.ai-copilot-card::after,
+.market-overview-card::after,
+.portfolio-insights-card::after {
   content: "";
   position: absolute;
   inset: auto -18% -45% auto;
@@ -2589,7 +2699,10 @@ body::after {
   font-size: 0.66rem;
 }
 
-.command-center-card h2,
+.quick-actions-card h2,
+.ai-copilot-card h2,
+.market-overview-card h2,
+.portfolio-insights-card h2,
 .recent-activity-preview h2 {
   margin: 4px 0 0;
   letter-spacing: -0.04em;
@@ -2599,20 +2712,20 @@ body::after {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .command-grid button {
-  min-height: 56px;
+  min-height: 94px;
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  align-content: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  align-content: space-between;
   gap: 8px;
-  padding: 8px 9px;
-  border-radius: 16px;
+  padding: 12px;
+  border-radius: 20px;
   border: 1px solid rgba(137, 188, 255, 0.14);
   background:
     radial-gradient(circle at 100% 0%, rgba(97, 216, 255, 0.12), transparent 34%),
@@ -2663,8 +2776,8 @@ body::after {
   z-index: 1;
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   flex: 0 0 auto;
   border-radius: 14px;
   border: 1px solid rgba(137, 188, 255, 0.22);
@@ -2688,6 +2801,7 @@ body::after {
   z-index: 1;
   display: grid;
   gap: 2px;
+  grid-column: 1 / -1;
   min-width: 0;
 }
 
@@ -2703,7 +2817,8 @@ body::after {
 }
 
 .command-card-copy small {
-  display: none;
+  display: block;
+  font-size: 0.72rem;
 }
 
 .command-card-copy em {
@@ -2713,7 +2828,106 @@ body::after {
   font-weight: 800;
 }
 
+.ai-copilot-card {
+  grid-column: 2;
+  gap: 14px;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(97, 216, 255, 0.18), transparent 30%),
+    radial-gradient(circle at 90% 22%, rgba(142, 107, 255, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(12, 18, 32, 0.94), rgba(7, 11, 22, 0.94));
+}
+
+.ai-copilot-top {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-orb-avatar {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  animation: aiOrbPulse 3.2s ease-in-out infinite;
+}
+
+.ai-command-input {
+  position: relative;
+  z-index: 1;
+  padding: 13px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(137, 188, 255, 0.14);
+  background: rgba(3, 8, 17, 0.54);
+  color: var(--muted);
+}
+
+.ai-command-chips,
+.market-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ai-command-chips span,
+.market-grid div {
+  border-radius: 16px;
+  border: 1px solid rgba(137, 188, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ai-command-chips span {
+  padding: 8px 10px;
+  color: #bfefff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.market-overview-card,
+.portfolio-insights-card {
+  grid-column: 2;
+}
+
+.market-grid div {
+  display: grid;
+  gap: 3px;
+  padding: 11px;
+}
+
+.market-grid span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.market-grid strong {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+}
+
+.insight-score-ring {
+  width: 116px;
+  height: 116px;
+  display: grid;
+  place-items: center;
+  margin: 4px auto;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at center, rgba(8, 13, 24, 0.96) 52%, transparent 54%),
+    conic-gradient(from 180deg, #61d8ff, #8e6bff, #61d8ff);
+  box-shadow: 0 0 42px rgba(97, 216, 255, 0.16);
+}
+
+.insight-score-ring strong {
+  font-size: 1.7rem;
+  letter-spacing: -0.06em;
+}
+
 .recent-activity-preview {
+  grid-column: 1;
   min-height: 100%;
 }
 
@@ -2727,6 +2941,14 @@ body::after {
   display: grid;
   align-content: center;
   padding-right: 180px;
+}
+
+.allocation-card-compact {
+  grid-column: 1;
+}
+
+.activity-trend-card {
+  grid-column: 1;
 }
 
 .recent-activity-list {
@@ -3621,7 +3843,13 @@ body::after {
 
   .ai-insight-hero,
   .dashboard-final-card,
-  .command-center-card {
+  .quick-actions-card,
+  .ai-copilot-card,
+  .market-overview-card,
+  .portfolio-insights-card,
+  .activity-trend-card,
+  .allocation-card-compact,
+  .recent-activity-preview {
     grid-column: auto;
     grid-row: auto;
     padding-right: 20px;
@@ -3636,7 +3864,7 @@ body::after {
   }
 
   .floating-wallet-dock nav {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .command-grid {
@@ -3655,6 +3883,20 @@ body::after {
     justify-content: center;
     min-height: 56px;
     padding: 10px;
+  }
+
+  .app-nav-bar {
+    flex-wrap: wrap;
+  }
+
+  .app-nav-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .app-nav-value,
+  .app-nav-wallet-pill {
+    flex: 1 1 140px;
   }
 
   .floating-wallet-dock .sidebar-action span:last-child {
@@ -3733,6 +3975,19 @@ body::after {
   }
 
   .app-nav-copy span {
+    display: none;
+  }
+
+  .app-nav-actions {
+    gap: 8px;
+  }
+
+  .app-nav-value {
+    min-width: 0;
+  }
+
+  .app-nav-wallet-pill,
+  .app-nav-icon-button:nth-of-type(1) {
     display: none;
   }
 

@@ -4,8 +4,11 @@ const ACTIONS = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
   { id: "send", label: "Send", icon: "send" },
   { id: "receive", label: "Receive", icon: "receive" },
+  { id: "swap", label: "Swap", icon: "swap" },
+  { id: "bridge", label: "Bridge", icon: "bridge" },
   { id: "portfolio", label: "Portfolio", icon: "portfolio" },
-  { id: "activity", label: "Activity", icon: "activity" }
+  { id: "activity", label: "Activity", icon: "activity" },
+  { id: "ai", label: "AI Assistant", icon: "ai" }
 ];
 
 export function FeatureIcon({ name }) {
@@ -120,6 +123,11 @@ function WalletSidebar({
               return;
             }
 
+            if (action.id === "ai") {
+              onAiOpen?.();
+              return;
+            }
+
             onSelect(action.id);
           };
 
@@ -138,6 +146,13 @@ function WalletSidebar({
           );
         })}
       </nav>
+      <div className="wallet-sidebar-status">
+        <span className="status-dot" />
+        <div>
+          <strong>Arc connected</strong>
+          <small>Wallet OS v1.0</small>
+        </div>
+      </div>
     </aside>
   );
 }

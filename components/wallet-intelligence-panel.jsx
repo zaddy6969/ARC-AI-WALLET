@@ -167,18 +167,16 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
   ];
 
   return (
-    <article className="card analytics-card command-center-card">
+    <article className="card analytics-card quick-actions-card">
       <div className="command-center-header">
         <div>
-          <p className="section-kicker">Command Center</p>
-          <h2>Wallet control deck</h2>
+          <p className="section-kicker">Quick Actions</p>
+          <h2>Move faster</h2>
         </div>
-        <span className="status-badge status-good">Ready</span>
       </div>
       <div className="command-grid">
-        {actions.map((action) => (
+        {actions.slice(0, 4).map((action) => (
           <button key={action.id} type="button" onClick={action.action}>
-            <span className="command-status">{action.status}</span>
             <span className="command-icon-orb">
               <FeatureIcon name={action.icon} />
             </span>
@@ -190,6 +188,82 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
           </button>
         ))}
       </div>
+    </article>
+  );
+}
+
+function AiCopilotWidget({ onAiOpen, walletSnapshot, activityItems = [] }) {
+  return (
+    <article
+      className="card analytics-card ai-copilot-card dashboard-click-card"
+      onClick={onAiOpen}
+      role="button"
+      tabIndex={0}
+    >
+      <div className="ai-copilot-top">
+        <div className="ai-orb-avatar" aria-hidden="true">
+          <span />
+        </div>
+        <div>
+          <p className="section-kicker">AI Copilot</p>
+          <h2>Ask your wallet</h2>
+        </div>
+      </div>
+      <div className="ai-command-input">Ask about balance, activity, swaps...</div>
+      <div className="ai-command-chips">
+        {["Send USDC", "Check portfolio", "Bridge assets", "Recent activity"].map((item) => (
+          <span key={item}>{item}</span>
+        ))}
+      </div>
+      <p className="helper-copy">
+        Connected to {walletSnapshot?.address ? "your Arc wallet" : "Arc Testnet"} with {activityItems.length} tracked events.
+      </p>
+    </article>
+  );
+}
+
+function MarketOverviewWidget({ walletSnapshot }) {
+  const assets = Array.isArray(walletSnapshot?.assets) ? walletSnapshot.assets : [];
+  const usdcAsset = assets.find((asset) => asset.symbol === "USDC");
+  const cirbtcAsset = assets.find((asset) => asset.symbol === "cirBTC");
+
+  return (
+    <article className="card analytics-card market-overview-card">
+      <div className="section-heading">
+        <div>
+          <p className="section-kicker">Market</p>
+          <h2>Arc overview</h2>
+        </div>
+        <span className="status-badge status-good">Live</span>
+      </div>
+      <div className="market-grid">
+        <div><span>USDC</span><strong>{usdcAsset?.balance || walletSnapshot?.usdcBalance || "0.00 USDC"}</strong></div>
+        <div><span>cirBTC</span><strong>{cirbtcAsset?.balance || "0.00 cirBTC"}</strong></div>
+        <div><span>Gas</span><strong>USDC</strong></div>
+        <div><span>Chain</span><strong>{walletSnapshot?.onArc ? "Ready" : "Switch"}</strong></div>
+      </div>
+    </article>
+  );
+}
+
+function PortfolioInsightsWidget({ walletSnapshot, activityItems = [] }) {
+  const assets = Array.isArray(walletSnapshot?.assets) ? walletSnapshot.assets : [];
+  const funded = assets.filter((asset) => Number(asset?.balanceValue) > 0);
+  const health = Math.min(100, 62 + funded.length * 8 + Math.min(activityItems.length, 10));
+
+  return (
+    <article className="card analytics-card portfolio-insights-card">
+      <p className="section-kicker">AI Insights</p>
+      <h2>Wallet health score</h2>
+      <div className="insight-score-ring">
+        <strong>{health}</strong>
+        <span>/100</span>
+      </div>
+      <p className="helper-copy">
+        {funded.length > 1
+          ? "Diversification is improving across Arc assets."
+          : "Add more supported Arc assets to improve diversification."}
+      </p>
     </article>
   );
 }
@@ -240,6 +314,12 @@ function WalletIntelligencePanel({
         </div>
       </article>
 
+      <AiCopilotWidget
+        onAiOpen={onAiOpen}
+        walletSnapshot={walletSnapshot}
+        activityItems={activityItems}
+      />
+
       <QuickActionCommandCenter
         onSelectView={onSelectView}
         onReceive={onReceive}
@@ -252,13 +332,20 @@ function WalletIntelligencePanel({
         onOpenPortfolio={() => onSelectView?.("portfolio")}
       />
 
+      <MarketOverviewWidget walletSnapshot={walletSnapshot} />
+
       <RecentActivityPreview
         items={activityItems}
         onOpenActivity={() => onSelectView?.("activity")}
       />
 
+      <PortfolioInsightsWidget
+        walletSnapshot={walletSnapshot}
+        activityItems={activityItems}
+      />
+
       <article
-        className="card analytics-card dashboard-click-card"
+        className="card analytics-card dashboard-click-card activity-trend-card"
         onClick={() => onSelectView?.("activity")}
         role="button"
         tabIndex={0}

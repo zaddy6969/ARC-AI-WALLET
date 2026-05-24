@@ -165,7 +165,7 @@ export default function Home() {
         <link rel="canonical" href={SITE_URL} />
       </Head>
 
-      <AppShell>
+      <AppShell walletSnapshot={walletSnapshot}>
         {showWelcome ? <WelcomeOverlay /> : null}
 
         <section className="wallet-dashboard-hero">
