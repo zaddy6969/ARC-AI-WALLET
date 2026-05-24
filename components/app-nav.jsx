@@ -8,7 +8,7 @@ export default function AppNav() {
         <Link href="/" className="app-nav-brand">
           <div className="app-nav-logo">
             <img
-              src="/arc-ai-wallet-logo.png"
+              src="/arc-ai-wallet-mark.png"
               alt="Arc AI Wallet"
             />
           </div>
