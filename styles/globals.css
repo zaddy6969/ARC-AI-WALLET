@@ -2852,14 +2852,37 @@ body::after {
   animation: aiOrbPulse 3.2s ease-in-out infinite;
 }
 
-.ai-command-input {
+.ai-command-form {
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.ai-command-input {
+  width: 100%;
+  min-height: 50px;
   padding: 13px 14px;
   border-radius: 18px;
   border: 1px solid rgba(137, 188, 255, 0.14);
   background: rgba(3, 8, 17, 0.54);
+  color: var(--text);
+  outline: none;
+}
+
+.ai-command-input::placeholder {
   color: var(--muted);
+}
+
+.ai-command-form button {
+  min-width: 64px;
+  border: 1px solid rgba(97, 216, 255, 0.24);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(97, 216, 255, 0.22), rgba(142, 107, 255, 0.18));
+  color: #eaf6ff;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .ai-command-chips,
@@ -2871,18 +2894,27 @@ body::after {
   gap: 8px;
 }
 
-.ai-command-chips span,
+.ai-command-chips button,
 .market-grid div {
   border-radius: 16px;
   border: 1px solid rgba(137, 188, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
 }
 
-.ai-command-chips span {
+.ai-command-chips button {
   padding: 8px 10px;
   color: #bfefff;
   font-size: 0.78rem;
   font-weight: 800;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.ai-command-chips button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(97, 216, 255, 0.28);
+  background: rgba(97, 216, 255, 0.08);
 }
 
 .market-overview-card,

@@ -54,6 +54,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState("dashboard");
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantPrompt, setAssistantPrompt] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [copied, setCopied] = useState(false);
   const wasSignedInRef = useRef(false);
@@ -135,6 +136,13 @@ export default function Home() {
   const closeReceive = useCallback(() => setReceiveOpen(false), []);
   const openAssistant = useCallback(() => setAssistantOpen(true), []);
   const closeAssistant = useCallback(() => setAssistantOpen(false), []);
+  const askCopilot = useCallback((prompt) => {
+    setAssistantPrompt({
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      text: prompt
+    });
+    setAssistantOpen(true);
+  }, []);
 
   if (!walletSnapshot.isSignedIn) {
     return (
@@ -199,6 +207,7 @@ export default function Home() {
                 onSelectView={handleSelectView}
                 onReceive={openReceive}
                 onAiOpen={openAssistant}
+                onAskCopilot={askCopilot}
               />
             ) : activeView === "activity" ? (
               <TransactionActivity
@@ -227,6 +236,7 @@ export default function Home() {
                 onSelectView={handleSelectView}
                 onReceive={openReceive}
                 onAiOpen={openAssistant}
+                onAskCopilot={askCopilot}
               />
             ) : activeView === "bridge" ? (
               <BridgeToArcPanel
@@ -258,6 +268,7 @@ export default function Home() {
           walletSnapshot={walletSnapshot}
           activityItems={mergedActivity}
           activityStatus={liveActivityStatus}
+          initialPrompt={assistantPrompt}
         />
       </AppShell>
     </>

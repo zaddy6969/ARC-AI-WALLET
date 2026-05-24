@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import PortfolioAllocation from "./portfolio-allocation";
 import { FeatureIcon } from "./wallet-sidebar";
 
@@ -192,7 +192,33 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
   );
 }
 
-function AiCopilotWidget({ onAiOpen, walletSnapshot, activityItems = [] }) {
+function AiCopilotWidget({
+  onAiOpen,
+  onAskCopilot,
+  onSelectView,
+  walletSnapshot,
+  activityItems = []
+}) {
+  const [question, setQuestion] = useState("");
+  const commands = [
+    { label: "Send USDC", action: () => onSelectView?.("send") },
+    { label: "Check portfolio", action: () => onSelectView?.("portfolio") },
+    { label: "Bridge assets", action: () => onSelectView?.("bridge") },
+    { label: "Recent activity", action: () => onSelectView?.("activity") }
+  ];
+  const submitQuestion = (event) => {
+    event.preventDefault();
+    const trimmed = question.trim();
+
+    if (!trimmed) {
+      onAiOpen?.();
+      return;
+    }
+
+    onAskCopilot?.(trimmed);
+    setQuestion("");
+  };
+
   return (
     <article
       className="card analytics-card ai-copilot-card dashboard-click-card"
@@ -209,10 +235,27 @@ function AiCopilotWidget({ onAiOpen, walletSnapshot, activityItems = [] }) {
           <h2>Ask your wallet</h2>
         </div>
       </div>
-      <div className="ai-command-input">Ask about balance, activity, swaps...</div>
+      <form className="ai-command-form" onSubmit={submitQuestion} onClick={(event) => event.stopPropagation()}>
+        <input
+          className="ai-command-input"
+          value={question}
+          onChange={(event) => setQuestion(event.target.value)}
+          placeholder="Ask about balance, activity, swaps..."
+        />
+        <button type="submit">Ask</button>
+      </form>
       <div className="ai-command-chips">
-        {["Send USDC", "Check portfolio", "Bridge assets", "Recent activity"].map((item) => (
-          <span key={item}>{item}</span>
+        {commands.map((item) => (
+          <button
+            key={item.label}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              item.action();
+            }}
+          >
+            {item.label}
+          </button>
         ))}
       </div>
       <p className="helper-copy">
@@ -322,7 +365,8 @@ function WalletIntelligencePanel({
   walletSnapshot,
   onSelectView,
   onReceive,
-  onAiOpen
+  onAiOpen,
+  onAskCopilot
 }) {
   const bars = buildMonthlyBars(activityItems);
 
@@ -341,6 +385,8 @@ function WalletIntelligencePanel({
 
       <AiCopilotWidget
         onAiOpen={onAiOpen}
+        onAskCopilot={onAskCopilot}
+        onSelectView={onSelectView}
         walletSnapshot={walletSnapshot}
         activityItems={activityItems}
       />

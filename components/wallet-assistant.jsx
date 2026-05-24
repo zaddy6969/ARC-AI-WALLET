@@ -89,7 +89,8 @@ function ActionButton({ action, onPrompt }) {
 export default function WalletAssistant({
   walletSnapshot,
   activityItems,
-  activityStatus
+  activityStatus,
+  initialPrompt
 }) {
   const [messages, setMessages] = useState([
     {
@@ -104,6 +105,7 @@ export default function WalletAssistant({
   const [notice, setNotice] = useState("Wallet Copilot Ready");
   const [actions, setActions] = useState([]);
   const autoAnalyzeAddressRef = useRef("");
+  const externalPromptRef = useRef("");
   const threadRef = useRef(null);
   const requestRef = useRef(null);
 
@@ -205,6 +207,17 @@ export default function WalletAssistant({
       void askAssistant("Analyze my wallet");
     }
   }, [walletSnapshot?.address, walletSnapshot?.isSignedIn]);
+
+  useEffect(() => {
+    if (
+      initialPrompt?.id &&
+      initialPrompt?.text &&
+      externalPromptRef.current !== initialPrompt.id
+    ) {
+      externalPromptRef.current = initialPrompt.id;
+      void askAssistant(initialPrompt.text);
+    }
+  }, [initialPrompt]);
 
   useEffect(() => {
     threadRef.current?.scrollTo({
@@ -318,8 +331,11 @@ export default function WalletAssistant({
         />
         <div className="assistant-form-row">
           <span className="helper-copy">
-            Type a command like "Analyze my wallet" or "Show my balance".
+            Mic ready soon. Type a command like "Analyze my wallet" today.
           </span>
+          <button type="button" className="button button-secondary" disabled title="Voice commands coming soon">
+            Mic
+          </button>
           <button type="submit" className="button button-primary" disabled={loading}>
             {loading ? "Thinking..." : "Ask Copilot"}
           </button>
