@@ -1650,6 +1650,13 @@ button:disabled {
 
 .receive-actions .button {
   flex: 1 1 160px;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.receive-copy-button {
+  cursor: pointer;
 }
 
 .receive-warning {
@@ -3436,6 +3443,7 @@ body::after {
   background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.28), transparent);
   transform: translateX(-120%);
   transition: transform 520ms ease;
+  pointer-events: none;
 }
 
 .button-primary:hover::before {

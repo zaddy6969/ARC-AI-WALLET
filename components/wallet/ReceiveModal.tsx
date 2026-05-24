@@ -27,6 +27,28 @@ function shortenAddress(address?: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
+async function copyTextToClipboard(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
 export default function ReceiveModal({
   open,
   onClose,
@@ -105,7 +127,7 @@ export default function ReceiveModal({
     }
 
     try {
-      await navigator.clipboard.writeText(address);
+      await copyTextToClipboard(address);
       setFeedback({
         tone: "success",
         message: "Copied!"
@@ -227,11 +249,14 @@ export default function ReceiveModal({
             <div className="receive-actions">
               <button
                 type="button"
-                className="button button-primary"
-                onClick={handleCopy}
+                className="button button-primary receive-copy-button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void handleCopy();
+                }}
                 disabled={!hasAddress}
               >
-                Copy Address
+                {feedback?.tone === "success" ? "Copied!" : "Copy Address"}
               </button>
               <a
                 className="button button-secondary"
