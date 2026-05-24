@@ -2533,7 +2533,8 @@ body::after {
   position: relative;
   overflow: hidden;
   align-self: stretch;
-  grid-column: 1 / -1;
+  grid-column: 2;
+  grid-row: span 2;
   gap: 12px;
   padding: 16px;
   background:
@@ -2569,7 +2570,7 @@ body::after {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 0;
@@ -2577,7 +2578,7 @@ body::after {
 
 .command-center-header .status-badge {
   padding: 7px 11px;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
 }
 
 .command-center-card h2,
@@ -2590,20 +2591,20 @@ body::after {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
 .command-grid button {
-  min-height: 78px;
+  min-height: 56px;
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   align-content: center;
-  gap: 9px;
-  padding: 10px;
-  border-radius: 18px;
+  gap: 8px;
+  padding: 8px 9px;
+  border-radius: 16px;
   border: 1px solid rgba(137, 188, 255, 0.14);
   background:
     radial-gradient(circle at 100% 0%, rgba(97, 216, 255, 0.12), transparent 34%),
@@ -2637,6 +2638,7 @@ body::after {
   position: relative;
   z-index: 1;
   width: fit-content;
+  display: none;
   padding: 4px 7px;
   border-radius: 999px;
   border: 1px solid rgba(97, 216, 255, 0.16);
@@ -2653,8 +2655,8 @@ body::after {
   z-index: 1;
   display: inline-grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
   border-radius: 14px;
   border: 1px solid rgba(137, 188, 255, 0.22);
@@ -2682,7 +2684,7 @@ body::after {
 }
 
 .command-card-copy strong {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 900;
   letter-spacing: -0.03em;
 }
@@ -2698,7 +2700,7 @@ body::after {
 
 .command-card-copy em {
   color: #9edfff;
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   font-style: normal;
   font-weight: 800;
 }
@@ -2712,7 +2714,11 @@ body::after {
 }
 
 .dashboard-final-card {
-  grid-column: auto;
+  grid-column: 1 / -1;
+  min-height: 180px;
+  display: grid;
+  align-content: center;
+  padding-right: 180px;
 }
 
 .recent-activity-list {
@@ -3608,6 +3614,8 @@ body::after {
   .dashboard-final-card,
   .command-center-card {
     grid-column: auto;
+    grid-row: auto;
+    padding-right: 20px;
   }
 
   .dashboard-priority-card {
@@ -3623,7 +3631,7 @@ body::after {
   }
 
   .command-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .wallet-sidebar {
@@ -3741,6 +3749,11 @@ body::after {
   .portfolio-os-asset,
   .portfolio-os-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-final-card {
+    min-height: 220px;
+    padding-right: 20px;
   }
 
   .recent-activity-row > div:last-child {
