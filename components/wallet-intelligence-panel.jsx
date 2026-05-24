@@ -240,7 +240,17 @@ function WalletIntelligencePanel({
         onOpenActivity={() => onSelectView?.("activity")}
       />
 
-      <article className="card analytics-card">
+      <article
+        className="card analytics-card dashboard-click-card"
+        onClick={() => onSelectView?.("activity")}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            onSelectView?.("activity");
+          }
+        }}
+      >
         <div className="section-heading">
           <div>
             <p className="section-kicker">Activity Trend</p>

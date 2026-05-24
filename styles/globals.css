@@ -2502,6 +2502,7 @@ body::after {
   position: relative;
   overflow: hidden;
   align-self: stretch;
+  grid-column: 1 / -1;
   background:
     radial-gradient(circle at 18% 8%, rgba(97, 216, 255, 0.14), transparent 28%),
     radial-gradient(circle at 88% 86%, rgba(142, 107, 255, 0.13), transparent 32%),
@@ -2551,12 +2552,12 @@ body::after {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .command-grid button {
-  min-height: 138px;
+  min-height: 150px;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -2580,13 +2581,15 @@ body::after {
   grid-column: span 3;
 }
 
-.command-grid button:nth-child(n + 3) {
+.command-grid button:nth-child(3),
+.command-grid button:nth-child(4),
+.command-grid button:nth-child(5),
+.command-grid button:nth-child(6) {
   grid-column: span 2;
 }
 
-.command-grid button:nth-child(6),
 .command-grid button:nth-child(7) {
-  grid-column: span 3;
+  grid-column: span 4;
 }
 
 .command-grid button::before {
@@ -2704,6 +2707,21 @@ body::after {
 .recent-activity-row:hover {
   transform: translateX(3px);
   border-color: rgba(97, 216, 255, 0.24);
+}
+
+.dashboard-click-card {
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.dashboard-click-card:hover,
+.dashboard-click-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(97, 216, 255, 0.3);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.24),
+    0 0 34px rgba(97, 216, 255, 0.08);
+  outline: none;
 }
 
 .recent-activity-row > div {
@@ -3559,7 +3577,8 @@ body::after {
   }
 
   .ai-insight-hero,
-  .dashboard-final-card {
+  .dashboard-final-card,
+  .command-center-card {
     grid-column: auto;
   }
 
