@@ -2330,6 +2330,13 @@ body::after {
   background: rgba(255, 255, 255, 0.045);
 }
 
+.wallet-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .wallet-address-pill {
   width: fit-content;
   max-width: 100%;
@@ -2340,6 +2347,29 @@ body::after {
   color: #eef5ff;
   font-family: "IBM Plex Mono", monospace;
   cursor: pointer;
+}
+
+.wallet-disconnect-pill {
+  width: fit-content;
+  padding: 10px 13px;
+  border: 1px solid rgba(241, 160, 174, 0.22);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(241, 160, 174, 0.12), transparent 42%),
+    rgba(255, 255, 255, 0.035);
+  color: #ffdce3;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.wallet-disconnect-pill:hover,
+.wallet-disconnect-pill:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(241, 160, 174, 0.42);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(241, 160, 174, 0.18), transparent 42%),
+    rgba(255, 255, 255, 0.055);
+  outline: none;
 }
 
 .floating-wallet-dock {

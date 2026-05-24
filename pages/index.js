@@ -175,6 +175,7 @@ export default function Home() {
           activityItems={mergedActivity}
           onCopy={handleCopyAddress}
           copied={copied}
+          onDisconnect={walletSnapshot.disconnectWallet}
         />
 
         <div className="wallet-workspace">

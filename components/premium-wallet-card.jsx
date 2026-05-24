@@ -106,7 +106,8 @@ export default function PremiumWalletCard({
   walletSnapshot,
   activityItems = [],
   onCopy,
-  copied
+  copied,
+  onDisconnect
 }) {
   const balanceValue = getPortfolioValue(walletSnapshot);
   const balanceSummary = getBalanceSummary(walletSnapshot);
@@ -180,14 +181,25 @@ export default function PremiumWalletCard({
       <div className="premium-wallet-footer">
         <div>
           <span className="field-label">Wallet</span>
-          <button
-            type="button"
-            className="wallet-address-pill"
-            onClick={onCopy}
-            disabled={!walletSnapshot?.address}
-          >
-            {copied ? "Copied" : shortenAddress(walletSnapshot?.address)}
-          </button>
+          <div className="wallet-footer-actions">
+            <button
+              type="button"
+              className="wallet-address-pill"
+              onClick={onCopy}
+              disabled={!walletSnapshot?.address}
+            >
+              {copied ? "Copied" : shortenAddress(walletSnapshot?.address)}
+            </button>
+            {walletSnapshot?.address ? (
+              <button
+                type="button"
+                className="wallet-disconnect-pill"
+                onClick={onDisconnect}
+              >
+                Disconnect
+              </button>
+            ) : null}
+          </div>
         </div>
         <div>
           <span className="field-label">Network</span>
