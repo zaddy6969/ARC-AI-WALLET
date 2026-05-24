@@ -104,7 +104,7 @@ export default function PortfolioAllocation({
           <h2>Arc asset mix</h2>
         </div>
         <span className="status-badge">
-          {isInteractive ? "Tap to open" : `${displayAssets.length} assets`}
+          {isInteractive ? "Tap" : `${displayAssets.length} assets`}
         </span>
       </div>
 
@@ -151,7 +151,7 @@ export default function PortfolioAllocation({
                 <div>
                   <strong>{asset.symbol}</strong>
                   <small>
-                    {asset.balance || `0.00 ${asset.symbol}`} · {formatUsd(asset.valueUsd)}
+                    {asset.balance || `0.00 ${asset.symbol}`} / {formatUsd(asset.valueUsd)}
                   </small>
                 </div>
                 <span>{percentage.toFixed(1)}%</span>

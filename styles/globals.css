@@ -2907,8 +2907,9 @@ body::after {
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(circle at 18% 12%, rgba(97, 216, 255, 0.12), transparent 26%),
-    radial-gradient(circle at 92% 78%, rgba(142, 107, 255, 0.12), transparent 30%),
+    radial-gradient(circle at 16% 14%, rgba(97, 216, 255, 0.16), transparent 28%),
+    radial-gradient(circle at 92% 78%, rgba(142, 107, 255, 0.14), transparent 30%),
+    radial-gradient(circle at 72% 120%, rgba(97, 216, 255, 0.12), transparent 34%),
     linear-gradient(145deg, rgba(12, 18, 32, 0.94), rgba(7, 11, 22, 0.94));
 }
 
@@ -2942,19 +2943,24 @@ body::after {
   min-height: 0;
 }
 
+.allocation-card-compact .section-heading {
+  margin-bottom: 10px;
+}
+
 .allocation-content {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(160px, 0.58fr) minmax(0, 1.42fr);
   align-items: center;
-  gap: 18px;
+  gap: 16px;
+  min-height: 0;
 }
 
 .allocation-pie-wrap {
   display: grid;
   justify-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .allocation-pie-wrap > strong {
@@ -2967,13 +2973,14 @@ body::after {
 
 .allocation-pie {
   position: relative;
-  width: 190px;
-  height: 190px;
+  width: 158px;
+  height: 158px;
   border-radius: 999px;
   background: var(--allocation-chart, conic-gradient(from 180deg, #61d8ff, #8e6bff, #f6b14a, #61d8ff));
   box-shadow:
     0 0 44px rgba(97, 216, 255, 0.14),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 -22px 42px rgba(0, 0, 0, 0.16);
 }
 
 .allocation-pie::after {
@@ -2991,40 +2998,42 @@ body::after {
   position: absolute;
   z-index: 1;
   color: #f7fbff;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 950;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
 }
 
 .allocation-pie-label-usdc {
-  top: 34%;
-  right: 15%;
+  top: 31%;
+  right: 13%;
 }
 
 .allocation-pie-label-eurc {
-  bottom: 22%;
-  left: 28%;
+  bottom: 21%;
+  left: 25%;
 }
 
 .allocation-pie-label-cirbtc {
-  top: 12%;
+  top: 10%;
   left: 48%;
 }
 
 .allocation-asset-list {
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 
 .allocation-asset-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 9px 11px;
-  border-radius: 16px;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 15px;
   border: 1px solid rgba(137, 188, 255, 0.12);
-  background: rgba(255, 255, 255, 0.035);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.025);
 }
 
 .allocation-asset-row div {
@@ -3033,13 +3042,13 @@ body::after {
 }
 
 .allocation-asset-row strong {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
 }
 
 .allocation-asset-row small,
 .allocation-asset-row > span:last-child {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.76rem;
 }
 
 .allocation-dot {
