@@ -2295,6 +2295,22 @@ body::after {
   position: relative;
   overflow: hidden;
   align-self: stretch;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(97, 216, 255, 0.14), transparent 28%),
+    radial-gradient(circle at 88% 86%, rgba(142, 107, 255, 0.13), transparent 32%),
+    linear-gradient(145deg, rgba(12, 18, 32, 0.94), rgba(7, 11, 22, 0.94));
+}
+
+.command-center-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(137, 188, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(137, 188, 255, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at 30% 10%, black, transparent 68%);
+  pointer-events: none;
 }
 
 .command-center-card::after {
@@ -2308,9 +2324,19 @@ body::after {
   pointer-events: none;
 }
 
+.command-center-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .command-center-card h2,
 .recent-activity-preview h2 {
-  margin: 4px 0 16px;
+  margin: 4px 0 0;
   letter-spacing: -0.04em;
 }
 
@@ -2318,27 +2344,37 @@ body::after {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
 }
 
 .command-grid button {
-  min-height: 106px;
+  min-height: 138px;
   position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: space-between;
   gap: 14px;
   padding: 16px;
   border-radius: 24px;
   border: 1px solid rgba(137, 188, 255, 0.14);
   background:
+    radial-gradient(circle at 100% 0%, rgba(97, 216, 255, 0.12), transparent 34%),
     linear-gradient(145deg, rgba(97, 216, 255, 0.1), rgba(142, 107, 255, 0.08)),
     rgba(255, 255, 255, 0.035);
   color: var(--text);
   text-align: left;
   cursor: pointer;
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.command-grid button:nth-child(1),
+.command-grid button:nth-child(2) {
+  grid-column: span 3;
+}
+
+.command-grid button:nth-child(n + 3) {
+  grid-column: span 2;
 }
 
 .command-grid button::before {
@@ -2352,19 +2388,35 @@ body::after {
 }
 
 .command-grid button:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   border-color: rgba(97, 216, 255, 0.34);
-  box-shadow: 0 18px 44px rgba(97, 216, 255, 0.1);
+  box-shadow:
+    0 18px 44px rgba(97, 216, 255, 0.1),
+    inset 0 0 0 1px rgba(97, 216, 255, 0.08);
+}
+
+.command-status {
+  position: relative;
+  z-index: 1;
+  width: fit-content;
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(97, 216, 255, 0.16);
+  background: rgba(97, 216, 255, 0.08);
+  color: #cfefff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .command-icon-orb {
   position: relative;
   z-index: 1;
-  order: 2;
   display: inline-grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   flex: 0 0 auto;
   border-radius: 18px;
   border: 1px solid rgba(137, 188, 255, 0.22);
@@ -2386,8 +2438,9 @@ body::after {
 .command-card-copy {
   position: relative;
   z-index: 1;
+  grid-column: 1 / -1;
   display: grid;
-  gap: 8px;
+  gap: 7px;
 }
 
 .command-card-copy strong {
@@ -2398,6 +2451,13 @@ body::after {
 .command-card-copy small,
 .recent-activity-row small {
   color: var(--muted);
+}
+
+.command-card-copy em {
+  color: #9edfff;
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .recent-activity-preview {
@@ -2788,28 +2848,6 @@ body::after {
   border-radius: 999px;
   background: var(--asset-color, #61d8ff);
   box-shadow: 0 0 18px color-mix(in srgb, var(--asset-color, #61d8ff) 42%, transparent);
-}
-
-.flow-metrics {
-  display: grid;
-  gap: 12px;
-}
-
-.flow-metrics div {
-  display: grid;
-  gap: 6px;
-  padding: 16px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.flow-metrics span {
-  color: var(--muted);
-}
-
-.flow-metrics strong {
-  font-family: "IBM Plex Mono", monospace;
 }
 
 .ai-fab {

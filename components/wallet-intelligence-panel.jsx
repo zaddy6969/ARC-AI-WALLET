@@ -1,11 +1,6 @@
 import PortfolioAllocation from "./portfolio-allocation";
 import { FeatureIcon } from "./wallet-sidebar";
 
-function parseAmount(item) {
-  const numeric = Number(String(item?.amount || "").replace(/[^\d.-]/g, ""));
-  return Number.isFinite(numeric) ? numeric : 0;
-}
-
 function shortenValue(value) {
   if (!value || value.length < 14) {
     return value || "Unknown";
@@ -93,6 +88,8 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
       label: "Send",
       icon: "send",
       helper: "Transfer Arc USDC",
+      status: "Live",
+      command: "Open send flow",
       action: () => onSelectView?.("send")
     },
     {
@@ -100,51 +97,59 @@ function QuickActionCommandCenter({ onSelectView, onReceive, onAiOpen }) {
       label: "Receive",
       icon: "receive",
       helper: "Show QR address",
+      status: "QR",
+      command: "Copy wallet address",
       action: onReceive
-    },
-    {
-      id: "swap",
-      label: "Swap",
-      icon: "swap",
-      helper: "Arc App Kit swaps",
-      action: () => onSelectView?.("swap")
-    },
-    {
-      id: "bridge",
-      label: "Bridge",
-      icon: "bridge",
-      helper: "Move USDC to Arc",
-      action: () => onSelectView?.("bridge")
     },
     {
       id: "portfolio",
       label: "Portfolio",
       icon: "portfolio",
       helper: "Asset mix",
+      status: "Live",
+      command: "View balances",
       action: () => onSelectView?.("portfolio")
+    },
+    {
+      id: "activity",
+      label: "Activity",
+      icon: "activity",
+      helper: "Real wallet feed",
+      status: "Live",
+      command: "Review history",
+      action: () => onSelectView?.("activity")
     },
     {
       id: "ai",
       label: "Ask AI",
       icon: "ai",
       helper: "Wallet guidance",
+      status: "Copilot",
+      command: "Analyze wallet",
       action: onAiOpen
     }
   ];
 
   return (
     <article className="card analytics-card command-center-card">
-      <p className="section-kicker">Command Center</p>
-      <h2>One-tap wallet actions</h2>
+      <div className="command-center-header">
+        <div>
+          <p className="section-kicker">Command Center</p>
+          <h2>Wallet control deck</h2>
+        </div>
+        <span className="status-badge status-good">Ready</span>
+      </div>
       <div className="command-grid">
         {actions.map((action) => (
           <button key={action.id} type="button" onClick={action.action}>
+            <span className="command-status">{action.status}</span>
             <span className="command-icon-orb">
               <FeatureIcon name={action.icon} />
             </span>
             <span className="command-card-copy">
               <strong>{action.label}</strong>
               <small>{action.helper}</small>
+              <em>{action.command}</em>
             </span>
           </button>
         ))}
@@ -184,12 +189,6 @@ export default function WalletIntelligencePanel({
   onReceive,
   onAiOpen
 }) {
-  const sentItems = activityItems.filter((item) => item.kind === "sent");
-  const receivedItems = activityItems.filter((item) =>
-    item.kind === "received" || item.kind === "bridge_received"
-  );
-  const sentValue = sentItems.reduce((total, item) => total + parseAmount(item), 0);
-  const receivedValue = receivedItems.reduce((total, item) => total + parseAmount(item), 0);
   const bars = buildMonthlyBars(activityItems);
 
   return (
@@ -234,20 +233,6 @@ export default function WalletIntelligencePanel({
           {bars.map((bar) => (
             <span key={bar.id} style={{ height: `${bar.height}%` }} title={`${bar.value} events`} />
           ))}
-        </div>
-      </article>
-
-      <article className="card analytics-card">
-        <p className="section-kicker">Flow Summary</p>
-        <div className="flow-metrics">
-          <div>
-            <span>Sent</span>
-            <strong>{sentValue.toFixed(2)} USDC</strong>
-          </div>
-          <div>
-            <span>Received</span>
-            <strong>{receivedValue.toFixed(2)} USDC</strong>
-          </div>
         </div>
       </article>
 
