@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AppShell from "../components/app-shell";
 import BridgeToArcPanel from "../components/bridge-to-arc-panel";
 import {
@@ -108,15 +108,15 @@ export default function Home() {
     return undefined;
   }, [walletSnapshot.address, walletSnapshot.isSignedIn]);
 
-  const handleSelectView = (view) => {
+  const handleSelectView = useCallback((view) => {
     setActiveView(view);
 
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", `/#${view}`);
     }
-  };
+  }, []);
 
-  const handleCopyAddress = async () => {
+  const handleCopyAddress = useCallback(async () => {
     if (!walletSnapshot.address) {
       return;
     }
@@ -129,7 +129,12 @@ export default function Home() {
       }
       copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
     } catch {}
-  };
+  }, [walletSnapshot.address]);
+
+  const openReceive = useCallback(() => setReceiveOpen(true), []);
+  const closeReceive = useCallback(() => setReceiveOpen(false), []);
+  const openAssistant = useCallback(() => setAssistantOpen(true), []);
+  const closeAssistant = useCallback(() => setAssistantOpen(false), []);
 
   if (!walletSnapshot.isSignedIn) {
     return (
@@ -182,8 +187,8 @@ export default function Home() {
           <WalletSidebar
             activeView={activeView}
             onSelect={handleSelectView}
-            onReceive={() => setReceiveOpen(true)}
-            onAiOpen={() => setAssistantOpen(true)}
+            onReceive={openReceive}
+            onAiOpen={openAssistant}
           />
 
           <div className="wallet-main-panel">
@@ -192,8 +197,8 @@ export default function Home() {
                 walletSnapshot={walletSnapshot}
                 activityItems={mergedActivity}
                 onSelectView={handleSelectView}
-                onReceive={() => setReceiveOpen(true)}
-                onAiOpen={() => setAssistantOpen(true)}
+                onReceive={openReceive}
+                onAiOpen={openAssistant}
               />
             ) : activeView === "activity" ? (
               <TransactionActivity
@@ -220,8 +225,8 @@ export default function Home() {
                 walletSnapshot={walletSnapshot}
                 activityItems={mergedActivity}
                 onSelectView={handleSelectView}
-                onReceive={() => setReceiveOpen(true)}
-                onAiOpen={() => setAssistantOpen(true)}
+                onReceive={openReceive}
+                onAiOpen={openAssistant}
               />
             ) : activeView === "bridge" ? (
               <BridgeToArcPanel
@@ -241,15 +246,15 @@ export default function Home() {
 
         <ReceiveModal
           open={receiveOpen}
-          onClose={() => setReceiveOpen(false)}
+          onClose={closeReceive}
           address={walletSnapshot.address}
           networkLabel={arcTestnet.name}
         />
 
         <WalletAiDrawer
           open={assistantOpen}
-          onOpen={() => setAssistantOpen(true)}
-          onClose={() => setAssistantOpen(false)}
+          onOpen={openAssistant}
+          onClose={closeAssistant}
           walletSnapshot={walletSnapshot}
           activityItems={mergedActivity}
           activityStatus={liveActivityStatus}

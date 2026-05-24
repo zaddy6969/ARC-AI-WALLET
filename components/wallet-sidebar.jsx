@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 const ACTIONS = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
   { id: "send", label: "Send", icon: "send" },
@@ -101,7 +103,7 @@ export function FeatureIcon({ name }) {
   }
 }
 
-export default function WalletSidebar({
+function WalletSidebar({
   activeView,
   onSelect,
   onReceive,
@@ -139,3 +141,5 @@ export default function WalletSidebar({
     </aside>
   );
 }
+
+export default memo(WalletSidebar);

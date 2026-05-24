@@ -1,3 +1,4 @@
+import { memo } from "react";
 import PortfolioAllocation from "./portfolio-allocation";
 import { FeatureIcon } from "./wallet-sidebar";
 
@@ -200,7 +201,7 @@ function buildMonthlyBars(items) {
   }));
 }
 
-export default function WalletIntelligencePanel({
+function WalletIntelligencePanel({
   activityItems = [],
   walletSnapshot,
   onSelectView,
@@ -275,3 +276,5 @@ export default function WalletIntelligencePanel({
     </section>
   );
 }
+
+export default memo(WalletIntelligencePanel);

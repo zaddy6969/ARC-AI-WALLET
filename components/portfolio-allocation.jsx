@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 const TOKEN_COLORS = {
   USDC: "#61d8ff",
   EURC: "#8e6bff",
@@ -63,7 +65,7 @@ function getCenterLabel(fundedAssets) {
   return `${fundedAssets.length} ASSETS`;
 }
 
-export default function PortfolioAllocation({
+function PortfolioAllocation({
   walletSnapshot,
   compact = false,
   onOpenPortfolio
@@ -171,3 +173,5 @@ export default function PortfolioAllocation({
     </article>
   );
 }
+
+export default memo(PortfolioAllocation);

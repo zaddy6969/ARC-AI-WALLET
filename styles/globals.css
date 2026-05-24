@@ -21,10 +21,13 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+  overscroll-behavior: contain;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -36,17 +39,35 @@ body {
     linear-gradient(180deg, #070b14 0%, #04070f 100%);
   color: var(--text);
   font-family: "Manrope", system-ui, sans-serif;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+  touch-action: manipulation;
 }
 
 button,
 input,
+select,
 textarea {
   font: inherit;
+  touch-action: manipulation;
+}
+
+button,
+[role="button"],
+.sidebar-action,
+.activity-filter-chip,
+.prompt-chip,
+.command-grid button,
+.wallet-address-pill,
+.wallet-disconnect-pill {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 button:disabled {
@@ -3521,6 +3542,15 @@ body::after {
 }
 
 @media (max-width: 900px) {
+  .page-shell,
+  .page-frame,
+  .wallet-workspace,
+  .wallet-main-panel,
+  .ai-drawer {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .premium-wallet-footer,
   .premium-wallet-body,
   .wallet-intelligence-grid,
@@ -3565,6 +3595,58 @@ body::after {
 }
 
 @media (max-width: 640px) {
+  .page-shell * {
+    transition-duration: 120ms !important;
+  }
+
+  .login-page-shell,
+  .login-card-premium::before,
+  .login-blob,
+  .wallet-card-particle,
+  .wallet-light-sweep,
+  .wallet-mesh-layer,
+  .command-center-card::before,
+  .command-center-card::after,
+  .allocation-card::after,
+  .coming-soon-orb {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .hero-card,
+  .card,
+  .premium-wallet-card,
+  .floating-wallet-dock,
+  .app-nav-bar,
+  .receive-modal,
+  .ai-drawer {
+    backdrop-filter: none;
+  }
+
+  .premium-wallet-card,
+  .floating-wallet-dock,
+  .card {
+    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.34);
+  }
+
+  .command-grid button:hover,
+  .recent-activity-row:hover,
+  .allocation-card-interactive:hover,
+  .allocation-card-interactive:focus-visible,
+  .sidebar-action:hover,
+  .portfolio-os-asset:hover {
+    transform: none;
+  }
+
+  .command-grid button:active,
+  .sidebar-action:active,
+  .activity-filter-chip:active,
+  .prompt-chip:active,
+  .wallet-address-pill:active,
+  .wallet-disconnect-pill:active {
+    transform: scale(0.985);
+  }
+
   .app-nav-bar {
     min-height: 70px;
     padding: 10px;

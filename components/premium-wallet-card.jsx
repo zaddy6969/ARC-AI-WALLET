@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { arcTestnet } from "../lib/arc-chain";
 import NetworkSwitcher from "./network-switcher";
 
@@ -102,7 +103,7 @@ function getWalletHealth({ isConnected, onArc, balanceValue, activityCount }) {
   return Math.min(score, 100);
 }
 
-export default function PremiumWalletCard({
+function PremiumWalletCard({
   walletSnapshot,
   activityItems = [],
   onCopy,
@@ -214,3 +215,5 @@ export default function PremiumWalletCard({
     </section>
   );
 }
+
+export default memo(PremiumWalletCard);
