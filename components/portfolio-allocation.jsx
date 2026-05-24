@@ -113,25 +113,9 @@ function PortfolioAllocation({
       <div className="allocation-content">
         <div className="allocation-pie-wrap">
           <div className="allocation-pie" style={{ "--allocation-chart": background }}>
-            {chartAssets.map((asset) => {
-              const percentage =
-                totalUnits > 0
-                  ? (Math.max(asset.valueUsd || asset.balanceValue, 0) / totalUnits) * 100
-                  : 0;
-
-              if (percentage < 3) {
-                return null;
-              }
-
-              return (
-                <span
-                  key={asset.symbol}
-                  className={`allocation-pie-label allocation-pie-label-${asset.symbol.toLowerCase()}`}
-                >
-                  {percentage.toFixed(0)}%
-                </span>
-              );
-            })}
+            <span className="allocation-pie-core" aria-hidden="true" />
+            <span className="allocation-pie-spark allocation-pie-spark-one" aria-hidden="true" />
+            <span className="allocation-pie-spark allocation-pie-spark-two" aria-hidden="true" />
           </div>
           <strong>{getCenterLabel(fundedAssets)}</strong>
         </div>
