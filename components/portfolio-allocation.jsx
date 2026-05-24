@@ -17,9 +17,16 @@ function getAssets(walletSnapshot) {
   }));
 }
 
+function formatUsd(value) {
+  return `$${new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(Number(value) || 0)}`;
+}
+
 function getChartSegments(assets) {
   const totalUnits = assets.reduce(
-    (total, asset) => total + Math.max(asset.balanceValue, 0),
+    (total, asset) => total + Math.max(asset.valueUsd || asset.balanceValue, 0),
     0
   );
 
@@ -33,7 +40,7 @@ function getChartSegments(assets) {
   let cursor = 0;
   const segments = assets.map((asset) => {
     const start = cursor;
-    const size = (Math.max(asset.balanceValue, 0) / totalUnits) * 100;
+    const size = (Math.max(asset.valueUsd || asset.balanceValue, 0) / totalUnits) * 100;
     cursor += size;
     return `${asset.color} ${start}% ${cursor}%`;
   });
@@ -63,7 +70,9 @@ export default function PortfolioAllocation({
 }) {
   const assets = getAssets(walletSnapshot);
   const readyAssets = assets.filter((asset) => asset.status === "ready");
-  const fundedAssets = readyAssets.filter((asset) => asset.balanceValue > 0);
+  const fundedAssets = readyAssets.filter(
+    (asset) => asset.balanceValue > 0 || asset.valueUsd > 0
+  );
   const displayAssets = readyAssets.length ? readyAssets : assets;
   const chartAssets = fundedAssets.length ? fundedAssets : readyAssets;
   const { totalUnits, background } = getChartSegments(chartAssets);
@@ -100,14 +109,37 @@ export default function PortfolioAllocation({
       </div>
 
       <div className="allocation-content">
-        <div className="allocation-ring" style={{ "--allocation-chart": background }}>
-          <span>{getCenterLabel(fundedAssets)}</span>
+        <div className="allocation-pie-wrap">
+          <div className="allocation-pie" style={{ "--allocation-chart": background }}>
+            {chartAssets.map((asset) => {
+              const percentage =
+                totalUnits > 0
+                  ? (Math.max(asset.valueUsd || asset.balanceValue, 0) / totalUnits) * 100
+                  : 0;
+
+              if (percentage < 3) {
+                return null;
+              }
+
+              return (
+                <span
+                  key={asset.symbol}
+                  className={`allocation-pie-label allocation-pie-label-${asset.symbol.toLowerCase()}`}
+                >
+                  {percentage.toFixed(0)}%
+                </span>
+              );
+            })}
+          </div>
+          <strong>{getCenterLabel(fundedAssets)}</strong>
         </div>
 
         <div className="allocation-asset-list">
           {displayAssets.map((asset) => {
             const percentage =
-              totalUnits > 0 ? (Math.max(asset.balanceValue, 0) / totalUnits) * 100 : 0;
+              totalUnits > 0
+                ? (Math.max(asset.valueUsd || asset.balanceValue, 0) / totalUnits) * 100
+                : 0;
 
             return (
               <div className="allocation-asset-row" key={asset.symbol}>
@@ -118,7 +150,9 @@ export default function PortfolioAllocation({
                 />
                 <div>
                   <strong>{asset.symbol}</strong>
-                  <small>{asset.balance || `0.00 ${asset.symbol}`}</small>
+                  <small>
+                    {asset.balance || `0.00 ${asset.symbol}`} · {formatUsd(asset.valueUsd)}
+                  </small>
                 </div>
                 <span>{percentage.toFixed(1)}%</span>
               </div>

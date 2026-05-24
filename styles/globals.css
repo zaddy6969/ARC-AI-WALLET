@@ -2742,27 +2742,6 @@ body::after {
   animation: chartRise 650ms ease both;
 }
 
-.allocation-ring {
-  width: 150px;
-  height: 150px;
-  display: grid;
-  place-items: center;
-  margin: 0 auto;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle, rgba(8, 13, 24, 0.96) 52%, transparent 54%),
-    var(--allocation-chart, conic-gradient(from 180deg, #61d8ff, #8e6bff, #f6b14a, #61d8ff));
-  box-shadow: 0 0 44px rgba(97, 216, 255, 0.12);
-}
-
-.allocation-ring span {
-  max-width: 86px;
-  text-align: center;
-  font-size: 0.86rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-}
-
 .allocation-card {
   position: relative;
   overflow: hidden;
@@ -2806,9 +2785,69 @@ body::after {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(132px, 0.72fr) minmax(0, 1.28fr);
+  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1.2fr);
   align-items: center;
   gap: 18px;
+}
+
+.allocation-pie-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.allocation-pie-wrap > strong {
+  color: #eaf6ff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.allocation-pie {
+  position: relative;
+  width: 190px;
+  height: 190px;
+  border-radius: 999px;
+  background: var(--allocation-chart, conic-gradient(from 180deg, #61d8ff, #8e6bff, #f6b14a, #61d8ff));
+  box-shadow:
+    0 0 44px rgba(97, 216, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.allocation-pie::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 28% 20%, rgba(255, 255, 255, 0.18), transparent 20%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 48%);
+  pointer-events: none;
+}
+
+.allocation-pie-label {
+  position: absolute;
+  z-index: 1;
+  color: #f7fbff;
+  font-size: 0.82rem;
+  font-weight: 950;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
+}
+
+.allocation-pie-label-usdc {
+  top: 34%;
+  right: 15%;
+}
+
+.allocation-pie-label-eurc {
+  bottom: 22%;
+  left: 28%;
+}
+
+.allocation-pie-label-cirbtc {
+  top: 12%;
+  left: 48%;
 }
 
 .allocation-asset-list {
