@@ -296,14 +296,16 @@ function PortfolioInsightsWidget({ walletSnapshot, activityItems = [] }) {
   const totalValue = assets.reduce((total, asset) => total + (Number(asset?.valueUsd) || 0), 0);
   const strongestAsset = funded[0]?.symbol || "USDC";
   const riskLevel = funded.length > 2 ? "Balanced" : funded.length > 1 ? "Moderate" : "Focused";
+  const activityLevel = activityItems.length > 20 ? "High" : activityItems.length > 5 ? "Active" : "Quiet";
+  const networkReadiness = walletSnapshot?.onArc ? "Arc ready" : "Switch needed";
 
   return (
     <article className="card analytics-card portfolio-insights-card">
-      <div>
+      <div className="insight-panel-heading">
         <p className="section-kicker">AI Insights</p>
         <h2>Wallet health score</h2>
       </div>
-      <div className="insight-vertical-stack">
+      <div className="insight-horizontal-stack">
         <div className="insight-score-ring">
           <strong>{health}</strong>
           <span>/100</span>
@@ -324,6 +326,14 @@ function PortfolioInsightsWidget({ walletSnapshot, activityItems = [] }) {
           <div>
             <span>Portfolio value</span>
             <strong>${totalValue.toFixed(2)}</strong>
+          </div>
+          <div>
+            <span>Activity level</span>
+            <strong>{activityLevel}</strong>
+          </div>
+          <div>
+            <span>Network</span>
+            <strong>{networkReadiness}</strong>
           </div>
         </div>
       </div>
