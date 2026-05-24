@@ -1,6 +1,5 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useEffect, useState } from "react";
-import { arcTestnet } from "../lib/arc-chain";
 
 export default function WalletLoginScreen({
   providerError = "",
@@ -24,14 +23,9 @@ export default function WalletLoginScreen({
           <img src="/arc-ai-wallet-logo.png" alt="Arc AI Wallet" />
         </div>
 
-        <p className="login-built-label">Built on Arc</p>
-        <h1>Arc AI Wallet</h1>
+        <h1 className="sr-only">Arc AI Wallet</h1>
         <p className="login-tagline">
-          Send, bridge, and manage USDC on Arc with AI.
-        </p>
-        <p className="login-description">
-          A cleaner way to connect, receive, send USDC, and understand wallet
-          activity on Arc Testnet.
+          AI-powered wallet built on Arc
         </p>
 
         {providerUnavailable ? (
@@ -95,10 +89,6 @@ export default function WalletLoginScreen({
           </ConnectButton.Custom>
         )}
 
-        <div className="login-meta-row">
-          <span className="status-badge status-good">{arcTestnet.name}</span>
-          <span>USDC powered payments on Arc</span>
-        </div>
       </section>
     </main>
   );

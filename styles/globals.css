@@ -24,6 +24,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 html {
   scroll-behavior: auto;
   overscroll-behavior: contain;
@@ -112,9 +124,10 @@ button:disabled {
   overflow: hidden;
   padding: 24px;
   background:
-    radial-gradient(circle at 20% 12%, rgba(102, 182, 255, 0.22), transparent 28%),
-    radial-gradient(circle at 80% 8%, rgba(142, 107, 255, 0.2), transparent 30%),
-    linear-gradient(145deg, #050811, #081122 48%, #04070f);
+    radial-gradient(circle at 50% 22%, rgba(97, 216, 255, 0.2), transparent 28%),
+    radial-gradient(circle at 22% 78%, rgba(102, 182, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 80% 18%, rgba(142, 107, 255, 0.2), transparent 30%),
+    linear-gradient(145deg, #030610, #071122 48%, #04070f);
   background-size: 130% 130%;
   animation: loginGradientShift 14s ease-in-out infinite;
 }
@@ -146,14 +159,16 @@ button:disabled {
 .login-card-premium {
   position: relative;
   isolation: isolate;
-  width: min(520px, 100%);
+  width: min(560px, 100%);
   display: grid;
   justify-items: center;
-  gap: 16px;
-  padding: clamp(24px, 5vw, 38px);
-  border-radius: 34px;
+  gap: 18px;
+  padding: clamp(26px, 5vw, 42px);
+  border-radius: 36px;
   border: 1px solid rgba(158, 184, 255, 0.18);
-  background: rgba(10, 16, 29, 0.74);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(97, 216, 255, 0.12), transparent 44%),
+    rgba(10, 16, 29, 0.74);
   box-shadow:
     0 30px 100px rgba(0, 0, 0, 0.48),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -186,10 +201,24 @@ button:disabled {
 }
 
 .login-brand-mark {
-  width: min(260px, 72vw);
+  position: relative;
+  width: min(380px, 82vw);
   overflow: hidden;
-  border-radius: 26px;
-  box-shadow: 0 22px 52px rgba(48, 119, 255, 0.2);
+  border-radius: 28px;
+  box-shadow:
+    0 26px 80px rgba(48, 119, 255, 0.22),
+    0 0 72px rgba(97, 216, 255, 0.16);
+}
+
+.login-brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(110deg, transparent 18%, rgba(255, 255, 255, 0.18), transparent 44%);
+  transform: translateX(-120%);
+  animation: logoSweep 5.8s ease-in-out 900ms infinite;
+  pointer-events: none;
 }
 
 .login-brand-mark img {
@@ -219,9 +248,11 @@ button:disabled {
 }
 
 .login-tagline {
-  font-size: 1.02rem;
-  color: #dfeaff;
-  font-weight: 700;
+  max-width: 330px;
+  font-size: clamp(1.06rem, 3vw, 1.24rem);
+  color: #edf6ff;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 .login-description {
@@ -230,8 +261,8 @@ button:disabled {
 }
 
 .login-connect-button {
-  min-width: min(280px, 100%);
-  margin-top: 4px;
+  min-width: min(300px, 100%);
+  margin-top: 2px;
   box-shadow: 0 18px 42px rgba(102, 182, 255, 0.25);
 }
 
@@ -379,10 +410,10 @@ button:disabled {
   position: relative;
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
+  width: 168px;
+  height: 56px;
   flex: 0 0 auto;
-  border-radius: 20px;
+  border-radius: 22px;
   border: 1px solid rgba(137, 188, 255, 0.2);
   background:
     radial-gradient(circle at 50% 0%, rgba(97, 216, 255, 0.2), transparent 44%),
@@ -406,7 +437,7 @@ button:disabled {
 .app-nav-logo img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .app-nav-copy {
@@ -3674,7 +3705,7 @@ body::after {
   }
 
   .app-nav-logo {
-    width: 48px;
+    width: 120px;
     height: 48px;
     border-radius: 18px;
   }
