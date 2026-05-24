@@ -2890,6 +2890,11 @@ body::after {
   grid-column: 2;
 }
 
+.portfolio-insights-card {
+  align-content: start;
+  gap: 16px;
+}
+
 .market-grid div {
   display: grid;
   gap: 3px;
@@ -2909,8 +2914,8 @@ body::after {
 }
 
 .insight-score-ring {
-  width: 116px;
-  height: 116px;
+  width: 124px;
+  height: 124px;
   display: grid;
   place-items: center;
   margin: 4px auto;
@@ -2924,6 +2929,41 @@ body::after {
 .insight-score-ring strong {
   font-size: 1.7rem;
   letter-spacing: -0.06em;
+}
+
+.insight-vertical-stack {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+}
+
+.insight-feature-list {
+  display: grid;
+  gap: 8px;
+}
+
+.insight-feature-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(137, 188, 255, 0.12);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(97, 216, 255, 0.08), transparent 36%),
+    rgba(255, 255, 255, 0.04);
+}
+
+.insight-feature-list span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.insight-feature-list strong {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.86rem;
 }
 
 .recent-activity-preview {

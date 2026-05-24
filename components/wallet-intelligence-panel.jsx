@@ -250,14 +250,39 @@ function PortfolioInsightsWidget({ walletSnapshot, activityItems = [] }) {
   const assets = Array.isArray(walletSnapshot?.assets) ? walletSnapshot.assets : [];
   const funded = assets.filter((asset) => Number(asset?.balanceValue) > 0);
   const health = Math.min(100, 62 + funded.length * 8 + Math.min(activityItems.length, 10));
+  const totalValue = assets.reduce((total, asset) => total + (Number(asset?.valueUsd) || 0), 0);
+  const strongestAsset = funded[0]?.symbol || "USDC";
+  const riskLevel = funded.length > 2 ? "Balanced" : funded.length > 1 ? "Moderate" : "Focused";
 
   return (
     <article className="card analytics-card portfolio-insights-card">
-      <p className="section-kicker">AI Insights</p>
-      <h2>Wallet health score</h2>
-      <div className="insight-score-ring">
-        <strong>{health}</strong>
-        <span>/100</span>
+      <div>
+        <p className="section-kicker">AI Insights</p>
+        <h2>Wallet health score</h2>
+      </div>
+      <div className="insight-vertical-stack">
+        <div className="insight-score-ring">
+          <strong>{health}</strong>
+          <span>/100</span>
+        </div>
+        <div className="insight-feature-list">
+          <div>
+            <span>Risk level</span>
+            <strong>{riskLevel}</strong>
+          </div>
+          <div>
+            <span>Tracked assets</span>
+            <strong>{funded.length || assets.length}</strong>
+          </div>
+          <div>
+            <span>Top asset</span>
+            <strong>{strongestAsset}</strong>
+          </div>
+          <div>
+            <span>Portfolio value</span>
+            <strong>${totalValue.toFixed(2)}</strong>
+          </div>
+        </div>
       </div>
       <p className="helper-copy">
         {funded.length > 1
