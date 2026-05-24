@@ -2503,8 +2503,8 @@ body::after {
   overflow: hidden;
   align-self: stretch;
   grid-column: 1 / -1;
-  gap: 14px;
-  padding: 20px;
+  gap: 12px;
+  padding: 16px;
   background:
     radial-gradient(circle at 18% 8%, rgba(97, 216, 255, 0.14), transparent 28%),
     radial-gradient(circle at 88% 86%, rgba(142, 107, 255, 0.13), transparent 32%),
@@ -2544,6 +2544,11 @@ body::after {
   margin-bottom: 0;
 }
 
+.command-center-header .status-badge {
+  padding: 7px 11px;
+  font-size: 0.72rem;
+}
+
 .command-center-card h2,
 .recent-activity-preview h2 {
   margin: 4px 0 0;
@@ -2555,18 +2560,19 @@ body::after {
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .command-grid button {
-  min-height: 112px;
+  min-height: 78px;
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-content: space-between;
-  gap: 10px;
-  padding: 13px;
-  border-radius: 20px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  gap: 9px;
+  padding: 10px;
+  border-radius: 18px;
   border: 1px solid rgba(137, 188, 255, 0.14);
   background:
     radial-gradient(circle at 100% 0%, rgba(97, 216, 255, 0.12), transparent 34%),
@@ -2600,12 +2606,12 @@ body::after {
   position: relative;
   z-index: 1;
   width: fit-content;
-  padding: 5px 8px;
+  padding: 4px 7px;
   border-radius: 999px;
   border: 1px solid rgba(97, 216, 255, 0.16);
   background: rgba(97, 216, 255, 0.08);
   color: #cfefff;
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -2616,10 +2622,10 @@ body::after {
   z-index: 1;
   display: inline-grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
-  border-radius: 18px;
+  border-radius: 14px;
   border: 1px solid rgba(137, 188, 255, 0.22);
   background:
     radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.26), transparent 28%),
@@ -2631,21 +2637,21 @@ body::after {
 }
 
 .command-icon-orb svg {
-  width: 19px;
-  height: 19px;
+  width: 17px;
+  height: 17px;
   filter: drop-shadow(0 0 10px rgba(97, 216, 255, 0.32));
 }
 
 .command-card-copy {
   position: relative;
   z-index: 1;
-  grid-column: 1 / -1;
   display: grid;
-  gap: 4px;
+  gap: 2px;
+  min-width: 0;
 }
 
 .command-card-copy strong {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 900;
   letter-spacing: -0.03em;
 }
@@ -2655,9 +2661,13 @@ body::after {
   color: var(--muted);
 }
 
+.command-card-copy small {
+  display: none;
+}
+
 .command-card-copy em {
   color: #9edfff;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-style: normal;
   font-weight: 800;
 }
@@ -2671,7 +2681,7 @@ body::after {
 }
 
 .dashboard-final-card {
-  grid-column: 1 / -1;
+  grid-column: auto;
 }
 
 .recent-activity-list {
@@ -3582,7 +3592,7 @@ body::after {
   }
 
   .command-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .wallet-sidebar {

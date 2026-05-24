@@ -240,16 +240,16 @@ function WalletIntelligencePanel({
         </div>
       </article>
 
-      <PortfolioAllocation
-        walletSnapshot={walletSnapshot}
-        compact
-        onOpenPortfolio={() => onSelectView?.("portfolio")}
-      />
-
       <QuickActionCommandCenter
         onSelectView={onSelectView}
         onReceive={onReceive}
         onAiOpen={onAiOpen}
+      />
+
+      <PortfolioAllocation
+        walletSnapshot={walletSnapshot}
+        compact
+        onOpenPortfolio={() => onSelectView?.("portfolio")}
       />
 
       <RecentActivityPreview
