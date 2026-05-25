@@ -303,7 +303,7 @@ function PortfolioInsightsWidget({ walletSnapshot, activityItems = [] }) {
     <article className="card analytics-card portfolio-insights-card">
       <div className="insight-panel-heading">
         <p className="section-kicker">AI Insights</p>
-        <h2>Wallet health score</h2>
+        <h2>Wallet health</h2>
       </div>
       <div className="insight-horizontal-stack">
         <div className="insight-score-ring">
@@ -337,11 +337,6 @@ function PortfolioInsightsWidget({ walletSnapshot, activityItems = [] }) {
           </div>
         </div>
       </div>
-      <p className="helper-copy">
-        {funded.length > 1
-          ? "Diversification is improving across Arc assets."
-          : "Add more supported Arc assets to improve diversification."}
-      </p>
     </article>
   );
 }
