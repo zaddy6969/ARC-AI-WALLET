@@ -443,9 +443,10 @@ button:disabled {
 }
 
 .app-nav-logo img {
-  width: 92%;
-  height: 92%;
+  width: 118%;
+  height: 118%;
   object-fit: contain;
+  object-position: center;
   filter: drop-shadow(0 0 14px rgba(97, 216, 255, 0.42));
 }
 
@@ -4054,8 +4055,8 @@ body::after {
   }
 
   .app-nav-logo img {
-    width: 92%;
-    height: 92%;
+    width: 118%;
+    height: 118%;
   }
 
   .app-nav-copy span {
