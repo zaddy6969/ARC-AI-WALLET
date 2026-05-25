@@ -379,66 +379,6 @@ button:disabled {
   min-width: 0;
 }
 
-.app-nav-value,
-.app-nav-wallet-pill,
-.app-nav-icon-button,
-.app-nav-avatar {
-  border: 1px solid rgba(137, 188, 255, 0.15);
-  background: rgba(255, 255, 255, 0.045);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.app-nav-value {
-  display: grid;
-  gap: 2px;
-  min-width: 118px;
-  padding: 9px 13px;
-  border-radius: 18px;
-}
-
-.app-nav-value span {
-  color: var(--muted);
-  font-size: 0.66rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.app-nav-value strong,
-.app-nav-wallet-pill {
-  font-family: "IBM Plex Mono", monospace;
-}
-
-.app-nav-wallet-pill {
-  max-width: 132px;
-  padding: 11px 13px;
-  border-radius: 999px;
-  color: #dceeff;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.app-nav-icon-button,
-.app-nav-avatar {
-  width: 42px;
-  height: 42px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 16px;
-  color: #eaf6ff;
-}
-
-.app-nav-icon-button {
-  cursor: pointer;
-}
-
-.app-nav-avatar {
-  background: linear-gradient(135deg, rgba(97, 216, 255, 0.18), rgba(142, 107, 255, 0.18));
-  font-size: 0.78rem;
-  font-weight: 900;
-}
-
 .app-nav-bar::before {
   content: "";
   position: absolute;
@@ -4017,10 +3957,6 @@ body::after {
     justify-content: flex-start;
   }
 
-  .app-nav-value,
-  .app-nav-wallet-pill {
-    flex: 1 1 140px;
-  }
 
   .floating-wallet-dock .sidebar-action span:last-child {
     display: none;
@@ -4105,14 +4041,6 @@ body::after {
     gap: 8px;
   }
 
-  .app-nav-value {
-    min-width: 0;
-  }
-
-  .app-nav-wallet-pill,
-  .app-nav-icon-button:nth-of-type(1) {
-    display: none;
-  }
 
   .app-nav-status {
     min-height: 40px;
