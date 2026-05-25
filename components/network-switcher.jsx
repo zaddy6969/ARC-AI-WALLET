@@ -62,9 +62,9 @@ export default function NetworkSwitcher({ compact = false }) {
           ))}
         </select>
       </label>
-      <small>
-        {isPending ? "Switching network..." : error || "Arc, Ethereum Sepolia, Base Sepolia"}
-      </small>
+      {isPending || error ? (
+        <small>{isPending ? "Switching network..." : error}</small>
+      ) : null}
     </div>
   );
 }
