@@ -8,7 +8,7 @@ export default function AppNav({ walletSnapshot }) {
         <Link href="/" className="app-nav-brand">
           <div className="app-nav-logo">
             <img
-              src="/arc-ai-wallet-mark.png"
+              src="/arc-ai-wallet-mark-v2.png"
               alt="Arc AI Wallet"
             />
           </div>
