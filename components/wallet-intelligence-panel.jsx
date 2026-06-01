@@ -201,10 +201,10 @@ function AiCopilotWidget({
 }) {
   const [question, setQuestion] = useState("");
   const commands = [
-    { label: "Send USDC", action: () => onSelectView?.("send") },
-    { label: "Check portfolio", action: () => onSelectView?.("portfolio") },
-    { label: "Bridge assets", action: () => onSelectView?.("bridge") },
-    { label: "Recent activity", action: () => onSelectView?.("activity") }
+    { label: "Send", action: () => onSelectView?.("send") },
+    { label: "Portfolio", action: () => onSelectView?.("portfolio") },
+    { label: "Bridge", action: () => onSelectView?.("bridge") },
+    { label: "Activity", action: () => onSelectView?.("activity") }
   ];
   const submitQuestion = (event) => {
     event.preventDefault();
@@ -232,7 +232,7 @@ function AiCopilotWidget({
         </div>
         <div>
           <p className="section-kicker">AI Copilot</p>
-          <h2>Ask your wallet</h2>
+          <h2>Wallet command</h2>
         </div>
       </div>
       <form className="ai-command-form" onSubmit={submitQuestion} onClick={(event) => event.stopPropagation()}>
@@ -240,7 +240,7 @@ function AiCopilotWidget({
           className="ai-command-input"
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder="Ask about balance, activity, swaps..."
+          placeholder="Ask AI to analyze, send, bridge..."
         />
         <button type="submit">Ask</button>
       </form>
@@ -258,9 +258,10 @@ function AiCopilotWidget({
           </button>
         ))}
       </div>
-      <p className="helper-copy">
-        Connected to {walletSnapshot?.address ? "your Arc wallet" : "Arc Testnet"} with {activityItems.length} tracked events.
-      </p>
+      <div className="ai-copilot-status">
+        <span>{walletSnapshot?.address ? "Wallet linked" : "Arc ready"}</span>
+        <strong>{activityItems.length} events</strong>
+      </div>
     </article>
   );
 }

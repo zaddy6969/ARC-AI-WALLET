@@ -96,7 +96,7 @@ export default function WalletAssistant({
     {
       role: "assistant",
       content:
-        "I'm your Arc wallet copilot. Ask about balances, recent activity, Send, Bridge, Receive, or what to do next."
+        "Wallet Copilot Ready. Ask me to analyze your balance, activity, or next wallet action."
     }
   ]);
   const [question, setQuestion] = useState("");
@@ -240,10 +240,6 @@ export default function WalletAssistant({
         <div>
           <p className="section-kicker">AI Assistant</p>
           <h2>Arc wallet copilot</h2>
-          <p className="helper-copy">
-            Type commands like "Send 5 USDC", "Show my balance", or
-            "Explain my last transaction" for plain-English wallet help.
-          </p>
         </div>
         <span className="status-badge">
           {loading
@@ -258,21 +254,17 @@ export default function WalletAssistant({
         <div className="summary-card">
           <span className="field-label">Connected wallet</span>
           <strong>{walletSnapshot?.address || "No wallet connected"}</strong>
-          <small>
-            {walletSnapshot?.onArc
-              ? "Arc Testnet ready"
-              : "Connect and switch to Arc for full wallet actions"}
-          </small>
+          <small>{walletSnapshot?.onArc ? "Arc ready" : "Connect wallet"}</small>
         </div>
         <div className="summary-card">
           <span className="field-label">USDC balance</span>
           <strong>{walletSnapshot?.usdcBalance || "Syncing..."}</strong>
-          <small>Live from your connected Arc wallet snapshot</small>
+          <small>Live wallet data</small>
         </div>
         <div className="summary-card">
           <span className="field-label">Recent activity</span>
           <strong>{Array.isArray(activityItems) ? activityItems.length : 0} events</strong>
-          <small>Live send, receive, and bridge events for this wallet</small>
+          <small>Onchain + saved actions</small>
         </div>
       </div>
 
@@ -330,12 +322,6 @@ export default function WalletAssistant({
           rows={4}
         />
         <div className="assistant-form-row">
-          <span className="helper-copy">
-            Mic ready soon. Type a command like "Analyze my wallet" today.
-          </span>
-          <button type="button" className="button button-secondary" disabled title="Voice commands coming soon">
-            Mic
-          </button>
           <button type="submit" className="button button-primary" disabled={loading}>
             {loading ? "Thinking..." : "Ask Copilot"}
           </button>
