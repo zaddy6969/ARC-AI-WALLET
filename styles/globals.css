@@ -2799,14 +2799,23 @@ body::after {
   gap: 16px;
   min-height: 320px;
   background:
-    radial-gradient(circle at 12% 8%, rgba(97, 216, 255, 0.26), transparent 28%),
-    radial-gradient(circle at 92% 12%, rgba(142, 107, 255, 0.24), transparent 34%),
-    radial-gradient(circle at 54% 112%, rgba(97, 216, 255, 0.12), transparent 38%),
-    linear-gradient(145deg, rgba(13, 21, 39, 0.96), rgba(8, 10, 24, 0.98));
-  border-color: rgba(97, 216, 255, 0.2);
+    radial-gradient(circle at 14% 18%, rgba(97, 216, 255, 0.36), transparent 26%),
+    radial-gradient(circle at 90% 0%, rgba(142, 107, 255, 0.34), transparent 34%),
+    radial-gradient(circle at 50% 110%, rgba(97, 216, 255, 0.16), transparent 42%),
+    linear-gradient(145deg, rgba(15, 27, 50, 0.98), rgba(8, 9, 24, 0.99));
+  border-color: rgba(97, 216, 255, 0.28);
   box-shadow:
-    0 26px 70px rgba(0, 0, 0, 0.25),
+    0 30px 90px rgba(0, 0, 0, 0.34),
+    0 0 42px rgba(97, 216, 255, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.ai-copilot-card::after {
+  width: 320px;
+  height: 320px;
+  background:
+    radial-gradient(circle, rgba(142, 107, 255, 0.22), transparent 64%),
+    radial-gradient(circle at 28% 34%, rgba(97, 216, 255, 0.2), transparent 38%);
 }
 
 .ai-copilot-top {
@@ -2814,7 +2823,7 @@ body::after {
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .ai-orb-avatar {
@@ -2859,12 +2868,12 @@ body::after {
 }
 
 .ai-command-form button {
-  min-width: 74px;
+  min-width: 78px;
   border: 1px solid rgba(97, 216, 255, 0.34);
   border-radius: 18px;
   background:
-    linear-gradient(135deg, rgba(97, 216, 255, 0.78), rgba(142, 107, 255, 0.86));
-  color: #eaf6ff;
+    linear-gradient(135deg, #6ed8ff, #8e6bff);
+  color: #07101f;
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 14px 36px rgba(97, 216, 255, 0.16);
@@ -2894,19 +2903,22 @@ body::after {
 }
 
 .ai-command-chips button {
+  min-height: 46px;
   padding: 10px 12px;
-  color: #bfefff;
+  color: #dff8ff;
   font-size: 0.76rem;
   font-weight: 900;
   cursor: pointer;
-  text-align: left;
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+  text-align: center;
+  letter-spacing: -0.01em;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
 .ai-command-chips button:hover {
   transform: translateY(-1px);
   border-color: rgba(97, 216, 255, 0.28);
   background: rgba(97, 216, 255, 0.08);
+  box-shadow: 0 12px 30px rgba(97, 216, 255, 0.1);
 }
 
 .ai-copilot-status {
@@ -2916,10 +2928,12 @@ body::after {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 11px 14px;
   border-radius: 18px;
   border: 1px solid rgba(137, 188, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(135deg, rgba(97, 216, 255, 0.08), rgba(142, 107, 255, 0.06)),
+    rgba(255, 255, 255, 0.04);
   color: var(--muted);
   font-size: 0.82rem;
 }
