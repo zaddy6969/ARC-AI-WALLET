@@ -1,22 +1,71 @@
 import Head from "next/head";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AppShell from "../components/app-shell";
-import BridgeToArcPanel from "../components/bridge-to-arc-panel";
-import {
-  NftComingSoonCard,
-  PortfolioPanel
-} from "../components/wallet-feature-panels";
-import PremiumWalletCard from "../components/premium-wallet-card";
-import SendUsdcPanel from "../components/send-usdc-panel";
-import SwapUsdcPanel from "../components/swap-usdc-panel";
-import TransactionActivity from "../components/transaction-activity";
-import WalletAiDrawer from "../components/wallet-ai-drawer";
-import WalletIntelligencePanel from "../components/wallet-intelligence-panel";
 import WalletLoginScreen from "../components/wallet-login-screen";
 import WalletSidebar from "../components/wallet-sidebar";
-import ReceiveModal from "../components/wallet/ReceiveModal";
 import { arcTestnet } from "../lib/arc-chain";
+import { useArcWalletSnapshot } from "../lib/use-arc-wallet-snapshot";
 import { useWalletAppState } from "../lib/use-wallet-app-state";
+
+function PanelLoading() {
+  return (
+    <section className="card panel-loading" role="status" aria-live="polite">
+      <span className="panel-loading-orb" />
+      <div>
+        <strong>Loading wallet tools</strong>
+        <p>Preparing the latest Arc experience…</p>
+      </div>
+    </section>
+  );
+}
+
+const BridgeToArcPanel = dynamic(
+  () => import("../components/bridge-to-arc-panel"),
+  { loading: PanelLoading }
+);
+const NftComingSoonCard = dynamic(
+  () =>
+    import("../components/wallet-feature-panels").then(
+      (module) => module.NftComingSoonCard
+    ),
+  { loading: PanelLoading }
+);
+const PortfolioPanel = dynamic(
+  () =>
+    import("../components/wallet-feature-panels").then(
+      (module) => module.PortfolioPanel
+    ),
+  { loading: PanelLoading }
+);
+const PremiumWalletCard = dynamic(
+  () => import("../components/premium-wallet-card"),
+  { loading: PanelLoading }
+);
+const SendUsdcPanel = dynamic(
+  () => import("../components/send-usdc-panel"),
+  { loading: PanelLoading }
+);
+const SwapUsdcPanel = dynamic(
+  () => import("../components/swap-usdc-panel"),
+  { loading: PanelLoading }
+);
+const TransactionActivity = dynamic(
+  () => import("../components/transaction-activity"),
+  { loading: PanelLoading }
+);
+const WalletAiDrawer = dynamic(
+  () => import("../components/wallet-ai-drawer"),
+  { ssr: false }
+);
+const WalletIntelligencePanel = dynamic(
+  () => import("../components/wallet-intelligence-panel"),
+  { loading: PanelLoading }
+);
+const ReceiveModal = dynamic(
+  () => import("../components/wallet/ReceiveModal"),
+  { ssr: false }
+);
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://arc-ai-wallet.vercel.app";
@@ -41,16 +90,15 @@ function WelcomeOverlay() {
   );
 }
 
-export default function Home() {
+function ConnectedWalletExperience({ walletSnapshot }) {
   const {
-    walletSnapshot,
     mergedActivity,
     liveActivityStatus,
     liveActivityError,
     saveLocalActivity,
     refreshActivity,
     updateLocalActivityByHash
-  } = useWalletAppState();
+  } = useWalletAppState(walletSnapshot);
   const [activeView, setActiveView] = useState("dashboard");
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -144,43 +192,22 @@ export default function Home() {
     setAssistantOpen(true);
   }, []);
 
-  if (!walletSnapshot.isSignedIn) {
-    return (
-      <>
-        <Head>
-          <title>Arc AI Wallet | Built on Arc</title>
-          <meta
-            name="description"
-            content="Send, bridge, and manage USDC on Arc with AI."
-          />
-          <meta name="theme-color" content="#070b14" />
-          <link rel="canonical" href={SITE_URL} />
-        </Head>
-        <WalletLoginScreen />
-      </>
-    );
-  }
-
   return (
-    <>
-      <Head>
-        <title>Arc AI Wallet | Built on Arc</title>
-        <meta
-          name="description"
-          content="Send, receive, and understand USDC wallet activity on Arc with AI."
-        />
-        <meta name="theme-color" content="#070b14" />
-        <link rel="canonical" href={SITE_URL} />
-      </Head>
-
-      <AppShell walletSnapshot={walletSnapshot}>
+    <AppShell walletSnapshot={walletSnapshot}>
         {showWelcome ? <WelcomeOverlay /> : null}
 
         <section className="wallet-dashboard-hero">
           <div>
-            <p className="section-kicker">Arc AI Wallet</p>
-            <h1>Welcome to your AI-powered wallet built on Arc.</h1>
+            <p className="section-kicker">Your wallet command center</p>
+            <h1>Move money with clarity.</h1>
+            <p>
+              Send, swap, bridge, and understand every Arc transaction from one
+              secure workspace.
+            </p>
           </div>
+          <span className="dashboard-live-pill">
+            <i /> Live on {arcTestnet.name}
+          </span>
         </section>
 
         <PremiumWalletCard
@@ -270,7 +297,31 @@ export default function Home() {
           activityStatus={liveActivityStatus}
           initialPrompt={assistantPrompt}
         />
-      </AppShell>
+    </AppShell>
+  );
+}
+
+export default function Home() {
+  const walletSnapshot = useArcWalletSnapshot();
+
+  return (
+    <>
+      <Head>
+        <title>Arc AI Wallet | Smart USDC Wallet on Arc</title>
+        <meta
+          name="description"
+          content="Send, receive, swap, bridge, and understand USDC activity on Arc with an AI-powered self-custody wallet."
+        />
+        <meta name="theme-color" content="#060a13" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <link rel="canonical" href={SITE_URL} />
+      </Head>
+
+      {walletSnapshot.isSignedIn ? (
+        <ConnectedWalletExperience walletSnapshot={walletSnapshot} />
+      ) : (
+        <WalletLoginScreen />
+      )}
     </>
   );
 }

@@ -89,11 +89,19 @@ function createWalletConfig() {
   return createConfig({
     connectors,
     chains: MULTICHAIN_WALLET_CHAINS,
+    pollingInterval: 12_000,
     ssr: true,
     transports: Object.fromEntries(
       MULTICHAIN_WALLET_CHAINS.map((chain) => [
         chain.id,
-        http(chain.rpcUrls.default.http[0])
+        http(chain.rpcUrls.default.http[0], {
+          batch: {
+            batchSize: 20,
+            wait: 16
+          },
+          retryCount: 1,
+          timeout: 10_000
+        })
       ])
     )
   });

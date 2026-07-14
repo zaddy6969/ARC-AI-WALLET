@@ -150,7 +150,16 @@ export default function BridgeToArcPanel({
   };
 
   const handleBridge = async () => {
-    if (!connector || !isSignedIn || !amountLooksValid || !recipientLooksValid) {
+    if (
+      !connector ||
+      !isSignedIn ||
+      !amountLooksValid ||
+      !recipientLooksValid ||
+      !estimate
+    ) {
+      if (!estimate) {
+        setError("Estimate the bridge route before submitting it.");
+      }
       return;
     }
 
@@ -398,6 +407,7 @@ export default function BridgeToArcPanel({
                   !amountLooksValid ||
                   !recipientLooksValid ||
                   !connector ||
+                  !estimate ||
                   needsSourceSwitch ||
                   status === "estimating" ||
                   status === "bridging"

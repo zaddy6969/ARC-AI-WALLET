@@ -1,5 +1,5 @@
 import { BrowserProvider, Contract, formatUnits, parseUnits } from "ethers";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { isAddress } from "viem";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { ARC_USDC_ERC20_ADDRESS, arcTestnet } from "../lib/arc-chain";
@@ -89,6 +89,7 @@ export default function SendUsdcPanel({
   const [error, setError] = useState("");
   const [estimate, setEstimate] = useState(null);
   const [result, setResult] = useState(null);
+  const estimateRequestRef = useRef(0);
 
   const recipientValid = Boolean(recipient) && isAddress(recipient);
   const amountValue = Number(amount || 0);
@@ -98,6 +99,7 @@ export default function SendUsdcPanel({
   const feeReady = Boolean(estimate);
 
   useEffect(() => {
+    estimateRequestRef.current += 1;
     setEstimate(null);
     setResult(null);
     setError("");
@@ -149,6 +151,9 @@ export default function SendUsdcPanel({
       return;
     }
 
+    const requestId = estimateRequestRef.current + 1;
+    estimateRequestRef.current = requestId;
+
     if (!silent) {
       setStatus("estimating");
     }
@@ -168,6 +173,10 @@ export default function SendUsdcPanel({
         throw new Error("RPC fee estimation failed.");
       }
 
+      if (requestId !== estimateRequestRef.current) {
+        return;
+      }
+
       setEstimate({
         gasLimit,
         gasPrice,
@@ -175,6 +184,10 @@ export default function SendUsdcPanel({
       });
       setStatus("ready");
     } catch (nextError) {
+      if (requestId !== estimateRequestRef.current) {
+        return;
+      }
+
       setEstimate(null);
       setStatus("error");
       setError(
@@ -369,7 +382,14 @@ export default function SendUsdcPanel({
                 type="button"
                 className="button button-secondary"
                 onClick={handleEstimate}
-                disabled={status === "estimating" || status === "sending" || status === "confirming"}
+                disabled={
+                  !recipientValid ||
+                  !amountValid ||
+                  !connector ||
+                  status === "estimating" ||
+                  status === "sending" ||
+                  status === "confirming"
+                }
               >
                 {status === "estimating" ? "Estimating fee..." : "Estimate Fee"}
               </button>
