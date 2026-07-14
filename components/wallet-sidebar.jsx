@@ -137,6 +137,10 @@ function WalletSidebar({
               type="button"
               className={`sidebar-action ${isActive ? "sidebar-action-active" : ""}`}
               onClick={handleClick}
+              aria-label={action.label}
+              aria-current={isActive ? "page" : undefined}
+              data-wallet-action={action.id}
+              title={action.label}
             >
               <span className="dock-icon">
                 <FeatureIcon name={action.icon} />

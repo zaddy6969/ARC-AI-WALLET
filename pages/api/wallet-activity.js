@@ -1,22 +1,25 @@
 import { getWalletActivity } from "../../lib/wallet-activity";
+import { isAddress } from "viem";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
+    res.setHeader("Allow", "GET");
     return res.status(405).json({ error: "Method not allowed." });
   }
 
   const { address } = req.query || {};
+  const walletAddress = typeof address === "string" ? address.trim() : "";
 
-  if (!address || typeof address !== "string") {
-    return res.status(400).json({ error: "A wallet address is required." });
+  if (!walletAddress || !isAddress(walletAddress)) {
+    return res.status(400).json({ error: "A valid wallet address is required." });
   }
 
   try {
-    const activity = await getWalletActivity(address);
+    const activity = await getWalletActivity(walletAddress);
 
     if (process.env.NODE_ENV !== "production") {
       console.info("[arc-wallet-activity]", "api-response", {
-        address,
+        address: walletAddress,
         fetchedCount: activity.length
       });
     }
@@ -30,7 +33,7 @@ export default async function handler(req, res) {
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.error("[arc-wallet-activity]", "api-error", {
-        address,
+        address: walletAddress,
         message: error instanceof Error ? error.message : "Unknown RPC error"
       });
     }
