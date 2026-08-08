@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId, usePublicClient, useSwitchChain } from "wagmi";
 import { formatUnits } from "viem";
 import { getPrimaryExplorerUrl, getPrimaryTxHash } from "../lib/arc-app-kit";
@@ -157,7 +157,7 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved }) {
   const busy =
     isSwitching || ["switching", "estimating", "bridging"].includes(status);
 
-  useMemo(() => {
+  useEffect(() => {
     let cancelled = false;
 
     async function loadSourceBalances() {
