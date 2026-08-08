@@ -3,22 +3,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { buildWalletInsights } from "../lib/wallet-copilot";
 
 const quickPrompts = [
-  "Send 5 USDC",
+  "Analyze my wallet",
   "Show my balance",
-  "Show my activity",
   "Explain my last transaction",
-  "Bridge assets",
-  "Swap USDC",
-  "Portfolio summary",
-  "Analyze wallet activity"
+  "How do I bridge to Arc?",
+  "Check my wallet risk"
 ];
 
 function MessageBubble({ role, content }) {
   return (
     <div className={`assistant-message assistant-message-${role}`}>
-      <span className="field-label">
-        {role === "assistant" ? "Wallet Copilot" : "You"}
-      </span>
+      <span className="field-label">{role === "assistant" ? "Arc AI" : "You"}</span>
       <p>{content || "..."}</p>
     </div>
   );
@@ -27,15 +22,8 @@ function MessageBubble({ role, content }) {
 function ThinkingBubble() {
   return (
     <div className="assistant-message assistant-message-assistant assistant-message-thinking">
-      <span className="field-label">Wallet Copilot</span>
-      <p>
-        Thinking
-        <span className="typing-dots" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </span>
-      </p>
+      <span className="field-label">Arc AI</span>
+      <p>Analyzing<span className="typing-dots" aria-hidden="true"><i /><i /><i /></span></p>
     </div>
   );
 }
@@ -51,36 +39,15 @@ function InsightCard({ item }) {
 
 function ActionButton({ action, onPrompt }) {
   if (action.kind === "prompt") {
-    return (
-      <button
-        type="button"
-        className="button button-secondary"
-        onClick={() => onPrompt(action.prompt)}
-      >
-        {action.label}
-      </button>
-    );
+    return <button type="button" className="button button-secondary" onClick={() => onPrompt(action.prompt)}>{action.label}</button>;
   }
 
   if (action.kind === "internal-link") {
-    return (
-      <Link href={action.href} className="button button-secondary">
-        {action.label}
-      </Link>
-    );
+    return <Link href={action.href} className="button button-secondary">{action.label}</Link>;
   }
 
   if (action.kind === "link") {
-    return (
-      <a
-        href={action.href}
-        target="_blank"
-        rel="noreferrer"
-        className="button button-secondary"
-      >
-        {action.label}
-      </a>
-    );
+    return <a href={action.href} target="_blank" rel="noreferrer" className="button button-secondary">{action.label}</a>;
   }
 
   return null;
@@ -95,28 +62,26 @@ export default function WalletAssistant({
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content:
-        "Wallet Copilot Ready. Ask me to analyze your balance, activity, or next wallet action."
+      content: "Arc AI is ready. Ask about balances, activity, risk, Send, Swap or Bridge."
     }
   ]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("Wallet Copilot Ready");
+  const [notice, setNotice] = useState("Live wallet intelligence");
   const [actions, setActions] = useState([]);
   const autoAnalyzeAddressRef = useRef("");
   const externalPromptRef = useRef("");
   const threadRef = useRef(null);
   const requestRef = useRef(null);
 
-  useEffect(() => {
-    return () => {
-      requestRef.current?.abort();
-    };
-  }, []);
+  useEffect(() => () => requestRef.current?.abort(), []);
 
-  const context = useMemo(
-    () => ({
+  const context = useMemo(() => {
+    const assets = Array.isArray(walletSnapshot?.assets) ? walletSnapshot.assets : [];
+    const totalValueUsd = assets.reduce((sum, asset) => sum + (Number(asset?.valueUsd) || 0), 0);
+
+    return {
       wallet: {
         address: walletSnapshot?.address || "",
         connected: Boolean(walletSnapshot?.isSignedIn),
@@ -124,22 +89,31 @@ export default function WalletAssistant({
         usdcBalance: walletSnapshot?.usdcBalance || "",
         balanceStatus: walletSnapshot?.balanceStatus || "idle"
       },
+      portfolio: {
+        status: walletSnapshot?.balanceStatus || "idle",
+        totalValueUsd,
+        assets: assets.map((asset) => ({
+          symbol: asset.symbol,
+          name: asset.name,
+          balance: asset.balance,
+          balanceLabel: String(asset.balance || "").replace(` ${asset.symbol}`, ""),
+          valueUsd: Number(asset.valueUsd) || 0,
+          hasValue: Number(asset.valueUsd) > 0,
+          allocation: totalValueUsd > 0 ? ((Number(asset.valueUsd) || 0) / totalValueUsd) * 100 : 0
+        }))
+      },
       activity: {
-        status: activityStatus,
+        status: activityStatus || "idle",
         items: Array.isArray(activityItems) ? activityItems.slice(0, 12) : []
       }
-    }),
-    [activityItems, activityStatus, walletSnapshot]
-  );
+    };
+  }, [activityItems, activityStatus, walletSnapshot]);
 
   const insights = useMemo(() => buildWalletInsights(context), [context]);
 
   const askAssistant = async (nextQuestion) => {
     const trimmed = String(nextQuestion || "").trim();
-
-    if (!trimmed || loading) {
-      return;
-    }
+    if (!trimmed || loading) return;
 
     const nextMessages = [...messages, { role: "user", content: trimmed }];
     setMessages(nextMessages);
@@ -152,9 +126,7 @@ export default function WalletAssistant({
     try {
       const response = await fetch("/api/ai", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         signal: requestRef.current.signal,
         body: JSON.stringify({
           question: trimmed,
@@ -163,35 +135,26 @@ export default function WalletAssistant({
           stream: false
         })
       });
-      let payload = {};
 
+      let payload = {};
       try {
         payload = await response.json();
-      } catch {
-        payload = {};
-      }
+      } catch {}
 
-      if (!response.ok) {
-        throw new Error(payload.error || "Wallet Copilot is unavailable.");
-      }
+      if (!response.ok) throw new Error(payload.error || "Arc AI is unavailable.");
 
       setMessages((current) => [
         ...current,
         {
           role: "assistant",
-          content:
-            payload.answer ||
-            "I couldn't generate a wallet answer right now. Please try again."
+          content: payload.answer || "I could not generate a wallet answer. Please try again."
         }
       ]);
-      setNotice(payload.notice || "Wallet Copilot Ready");
+      setNotice(payload.notice || "Arc AI ready");
       setActions(Array.isArray(payload.actions) ? payload.actions : []);
     } catch (nextError) {
-      if (nextError?.name === "AbortError") {
-        return;
-      }
-
-      setError("Wallet Copilot is temporarily unavailable. Please try again.");
+      if (nextError?.name === "AbortError") return;
+      setError("Arc AI could not complete that request. Try again.");
     } finally {
       setLoading(false);
     }
@@ -209,21 +172,14 @@ export default function WalletAssistant({
   }, [walletSnapshot?.address, walletSnapshot?.isSignedIn]);
 
   useEffect(() => {
-    if (
-      initialPrompt?.id &&
-      initialPrompt?.text &&
-      externalPromptRef.current !== initialPrompt.id
-    ) {
+    if (initialPrompt?.id && initialPrompt?.text && externalPromptRef.current !== initialPrompt.id) {
       externalPromptRef.current = initialPrompt.id;
       void askAssistant(initialPrompt.text);
     }
   }, [initialPrompt]);
 
   useEffect(() => {
-    threadRef.current?.scrollTo({
-      top: threadRef.current.scrollHeight,
-      behavior: "smooth"
-    });
+    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
 
   const handleSubmit = async (event) => {
@@ -232,108 +188,54 @@ export default function WalletAssistant({
   };
 
   return (
-    <section className="card">
+    <section className="card pro-ai-assistant">
       <div className="assistant-hero">
-        <div className="ai-orb-avatar" aria-hidden="true">
-          <span />
-        </div>
-        <div>
-          <p className="section-kicker">AI Assistant</p>
-          <h2>Arc wallet copilot</h2>
-        </div>
-        <span className="status-badge">
-          {loading
-            ? "Thinking"
-            : walletSnapshot?.isSignedIn
-              ? "Live wallet mode"
-              : "AI ready"}
-        </span>
+        <div className="ai-orb-avatar" aria-hidden="true"><span /></div>
+        <div><p className="section-kicker">Arc AI</p><h2>Wallet copilot</h2></div>
+        <span className="status-badge">{loading ? "Analyzing" : "Ready"}</span>
       </div>
 
       <div className="copilot-summary-grid">
-        <div className="summary-card">
-          <span className="field-label">Connected wallet</span>
-          <strong>{walletSnapshot?.address || "No wallet connected"}</strong>
-          <small>{walletSnapshot?.onArc ? "Arc ready" : "Connect wallet"}</small>
-        </div>
-        <div className="summary-card">
-          <span className="field-label">USDC balance</span>
-          <strong>{walletSnapshot?.usdcBalance || "Syncing..."}</strong>
-          <small>Live wallet data</small>
-        </div>
-        <div className="summary-card">
-          <span className="field-label">Recent activity</span>
-          <strong>{Array.isArray(activityItems) ? activityItems.length : 0} events</strong>
-          <small>Onchain + saved actions</small>
-        </div>
+        <div className="summary-card"><span className="field-label">Wallet</span><strong>{walletSnapshot?.address ? `${walletSnapshot.address.slice(0, 6)}…${walletSnapshot.address.slice(-4)}` : "Not connected"}</strong><small>{walletSnapshot?.onArc ? "Arc connected" : "Network check"}</small></div>
+        <div className="summary-card"><span className="field-label">USDC</span><strong>{walletSnapshot?.usdcBalance || "Syncing…"}</strong><small>Live Arc balance</small></div>
+        <div className="summary-card"><span className="field-label">Activity</span><strong>{Array.isArray(activityItems) ? activityItems.length : 0} events</strong><small>Wallet context</small></div>
       </div>
 
       <p className="helper-copy">{notice}</p>
 
-      <div className="insight-grid">
-        {insights.map((item) => (
-          <InsightCard key={item.id} item={item} />
+      <div className="prompt-row">
+        {quickPrompts.map((prompt) => (
+          <button key={prompt} type="button" className="prompt-chip" onClick={() => askAssistant(prompt)} disabled={loading}>{prompt}</button>
         ))}
       </div>
 
-      <div className="prompt-row">
-        {quickPrompts.map((prompt) => (
-          <button
-            key={prompt}
-            type="button"
-            className="prompt-chip"
-            onClick={() => askAssistant(prompt)}
-            disabled={loading}
-          >
-            {prompt}
-          </button>
+      <div className="assistant-thread" ref={threadRef}>
+        {messages.map((message, index) => (
+          <MessageBubble key={`${message.role}-${index}`} role={message.role} content={message.content} />
         ))}
+        {loading ? <ThinkingBubble /> : null}
       </div>
 
       {actions.length ? (
         <div className="action-row">
-          {actions.map((action) => (
-            <ActionButton
-              key={action.id}
-              action={action}
-              onPrompt={askAssistant}
-            />
-          ))}
+          {actions.map((action) => <ActionButton key={action.id} action={action} onPrompt={askAssistant} />)}
         </div>
       ) : null}
-
-      <div className="assistant-thread" ref={threadRef}>
-        {messages.map((message, index) => (
-          <MessageBubble
-            key={`${message.role}-${index}`}
-            role={message.role}
-            content={message.content}
-          />
-        ))}
-        {loading ? <ThinkingBubble /> : null}
-      </div>
 
       <form className="assistant-form" onSubmit={handleSubmit}>
         <textarea
           className="assistant-input"
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder='Type a command like "Send 5 USDC" or "Show my activity"...'
-          rows={4}
+          placeholder='Ask “what is my balance?” or “explain my last transaction”'
+          rows={3}
         />
         <div className="assistant-form-row">
-          <button type="submit" className="button button-primary" disabled={loading}>
-            {loading ? "Thinking..." : "Ask Copilot"}
-          </button>
+          <button type="submit" className="button button-primary" disabled={loading || !question.trim()}>{loading ? "Analyzing…" : "Ask Arc AI"}</button>
         </div>
       </form>
 
-      {error ? (
-        <div className="empty-state empty-state-compact">
-          <strong>AI assistant unavailable</strong>
-          <p>{error}</p>
-        </div>
-      ) : null}
+      {error ? <div className="empty-state empty-state-compact"><strong>Arc AI unavailable</strong><p>{error}</p></div> : null}
     </section>
   );
 }
