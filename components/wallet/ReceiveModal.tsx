@@ -20,10 +20,7 @@ type FeedbackState =
 const RECEIVE_ASSETS = ["USDC", "EURC", "cirBTC"];
 
 function shortenAddress(address?: string) {
-  if (!address) {
-    return "";
-  }
-
+  if (!address) return "";
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
@@ -73,21 +70,16 @@ export default function ReceiveModal({
   }, []);
 
   useEffect(() => {
-    if (!open || typeof document === "undefined") {
-      return undefined;
-    }
+    if (!open || typeof document === "undefined") return undefined;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
+      if (event.key === "Escape") onClose();
     };
 
     window.addEventListener("keydown", handleEscape);
-
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleEscape);
@@ -95,14 +87,8 @@ export default function ReceiveModal({
   }, [onClose, open]);
 
   useEffect(() => {
-    if (!feedback) {
-      return undefined;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setFeedback(null);
-    }, 1600);
-
+    if (!feedback) return undefined;
+    const timeoutId = window.setTimeout(() => setFeedback(null), 1600);
     return () => window.clearTimeout(timeoutId);
   }, [feedback]);
 
@@ -119,60 +105,39 @@ export default function ReceiveModal({
 
   const handleCopy = async () => {
     if (!hasAddress) {
-      setFeedback({
-        tone: "error",
-        message: "Wallet address is still loading."
-      });
+      setFeedback({ tone: "error", message: "Wallet address is still loading." });
       return;
     }
 
     try {
       await copyTextToClipboard(address);
-      setFeedback({
-        tone: "success",
-        message: "Copied!"
-      });
+      setFeedback({ tone: "success", message: "Copied!" });
     } catch {
-      setFeedback({
-        tone: "error",
-        message: "Unable to copy the address right now."
-      });
+      setFeedback({ tone: "error", message: "Unable to copy the address right now." });
     }
   };
 
   const handleShare = async () => {
-    if (!canShare) {
-      return;
-    }
+    if (!canShare) return;
 
     try {
       setIsSharing(true);
       await navigator.share({
         title: "Arc AI Wallet address",
-        text: `Receive supported assets on ${networkLabel}: ${address}`
+        text: `Receive on ${networkLabel}: ${address}`
       });
-      setFeedback({
-        tone: "success",
-        message: "Address shared."
-      });
+      setFeedback({ tone: "success", message: "Address shared." });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message.toLowerCase() : "";
-
+      const message = error instanceof Error ? error.message.toLowerCase() : "";
       if (!message.includes("abort")) {
-        setFeedback({
-          tone: "error",
-          message: "Unable to share the address right now."
-        });
+        setFeedback({ tone: "error", message: "Unable to share the address right now." });
       }
     } finally {
       setIsSharing(false);
     }
   };
 
-  if (!mounted) {
-    return null;
-  }
+  if (!mounted) return null;
 
   return createPortal(
     <AnimatePresence>
@@ -198,29 +163,18 @@ export default function ReceiveModal({
             <div className="receive-modal-header">
               <div>
                 <p className="section-kicker">Receive</p>
-                <h2 id="receive-modal-title">Receive on Arc Testnet</h2>
+                <h2 id="receive-modal-title">Receive assets</h2>
               </div>
-              <button
-                type="button"
-                className="receive-close-button"
-                onClick={onClose}
-                aria-label="Close receive modal"
-              >
-                x
-              </button>
+              <button type="button" className="receive-close-button" onClick={onClose} aria-label="Close receive modal">×</button>
             </div>
 
             <div className="receive-network-row">
               <span className="status-badge status-good">{networkLabel}</span>
-              <span className="receive-short-address">
-                {shortAddress || "Loading address"}
-              </span>
+              <span className="receive-short-address">{shortAddress || "Loading address"}</span>
             </div>
 
             <div className="receive-asset-row" aria-label="Supported receive assets">
-              {RECEIVE_ASSETS.map((asset) => (
-                <span key={asset}>{asset}</span>
-              ))}
+              {RECEIVE_ASSETS.map((asset) => <span key={asset}>{asset}</span>)}
             </div>
 
             <div className="receive-qr-shell">
@@ -228,10 +182,10 @@ export default function ReceiveModal({
                 <QRCodeSVG
                   value={address}
                   size={196}
-                  bgColor="transparent"
-                  fgColor="#edf3ff"
+                  bgColor="#ffffff"
+                  fgColor="#101828"
                   level="M"
-                  includeMargin={false}
+                  includeMargin
                 />
               ) : (
                 <div className="receive-qr-loading">
@@ -256,35 +210,19 @@ export default function ReceiveModal({
                 }}
                 disabled={!hasAddress}
               >
-                {feedback?.tone === "success" ? "Copied!" : "Copy Address"}
+                {feedback?.tone === "success" ? "Copied!" : "Copy address"}
               </button>
-              <a
-                className="button button-secondary"
-                href="https://faucet.circle.com"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Open Faucet
-              </a>
               {canShare ? (
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  onClick={handleShare}
-                  disabled={!hasAddress || isSharing}
-                >
-                  {isSharing ? "Sharing..." : "Share Address"}
+                <button type="button" className="button button-secondary" onClick={handleShare} disabled={!hasAddress || isSharing}>
+                  {isSharing ? "Sharing..." : "Share"}
                 </button>
               ) : null}
+              <a className="button button-secondary" href="https://faucet.circle.com" target="_blank" rel="noreferrer">Faucet</a>
             </div>
 
             <div className="receive-warning">
-              <strong>Receive USDC, EURC, and cirBTC on this same Arc address.</strong>
-              <p>
-                In the Circle faucet, choose Arc Testnet and then select USDC,
-                EURC, or cirBTC. Sending unsupported assets or using the wrong
-                network can result in funds not showing up in this wallet view.
-              </p>
+              <strong>Use Arc Testnet for this address.</strong>
+              <p>Supported wallet assets shown here are USDC, EURC and cirBTC. Check the network before sending.</p>
             </div>
 
             <AnimatePresence>
