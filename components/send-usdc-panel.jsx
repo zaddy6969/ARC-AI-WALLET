@@ -42,7 +42,7 @@ function formatSendError(error, fallback) {
   }
 
   if (normalized.includes("insufficient")) {
-    return "Insufficient USDC balance.";
+    return "Insufficient USDC balance or Arc gas reserve.";
   }
 
   if (
@@ -58,6 +58,11 @@ function formatSendError(error, fallback) {
 
 async function getTransferContext(connector, sender, recipient, amount) {
   const injectedProvider = await connector.getProvider();
+
+  if (!injectedProvider) {
+    throw new Error("Wallet provider is unavailable.");
+  }
+
   const provider = new BrowserProvider(injectedProvider);
   const signer = await provider.getSigner();
   const contract = new Contract(ARC_USDC_ERC20_ADDRESS, USDC_ABI, signer);
@@ -148,7 +153,7 @@ export default function SendUsdcPanel({
 
   const estimateFee = async ({ silent = false } = {}) => {
     if (!recipientValid || !amountValid || !isSignedIn || !connector) {
-      return;
+      return null;
     }
 
     const requestId = estimateRequestRef.current + 1;
@@ -174,18 +179,20 @@ export default function SendUsdcPanel({
       }
 
       if (requestId !== estimateRequestRef.current) {
-        return;
+        return null;
       }
 
-      setEstimate({
+      const nextEstimate = {
         gasLimit,
         gasPrice,
         fee: gasLimit * gasPrice
-      });
+      };
+      setEstimate(nextEstimate);
       setStatus("ready");
+      return nextEstimate;
     } catch (nextError) {
       if (requestId !== estimateRequestRef.current) {
-        return;
+        return null;
       }
 
       setEstimate(null);
@@ -198,6 +205,7 @@ export default function SendUsdcPanel({
             : "RPC fee estimation failed."
         )
       );
+      return null;
     }
   };
 
@@ -234,7 +242,18 @@ export default function SendUsdcPanel({
   const handleSend = async (event) => {
     event.preventDefault();
 
-    if (!feeReady) {
+    if (!isSignedIn || !connector) {
+      setError("Wallet not connected.");
+      return;
+    }
+
+    if (!recipientValid) {
+      setError("Invalid wallet address.");
+      return;
+    }
+
+    if (!amountValid) {
+      setError("Enter valid USDC amount.");
       return;
     }
 
@@ -247,7 +266,24 @@ export default function SendUsdcPanel({
         await ensureArcNetwork();
       }
 
-      const { contract, parsedAmount } = await validateTransfer();
+      const { contract, provider, parsedAmount } = await validateTransfer();
+
+      if (!estimate) {
+        const gasLimit = await contract.transfer.estimateGas(recipient, parsedAmount);
+        const feeData = await provider.getFeeData();
+        const gasPrice = feeData.gasPrice || feeData.maxFeePerGas;
+
+        if (!gasPrice) {
+          throw new Error("RPC fee estimation failed.");
+        }
+
+        setEstimate({
+          gasLimit,
+          gasPrice,
+          fee: gasLimit * gasPrice
+        });
+      }
+
       const transaction = await contract.transfer(recipient, parsedAmount);
       setResult({ hash: transaction.hash });
 
@@ -301,7 +337,7 @@ export default function SendUsdcPanel({
           {!isSignedIn
             ? "Wallet required"
             : needsArcSwitch
-              ? "Switch required"
+              ? "Switch on send"
               : status === "sending"
                 ? "Sending USDC"
                 : status === "confirming"
@@ -332,11 +368,11 @@ export default function SendUsdcPanel({
             </div>
             <div className="wallet-summary-item">
               <span className="field-label">Estimated gas units</span>
-              <strong>{estimate ? estimate.gasLimit.toString() : "Estimate first"}</strong>
+              <strong>{estimate ? estimate.gasLimit.toString() : "Auto on send"}</strong>
             </div>
             <div className="wallet-summary-item">
               <span className="field-label">Estimated network fee</span>
-              <strong>{estimate ? formatGasFee(estimate.fee) : "Estimate first"}</strong>
+              <strong>{estimate ? formatGasFee(estimate.fee) : "Auto on send"}</strong>
             </div>
           </div>
 
@@ -370,10 +406,10 @@ export default function SendUsdcPanel({
                   : !amountValid
                     ? "Enter valid USDC amount."
                     : needsArcSwitch
-                      ? "Wrong network, please switch to Arc Testnet."
+                      ? "Your wallet will switch to Arc Testnet automatically when you send."
                       : !feeReady
-                        ? "Estimate the real Arc network fee before sending."
-                        : "This will submit a real Arc Testnet USDC transfer after wallet confirmation."}
+                        ? "The Arc network fee will be estimated automatically when you send."
+                        : "Ready to submit a real Arc Testnet USDC transfer after wallet confirmation."}
               </p>
             </div>
 
@@ -399,8 +435,7 @@ export default function SendUsdcPanel({
                 disabled={
                   !recipientValid ||
                   !amountValid ||
-                  !feeReady ||
-                  needsArcSwitch ||
+                  !connector ||
                   status === "estimating" ||
                   status === "sending" ||
                   status === "confirming" ||
@@ -411,7 +446,9 @@ export default function SendUsdcPanel({
                   ? "Sending USDC..."
                   : status === "confirming"
                     ? "Confirming transaction..."
-                    : "Send USDC"}
+                    : needsArcSwitch
+                      ? "Switch & Send USDC"
+                      : "Send USDC"}
               </button>
             </div>
           </form>
