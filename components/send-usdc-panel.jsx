@@ -1,5 +1,5 @@
 import { BrowserProvider, Contract, formatUnits, parseUnits } from "ethers";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { isAddress } from "viem";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { ARC_USDC_ERC20_ADDRESS, arcTestnet } from "../lib/arc-chain";
@@ -86,7 +86,8 @@ async function getTransferContext(connector, sender, recipient, amount) {
 export default function SendUsdcPanel({
   walletSnapshot,
   onActivitySaved,
-  onActivityUpdated
+  onActivityUpdated,
+  copilotAction
 }) {
   const { connector } = useAccount();
   const chainId = useChainId();
@@ -120,6 +121,18 @@ export default function SendUsdcPanel({
     () => (result?.hash ? `${arcTestnet.blockExplorers.default.url}/tx/${result.hash}` : ""),
     [result]
   );
+
+  useEffect(() => {
+    if (copilotAction?.tool !== "prepare_send") return;
+    const nextRecipient = String(copilotAction?.args?.recipient || "").trim();
+    const nextAmount = normalizeAmount(copilotAction?.args?.amount || "");
+    setRecipient(nextRecipient);
+    setAmount(nextAmount);
+    setEstimate(null);
+    setResult(null);
+    setError("");
+    setStatus("idle");
+  }, [copilotAction]);
 
   const resetReview = () => {
     setEstimate(null);
@@ -266,6 +279,10 @@ export default function SendUsdcPanel({
         </div>
         <span className="send-network-pill">Arc Testnet</span>
       </div>
+
+      {copilotAction?.tool === "prepare_send" ? (
+        <div className="copilot-prepared-note"><strong>Prepared by Arc AI</strong><span>Review every field before signing.</span></div>
+      ) : null}
 
       <div className="send-v2-section">
         <div className="send-section-label"><span>1</span><div><strong>Recipient</strong><small>Arc-compatible wallet address</small></div></div>
