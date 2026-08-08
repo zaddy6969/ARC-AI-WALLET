@@ -11,11 +11,7 @@ import { useWalletAppState } from "../lib/use-wallet-app-state";
 function PanelLoading() {
   return (
     <section className="card panel-loading" role="status" aria-live="polite">
-      <span className="panel-loading-orb" />
-      <div>
-        <strong>Loading wallet</strong>
-        <p>Syncing Arc data…</p>
-      </div>
+      <strong>Loading…</strong>
     </section>
   );
 }
@@ -36,10 +32,6 @@ const WalletOverviewCard = dynamic(
 );
 const FastDashboardPanel = dynamic(
   () => import("../components/wallet-pro-suite").then((module) => module.FastDashboardPanel),
-  { loading: PanelLoading }
-);
-const TransactionGuardianBanner = dynamic(
-  () => import("../components/wallet-pro-suite").then((module) => module.TransactionGuardianBanner),
   { loading: PanelLoading }
 );
 const ActivityInterpreterPanel = dynamic(
@@ -111,12 +103,14 @@ function ConnectedWalletExperience({ walletSnapshot }) {
   }, []);
 
   const handleSelectView = useCallback((view) => {
-    if (!SUPPORTED_VIEWS.has(view) || view === "receive") {
-      if (view === "receive") setReceiveOpen(true);
+    if (view === "receive") {
+      setReceiveOpen(true);
       return;
     }
 
+    if (!SUPPORTED_VIEWS.has(view)) return;
     setActiveView(view);
+
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", `/#${view}`);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -147,15 +141,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
 
   return (
     <AppShell walletSnapshot={walletSnapshot}>
-      <section className="wallet-dashboard-hero pro-wallet-hero">
-        <div>
-          <p className="section-kicker">Arc AI Wallet</p>
-          <h1>Fast, clear, self-custodial.</h1>
-          <p>A professional USDC wallet for Arc with AI guidance when you need it.</p>
-        </div>
-        <span className="dashboard-live-pill"><i /> {arcTestnet.name}</span>
-      </section>
-
       <WalletOverviewCard
         walletSnapshot={walletSnapshot}
         activityItems={mergedActivity}
@@ -164,14 +149,12 @@ function ConnectedWalletExperience({ walletSnapshot }) {
         onDisconnect={walletSnapshot.disconnectWallet}
         onSelectView={handleSelectView}
         onReceive={openReceive}
-        onAiOpen={openAssistant}
       />
 
-      <div className="wallet-workspace">
+      <div className="wallet-workspace wallet-workspace-simple">
         <WalletSidebar
           activeView={activeView}
           onSelect={handleSelectView}
-          onReceive={openReceive}
           onAiOpen={openAssistant}
         />
 
@@ -181,8 +164,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
               walletSnapshot={walletSnapshot}
               activityItems={mergedActivity}
               onSelectView={handleSelectView}
-              onReceive={openReceive}
-              onAskCopilot={askCopilot}
             />
           ) : activeView === "activity" ? (
             <>
@@ -202,24 +183,15 @@ function ConnectedWalletExperience({ walletSnapshot }) {
           ) : activeView === "request" ? (
             <PaymentRequestPanel walletSnapshot={walletSnapshot} />
           ) : activeView === "swap" ? (
-            <>
-              <TransactionGuardianBanner mode="swap" walletSnapshot={walletSnapshot} />
-              <SwapUsdcPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} />
-            </>
+            <SwapUsdcPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} />
           ) : activeView === "bridge" ? (
-            <>
-              <TransactionGuardianBanner mode="bridge" walletSnapshot={walletSnapshot} />
-              <BridgeToArcPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} compact />
-            </>
+            <BridgeToArcPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} />
           ) : (
-            <>
-              <TransactionGuardianBanner mode="send" walletSnapshot={walletSnapshot} />
-              <SendUsdcPanel
-                walletSnapshot={walletSnapshot}
-                onActivitySaved={saveLocalActivity}
-                onActivityUpdated={updateLocalActivityByHash}
-              />
-            </>
+            <SendUsdcPanel
+              walletSnapshot={walletSnapshot}
+              onActivitySaved={saveLocalActivity}
+              onActivityUpdated={updateLocalActivityByHash}
+            />
           )}
         </div>
       </div>
@@ -250,12 +222,12 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Arc AI Wallet | Professional USDC Wallet</title>
+        <title>Arc AI Wallet</title>
         <meta
           name="description"
-          content="A fast self-custodial USDC wallet for Arc. Send, receive, swap, bridge, request payments and understand wallet activity with Arc AI."
+          content="A fast self-custodial USDC wallet for Arc. Send, receive, swap and bridge with AI assistance."
         />
-        <meta name="theme-color" content="#0b0f17" />
+        <meta name="theme-color" content="#0a0d12" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="canonical" href={SITE_URL} />
       </Head>
