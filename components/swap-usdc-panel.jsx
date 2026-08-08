@@ -5,6 +5,11 @@ import { ARC_CIRBTC_ERC20_ADDRESS, arcTestnet } from "../lib/arc-chain";
 import { createWalletActionRecord } from "../lib/local-activity";
 
 const SWAP_TOKENS = ["USDC", "EURC", "cirBTC"];
+const TOKEN_META = {
+  USDC: { name: "USD Coin", mark: "$" },
+  EURC: { name: "Euro Coin", mark: "€" },
+  cirBTC: { name: "Circle Bitcoin", mark: "₿" }
+};
 const SLIPPAGE_OPTIONS = [
   { label: "0.5%", value: 50 },
   { label: "1%", value: 100 },
@@ -12,7 +17,9 @@ const SLIPPAGE_OPTIONS = [
 ];
 
 function normalizeAmount(value) {
-  return String(value || "").replace(/[^\d.]/g, "");
+  const next = String(value || "").replace(/[^\d.]/g, "");
+  const [whole, ...rest] = next.split(".");
+  return rest.length ? `${whole}.${rest.join("").slice(0, 8)}` : whole;
 }
 
 function isValidAmount(value) {
@@ -21,39 +28,33 @@ function isValidAmount(value) {
 }
 
 function parseBalanceValue(balance) {
-  const numeric = Number(String(balance || "").replace(/[^\d.]/g, ""));
+  const numeric = Number(String(balance || "").replace(/[^\d.-]/g, ""));
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
 function shortHash(hash) {
-  if (!hash || hash.length < 14) {
-    return hash || "";
-  }
-
+  if (!hash || hash.length < 14) return hash || "";
   return `${hash.slice(0, 10)}...${hash.slice(-6)}`;
 }
 
-function getSwapTxHash(result) {
-  if (result?.txHash) {
-    return result.txHash;
-  }
+function shortAddress(address) {
+  if (!address) return "";
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
 
+function getSwapTxHash(result) {
+  if (result?.txHash) return result.txHash;
   const stepWithHash = Array.isArray(result?.steps)
     ? result.steps.find((step) => step.txHash)
     : null;
-
   return stepWithHash?.txHash || "";
 }
 
 function getSwapExplorerUrl(result) {
-  if (result?.explorerUrl) {
-    return result.explorerUrl;
-  }
-
+  if (result?.explorerUrl) return result.explorerUrl;
   const stepWithUrl = Array.isArray(result?.steps)
     ? result.steps.find((step) => step.explorerUrl)
     : null;
-
   return stepWithUrl?.explorerUrl || "";
 }
 
@@ -79,31 +80,43 @@ function getEstimatedOutput(estimate) {
   );
 }
 
-function getSwapFeeSummary(estimate) {
+function getSwapFeeRows(estimate) {
   const fees = Array.isArray(estimate?.fees) ? estimate.fees : [];
-
-  if (!fees.length) {
-    return "";
-  }
-
-  return fees
-    .map((fee) => {
-      if (fee?.amount && fee?.token) {
-        return `${fee.amount} ${fee.token}`;
-      }
-
-      if (fee?.amount) {
-        return String(fee.amount);
-      }
-
-      return fee?.type || "";
-    })
-    .filter(Boolean)
-    .join(" + ");
+  return fees.map((fee, index) => ({
+    id: `${fee?.type || fee?.name || "fee"}-${index}`,
+    label: fee?.name || fee?.type || "Swap fee",
+    value: fee?.amount
+      ? `${fee.amount}${fee.token ? ` ${fee.token}` : ""}`
+      : fee?.formatted || "Included"
+  }));
 }
 
 function getSwapTokenIdentifier(token) {
   return token === "cirBTC" ? ARC_CIRBTC_ERC20_ADDRESS : token;
+}
+
+function getAsset(walletSnapshot, symbol) {
+  const assets = Array.isArray(walletSnapshot?.assets) ? walletSnapshot.assets : [];
+  const asset = assets.find((item) => item?.symbol === symbol);
+
+  if (asset) return asset;
+
+  if (symbol === "USDC") {
+    return {
+      symbol,
+      balance: walletSnapshot?.usdcBalance || "",
+      balanceValue: parseBalanceValue(walletSnapshot?.usdcBalance),
+      status: walletSnapshot?.balanceStatus === "ready" ? "ready" : walletSnapshot?.balanceStatus || "idle"
+    };
+  }
+
+  return { symbol, balance: "", balanceValue: 0, status: "idle" };
+}
+
+function formatAvailable(asset, symbol) {
+  if (asset?.status !== "ready") return "Syncing…";
+  if (asset?.balance) return asset.balance;
+  return `${Number(asset?.balanceValue || 0).toLocaleString("en-US", { maximumFractionDigits: 8 })} ${symbol}`;
 }
 
 async function loadKitKey() {
@@ -118,9 +131,7 @@ async function loadKitKey() {
 }
 
 async function readProxyRequestBody(input, init) {
-  if (typeof init?.body === "string") {
-    return init.body;
-  }
+  if (typeof init?.body === "string") return init.body;
 
   if (typeof URLSearchParams !== "undefined" && init?.body instanceof URLSearchParams) {
     return init.body.toString();
@@ -159,9 +170,7 @@ async function withCircleStablecoinProxy(operation) {
 
       return originalFetch("/api/circle-stablecoin-proxy", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           path: `${url.pathname}${url.search}`,
           method,
@@ -193,17 +202,20 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
   const [estimate, setEstimate] = useState(null);
   const [swapResult, setSwapResult] = useState(null);
 
-  const isSignedIn = walletSnapshot?.isSignedIn;
+  const isSignedIn = Boolean(walletSnapshot?.isSignedIn);
   const needsArcSwitch = isSignedIn && chainId !== arcTestnet.id;
   const amountLooksValid = isValidAmount(amountIn);
   const tokensValid = tokenIn !== tokenOut;
+  const inputAsset = useMemo(() => getAsset(walletSnapshot, tokenIn), [walletSnapshot, tokenIn]);
+  const outputAsset = useMemo(() => getAsset(walletSnapshot, tokenOut), [walletSnapshot, tokenOut]);
+  const inputBalanceKnown = inputAsset?.status === "ready";
+  const inputBalanceValue = Number(inputAsset?.balanceValue || 0);
+  const hasEnoughBalance = !inputBalanceKnown || Number(amountIn || 0) <= inputBalanceValue;
   const estimateOutput = getEstimatedOutput(estimate);
-  const feeSummary = getSwapFeeSummary(estimate);
-  const usdcBalance = parseBalanceValue(walletSnapshot?.usdcBalance);
-  const balanceReady = walletSnapshot?.balanceStatus === "ready";
-  const hasEnoughUsdc = tokenIn !== "USDC" || !balanceReady || Number(amountIn) <= usdcBalance;
+  const feeRows = useMemo(() => getSwapFeeRows(estimate), [estimate]);
   const txHash = useMemo(() => getSwapTxHash(swapResult), [swapResult]);
   const explorerUrl = useMemo(() => getSwapExplorerUrl(swapResult), [swapResult]);
+  const busy = isSwitchingChain || status === "estimating" || status === "swapping";
 
   useEffect(() => {
     setEstimate(null);
@@ -212,37 +224,51 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
     setStatus("idle");
   }, [tokenIn, tokenOut, amountIn, slippageBps]);
 
-  const ensureArcNetwork = async () => {
-    if (chainId === arcTestnet.id || !switchChainAsync) {
-      return;
-    }
+  const clearQuote = () => {
+    setEstimate(null);
+    setSwapResult(null);
+    setError("");
+    setStatus("idle");
+  };
 
+  const selectInputToken = (nextToken) => {
+    if (nextToken === tokenOut) setTokenOut(tokenIn);
+    setTokenIn(nextToken);
+  };
+
+  const selectOutputToken = (nextToken) => {
+    if (nextToken === tokenIn) setTokenIn(tokenOut);
+    setTokenOut(nextToken);
+  };
+
+  const reversePair = () => {
+    setTokenIn(tokenOut);
+    setTokenOut(tokenIn);
+  };
+
+  const useMax = () => {
+    if (!inputBalanceKnown || inputBalanceValue <= 0) return;
+    setAmountIn(String(inputBalanceValue));
+  };
+
+  const ensureArcNetwork = async () => {
+    if (chainId === arcTestnet.id) return;
+    if (!switchChainAsync) throw new Error("Wallet network switching is unavailable.");
     await switchChainAsync({ chainId: arcTestnet.id });
   };
 
   const getSwapParams = async () => {
-    if (!connector || !isSignedIn) {
-      throw new Error("Connect your wallet before swapping.");
-    }
-
-    if (!amountLooksValid) {
-      throw new Error("Enter a valid swap amount.");
-    }
-
-    if (!tokensValid) {
-      throw new Error("Choose two different tokens.");
-    }
-
-    if (!hasEnoughUsdc) {
-      throw new Error("Insufficient USDC balance for this swap.");
+    if (!connector || !isSignedIn) throw new Error("Connect your wallet before swapping.");
+    if (!amountLooksValid) throw new Error("Enter a valid swap amount.");
+    if (!tokensValid) throw new Error("Choose two different tokens.");
+    if (!hasEnoughBalance) {
+      throw new Error(`Insufficient ${tokenIn} balance for this swap.`);
     }
 
     await ensureArcNetwork();
 
-    const [provider, kitKey] = await Promise.all([
-      connector.getProvider(),
-      loadKitKey()
-    ]);
+    const [provider, kitKey] = await Promise.all([connector.getProvider(), loadKitKey()]);
+    if (!provider) throw new Error("Wallet provider is unavailable.");
     const client = await createArcAppKitClient(provider);
 
     return {
@@ -270,9 +296,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
 
     try {
       const { client, params } = await getSwapParams();
-      const nextEstimate = await withCircleStablecoinProxy(() =>
-        client.kit.estimateSwap(params)
-      );
+      const nextEstimate = await withCircleStablecoinProxy(() => client.kit.estimateSwap(params));
       setEstimate(nextEstimate);
       setStatus("ready");
     } catch (nextError) {
@@ -325,163 +349,183 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
     }
   };
 
-  return (
-    <section className="card swap-panel">
-      <div className="section-heading">
-        <div>
-          <p className="section-kicker">Swap</p>
-          <h2>Swap tokens on Arc Testnet</h2>
+  if (!isSignedIn) {
+    return (
+      <section className="card swap-panel swap-v2">
+        <div className="swap-v2-head">
+          <div><span className="swap-eyebrow">Arc Swap</span><h2>Swap tokens</h2></div>
+          <span className="swap-network-pill">Arc Testnet</span>
         </div>
-        <span className={status === "success" ? "status-badge status-good" : "status-badge"}>
-          {status === "idle" ? "Arc App Kit" : status}
-        </span>
+        <div className="swap-empty-state">
+          <strong>Connect wallet to swap</strong>
+          <p>Connect your wallet to use live Arc balances, quotes and wallet approval.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="card swap-panel swap-v2">
+      <div className="swap-v2-head">
+        <div>
+          <span className="swap-eyebrow">Arc Swap</span>
+          <h2>Swap tokens</h2>
+          <p>Choose a pair, review the live quote, then confirm in your wallet.</p>
+        </div>
+        <span className="swap-network-pill">Arc Testnet</span>
       </div>
 
-      {!isSignedIn ? (
-        <div className="empty-state">
-          <strong>Connect wallet to swap.</strong>
-          <p>Real swaps require your connected wallet and Arc Testnet approval.</p>
+      <div className="swap-v2-section swap-pair-section">
+        <div className="swap-section-label">
+          <span>1</span>
+          <div><strong>Choose tokens</strong><small>Swap supported Arc assets</small></div>
         </div>
-      ) : (
-        <>
-          <div className="swap-route-grid">
-            <label className="composer-field">
-              <span className="field-label">From token</span>
-              <select
-                value={tokenIn}
-                onChange={(event) => setTokenIn(event.target.value)}
-                className="composer-input"
-              >
-                {SWAP_TOKENS.map((token) => (
-                  <option key={token} value={token}>
-                    {token}
-                  </option>
-                ))}
-              </select>
-            </label>
 
-            <label className="composer-field">
-              <span className="field-label">To token</span>
-              <select
-                value={tokenOut}
-                onChange={(event) => setTokenOut(event.target.value)}
-                className="composer-input"
-              >
-                {SWAP_TOKENS.map((token) => (
-                  <option key={token} value={token}>
-                    {token}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="composer-field swap-amount-field">
-              <span className="field-label">Amount</span>
-              <input
-                value={amountIn}
-                onChange={(event) => setAmountIn(normalizeAmount(event.target.value))}
-                inputMode="decimal"
-                placeholder="1.00"
-                className="composer-input"
-              />
-            </label>
-
-            <label className="composer-field swap-amount-field">
-              <span className="field-label">Slippage tolerance</span>
-              <select
-                value={slippageBps}
-                onChange={(event) => setSlippageBps(Number(event.target.value))}
-                className="composer-input"
-              >
-                {SLIPPAGE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <div className="swap-token-box">
+          <div className="swap-token-box-head">
+            <span>You pay</span>
+            <span>Balance: <strong>{formatAvailable(inputAsset, tokenIn)}</strong></span>
           </div>
-
-          <div className="empty-state empty-state-compact">
-            <strong>Swap check</strong>
-            <p>
-              {needsArcSwitch
-                ? "Switch to Arc Testnet before estimating the swap."
-                : !tokensValid
-                  ? "Choose two different tokens."
-                  : !amountLooksValid
-                    ? "Enter a valid amount."
-                    : tokenIn === "USDC" && !balanceReady
-                      ? "USDC balance is still syncing. Try again in a moment."
-                    : !hasEnoughUsdc
-                      ? `Insufficient USDC balance. Available: ${walletSnapshot?.usdcBalance || "0 USDC"}.`
-                    : estimateOutput
-                      ? `Estimated output: ${estimateOutput}`
-                      : "Estimate the live swap route before confirming in your wallet."}
-            </p>
-            {feeSummary ? <small>Estimated fees: {feeSummary}</small> : null}
+          <div className="swap-token-input-row">
+            <input
+              value={amountIn}
+              onChange={(event) => setAmountIn(normalizeAmount(event.target.value))}
+              inputMode="decimal"
+              placeholder="0.00"
+              aria-label={`${tokenIn} amount`}
+            />
+            <div className="swap-token-select-wrap">
+              <span className="swap-token-mark">{TOKEN_META[tokenIn]?.mark}</span>
+              <select value={tokenIn} onChange={(event) => selectInputToken(event.target.value)} aria-label="Pay token">
+                {SWAP_TOKENS.map((token) => <option key={token} value={token}>{token}</option>)}
+              </select>
+            </div>
           </div>
+          <div className="swap-token-box-foot">
+            <span>{TOKEN_META[tokenIn]?.name}</span>
+            <button type="button" onClick={useMax} disabled={!inputBalanceKnown || inputBalanceValue <= 0}>MAX</button>
+          </div>
+        </div>
 
-          <div className="composer-actions">
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={handleEstimate}
-              disabled={
-                !tokensValid ||
-                !amountLooksValid ||
-                !hasEnoughUsdc ||
-                status === "estimating" ||
-                status === "swapping" ||
-                isSwitchingChain
-              }
-            >
-              {status === "estimating" ? "Estimating..." : "Estimate Swap"}
-            </button>
+        <button type="button" className="swap-reverse-button" onClick={reversePair} disabled={busy} aria-label="Reverse swap pair">⇅</button>
+
+        <div className="swap-token-box swap-token-box-output">
+          <div className="swap-token-box-head">
+            <span>You receive</span>
+            <span>Balance: <strong>{formatAvailable(outputAsset, tokenOut)}</strong></span>
+          </div>
+          <div className="swap-token-input-row">
+            <div className={`swap-output-value ${estimateOutput ? "is-ready" : ""}`}>{estimateOutput || "—"}</div>
+            <div className="swap-token-select-wrap">
+              <span className="swap-token-mark">{TOKEN_META[tokenOut]?.mark}</span>
+              <select value={tokenOut} onChange={(event) => selectOutputToken(event.target.value)} aria-label="Receive token">
+                {SWAP_TOKENS.map((token) => <option key={token} value={token}>{token}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="swap-token-box-foot"><span>{TOKEN_META[tokenOut]?.name}</span><span>Live quote</span></div>
+        </div>
+      </div>
+
+      <div className="swap-v2-section">
+        <div className="swap-section-label">
+          <span>2</span>
+          <div><strong>Swap settings</strong><small>Maximum price movement you accept</small></div>
+        </div>
+        <div className="swap-slippage-row">
+          <span>Slippage tolerance</span>
+          <div>
+            {SLIPPAGE_OPTIONS.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                className={option.value === slippageBps ? "is-active" : ""}
+                onClick={() => setSlippageBps(option.value)}
+                disabled={busy}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {needsArcSwitch ? (
+        <div className="swap-network-note">
+          <span>↗</span>
+          <div><strong>Arc network required</strong><p>Your wallet will switch to Arc Testnet when you review the swap.</p></div>
+        </div>
+      ) : null}
+
+      {inputBalanceKnown && !hasEnoughBalance ? (
+        <div className="swap-funding-warning">
+          <span>!</span>
+          <div>
+            <strong>Not enough {tokenIn}</strong>
+            <p>You entered {amountIn || "0"} {tokenIn}, but your available balance is {formatAvailable(inputAsset, tokenIn)}.</p>
+          </div>
+          <button type="button" onClick={useMax}>Use max</button>
+        </div>
+      ) : null}
+
+      {estimate ? (
+        <div className="swap-v2-section swap-quote-section">
+          <div className="swap-section-label">
+            <span>3</span>
+            <div><strong>Review quote</strong><small>Live route from Circle App Kit</small></div>
+          </div>
+          <div className="swap-v2-quote">
+            <div><span>Pay</span><strong>{amountIn} {tokenIn}</strong></div>
+            <div className="swap-quote-output"><span>Estimated receive</span><strong>{estimateOutput || tokenOut}</strong></div>
+            <div><span>Network</span><strong>Arc Testnet</strong></div>
+            <div><span>Slippage</span><strong>{(slippageBps / 100).toFixed(slippageBps % 100 === 0 ? 0 : 1)}%</strong></div>
+            {feeRows.map((fee) => <div key={fee.id}><span>{fee.label}</span><strong>{fee.value}</strong></div>)}
+            <div><span>Wallet</span><strong>{shortAddress(walletSnapshot?.address)}</strong></div>
+          </div>
+        </div>
+      ) : null}
+
+      {error ? <p className="swap-v2-error" role="alert">{error}</p> : null}
+
+      {swapResult ? (
+        <div className="swap-v2-success">
+          <div>
+            <strong>{status === "success" ? "Swap submitted" : "Swap result"}</strong>
+            <span>{amountIn} {tokenIn} → {estimateOutput || tokenOut}</span>
+          </div>
+          {txHash ? <code>{shortHash(txHash)}</code> : null}
+          {explorerUrl ? <a href={explorerUrl} target="_blank" rel="noreferrer">View on ArcScan</a> : null}
+        </div>
+      ) : null}
+
+      <div className="swap-v2-actions">
+        {!estimate ? (
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={handleEstimate}
+            disabled={!tokensValid || !amountLooksValid || !hasEnoughBalance || busy}
+          >
+            {isSwitchingChain ? "Switching to Arc…" : status === "estimating" ? "Getting quote…" : "Review swap"}
+          </button>
+        ) : (
+          <>
+            <button type="button" className="button button-secondary" onClick={clearQuote} disabled={busy}>Edit</button>
             <button
               type="button"
               className="button button-primary"
               onClick={handleSwap}
-              disabled={
-                !tokensValid ||
-                !amountLooksValid ||
-                !hasEnoughUsdc ||
-                !estimate ||
-                needsArcSwitch ||
-                status === "estimating" ||
-                status === "swapping" ||
-                isSwitchingChain
-              }
+              disabled={!tokensValid || !amountLooksValid || !hasEnoughBalance || busy}
             >
-              {status === "swapping" ? "Swapping..." : `Swap ${tokenIn}`}
+              {status === "swapping" ? "Confirm in wallet…" : `Swap ${tokenIn}`}
             </button>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
 
-      {error ? (
-        <div className="empty-state empty-state-compact">
-          <strong>Swap unavailable</strong>
-          <p>{error}</p>
-        </div>
-      ) : null}
-
-      {swapResult ? (
-        <div className="empty-state empty-state-compact">
-          <strong>{status === "success" ? "Swap submitted" : "Swap result"}</strong>
-          <p>
-            {status === "success"
-              ? `Your ${amountIn} ${tokenIn} swap was submitted on Arc Testnet.`
-              : `${amountIn} ${tokenIn} to ${tokenOut}`}
-          </p>
-          {txHash ? <code>{shortHash(txHash)}</code> : null}
-          {explorerUrl ? (
-            <a href={explorerUrl} target="_blank" rel="noreferrer">
-              View on ArcScan
-            </a>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="swap-v2-footnote">
+        <span>Self-custodial</span><span>•</span><span>Wallet approval required</span><span>•</span><span>Arc Testnet</span>
+      </div>
     </section>
   );
 }
