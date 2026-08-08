@@ -50,6 +50,14 @@ function networkFromId(chainId) {
   );
 }
 
+function copilotNetworkId(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (normalized === "arc") return arcTestnet.id;
+  if (normalized === "ethereum-sepolia") return 11155111;
+  if (normalized === "base-sepolia") return 84532;
+  return null;
+}
+
 function defaultDestinationId(sourceChainId) {
   return sourceChainId === arcTestnet.id ? 84532 : arcTestnet.id;
 }
@@ -87,7 +95,7 @@ async function verifyProviderChain(provider, expectedChainId) {
   }
 }
 
-export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved }) {
+export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copilotAction }) {
   const { connector } = useAccount();
   const currentChainId = useChainId();
   const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
@@ -156,6 +164,24 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved }) {
     : Math.max(0, sourceUsdcNumber);
   const busy =
     isSwitching || ["switching", "estimating", "bridging"].includes(status);
+
+  useEffect(() => {
+    if (copilotAction?.tool !== "prepare_bridge") return;
+    const args = copilotAction.args || {};
+    const nextSource = copilotNetworkId(args.sourceNetwork);
+    const nextDestination = copilotNetworkId(args.destinationNetwork);
+    if (nextSource) setSourceChainId(nextSource);
+    if (nextDestination && nextDestination !== nextSource) {
+      setDestinationChainId(nextDestination);
+    } else if (nextSource) {
+      setDestinationChainId(defaultDestinationId(nextSource));
+    }
+    setAmount(cleanAmount(args.amount || ""));
+    setEstimate(null);
+    setResult(null);
+    setError("");
+    setStatus("idle");
+  }, [copilotAction]);
 
   useEffect(() => {
     let cancelled = false;
@@ -385,6 +411,10 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved }) {
           {sourceChain.shortName} → {destinationChain.shortName}
         </span>
       </div>
+
+      {copilotAction?.tool === "prepare_bridge" ? (
+        <div className="copilot-prepared-note"><strong>Prepared by Arc AI</strong><span>Balances and Circle fees are checked before signing.</span></div>
+      ) : null}
 
       <div className="bridge-v2-section">
         <div className="bridge-section-label">
