@@ -5,6 +5,7 @@ import "../styles/globals.css";
 import "../styles/wallet-pro.css";
 import "../styles/wallet-light.css";
 import "../styles/bridge-fix.css";
+import "../styles/bridge-networks.css";
 import "../styles/swap-fix.css";
 
 export default function App({ Component, pageProps }) {
