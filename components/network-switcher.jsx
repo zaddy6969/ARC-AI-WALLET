@@ -1,60 +1,98 @@
 import { useState } from "react";
-import { useChainId, useSwitchChain } from "wagmi";
+import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { MULTICHAIN_WALLET_CHAINS } from "../lib/arc-chain";
 
-function getChainLabel(chainId) {
-  return (
-    MULTICHAIN_WALLET_CHAINS.find((chain) => chain.id === chainId)?.name ||
-    "Unsupported network"
-  );
+function getChain(chainId) {
+  return MULTICHAIN_WALLET_CHAINS.find((chain) => chain.id === chainId) || null;
+}
+
+function chainIdHex(chainId) {
+  return `0x${Number(chainId).toString(16)}`;
+}
+
+function isUnknownChainError(error) {
+  const code = Number(error?.code || error?.cause?.code || 0);
+  const message = String(error?.message || error?.cause?.message || "").toLowerCase();
+  return code === 4902 || message.includes("unrecognized chain") || message.includes("unknown chain") || message.includes("not added");
 }
 
 export default function NetworkSwitcher({ compact = false }) {
   const chainId = useChainId();
+  const { connector } = useAccount();
   const { switchChainAsync, isPending } = useSwitchChain();
   const [error, setError] = useState("");
-  const currentChainId = MULTICHAIN_WALLET_CHAINS.some(
-    (chain) => chain.id === chainId
-  )
-    ? chainId
-    : "";
+  const [manualPending, setManualPending] = useState(false);
+  const currentChain = getChain(chainId);
+  const busy = isPending || manualPending;
+
+  const addAndSwitchChain = async (chain) => {
+    const provider = await connector?.getProvider?.();
+    if (!provider?.request) {
+      throw new Error("Wallet network switching is unavailable.");
+    }
+
+    const hexId = chainIdHex(chain.id);
+    await provider.request({
+      method: "wallet_addEthereumChain",
+      params: [
+        {
+          chainId: hexId,
+          chainName: chain.name,
+          nativeCurrency: chain.nativeCurrency,
+          rpcUrls: chain.rpcUrls.default.http,
+          blockExplorerUrls: chain.blockExplorers?.default?.url
+            ? [chain.blockExplorers.default.url]
+            : []
+        }
+      ]
+    });
+
+    await provider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: hexId }]
+    });
+  };
 
   const handleChange = async (event) => {
     const nextChainId = Number(event.target.value);
+    const nextChain = getChain(nextChainId);
 
-    if (!nextChainId || nextChainId === chainId) {
-      return;
-    }
+    if (!nextChain || nextChainId === chainId || busy) return;
+
+    setError("");
+    setManualPending(true);
 
     try {
-      setError("");
-      await switchChainAsync({ chainId: nextChainId });
+      try {
+        await switchChainAsync({ chainId: nextChainId });
+      } catch (switchError) {
+        if (!isUnknownChainError(switchError)) throw switchError;
+        await addAndSwitchChain(nextChain);
+      }
     } catch (nextError) {
-      const rejected =
-        nextError instanceof Error &&
-        nextError.message.toLowerCase().includes("reject");
-
+      const message = String(nextError?.message || "").toLowerCase();
       setError(
-        rejected
-          ? "Network switch rejected."
-          : "Unable to switch network. Try from your wallet."
+        message.includes("reject") || message.includes("denied")
+          ? "Network switch cancelled"
+          : "Could not switch network"
       );
+    } finally {
+      setManualPending(false);
     }
   };
 
   return (
     <div className={`network-switcher ${compact ? "network-switcher-compact" : ""}`}>
       <label>
-        <span className="field-label">Change network</span>
+        <span className="sr-only">Network</span>
+        <span className="network-switcher-dot" aria-hidden="true" />
         <select
-          value={currentChainId}
+          value={currentChain ? currentChain.id : ""}
           onChange={handleChange}
-          disabled={isPending || !switchChainAsync}
-          aria-label="Change wallet network"
+          disabled={busy}
+          aria-label="Switch network"
         >
-          {currentChainId === "" ? (
-            <option value="">{getChainLabel(chainId)}</option>
-          ) : null}
+          {!currentChain ? <option value="">Unsupported network</option> : null}
           {MULTICHAIN_WALLET_CHAINS.map((chain) => (
             <option key={chain.id} value={chain.id}>
               {chain.name}
@@ -62,9 +100,7 @@ export default function NetworkSwitcher({ compact = false }) {
           ))}
         </select>
       </label>
-      {isPending || error ? (
-        <small>{isPending ? "Switching network..." : error}</small>
-      ) : null}
+      {busy ? <small>Switching…</small> : error ? <small role="alert">{error}</small> : null}
     </div>
   );
 }
