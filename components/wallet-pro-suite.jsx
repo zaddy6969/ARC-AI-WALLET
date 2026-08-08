@@ -21,7 +21,7 @@ function formatUsd(value) {
 }
 
 function shorten(value, start = 6, end = 4) {
-  if (!value) return "";
+  if (!value) return "Not connected";
   if (value.length <= start + end + 3) return value;
   return `${value.slice(0, start)}…${value.slice(-end)}`;
 }
@@ -43,15 +43,18 @@ function openExternal(url) {
 
 export const WalletOverviewCard = memo(function WalletOverviewCard({
   walletSnapshot,
+  activityItems = [],
   copied,
   onCopy,
   onDisconnect,
   onSelectView,
-  onReceive
+  onReceive,
+  onAiOpen
 }) {
   const totalValue = getPortfolioValue(walletSnapshot);
   const assets = getReadyAssets(walletSnapshot);
   const usdc = assets.find((asset) => asset.symbol === "USDC");
+
   const actions = [
     { id: "send", label: "Send", icon: "send", onClick: () => onSelectView?.("send") },
     { id: "receive", label: "Receive", icon: "receive", onClick: onReceive },
@@ -60,11 +63,16 @@ export const WalletOverviewCard = memo(function WalletOverviewCard({
   ];
 
   return (
-    <section className="wallet-overview-card wallet-overview-simple">
+    <section className="wallet-overview-card">
       <div className="wallet-overview-main">
-        <span className="wallet-balance-label">Total balance</span>
+        <div className="wallet-overview-label-row">
+          <span>Portfolio balance</span>
+          <span className={`network-state ${walletSnapshot?.onArc ? "is-ready" : ""}`}>
+            <i /> {walletSnapshot?.onArc ? "Arc connected" : "Switch network"}
+          </span>
+        </div>
         <strong className="wallet-overview-balance">{formatUsd(totalValue)}</strong>
-        <p className="wallet-primary-balance">{usdc?.balance || walletSnapshot?.usdcBalance || "Syncing…"}</p>
+        <p>{usdc?.balance || walletSnapshot?.usdcBalance || "Balance syncing…"}</p>
 
         <div className="wallet-overview-actions">
           {actions.map((action) => (
@@ -74,26 +82,126 @@ export const WalletOverviewCard = memo(function WalletOverviewCard({
             </button>
           ))}
         </div>
-
-        <div className="wallet-overview-footer">
-          <button type="button" onClick={onCopy} title={walletSnapshot?.address}>
-            {copied ? "Copied" : shorten(walletSnapshot?.address)}
-          </button>
-          <button type="button" onClick={onDisconnect}>Disconnect</button>
-        </div>
       </div>
+
+      <aside className="wallet-overview-side">
+        <div className="wallet-overview-wallet">
+          <span>Connected wallet</span>
+          <strong>{shorten(walletSnapshot?.address)}</strong>
+          <div>
+            <button type="button" onClick={onCopy}>{copied ? "Copied" : "Copy address"}</button>
+            <button type="button" onClick={onDisconnect}>Disconnect</button>
+          </div>
+        </div>
+        <div className="wallet-overview-mini-grid">
+          <div><span>Activity</span><strong>{activityItems.length}</strong></div>
+          <div><span>Network</span><strong>{walletSnapshot?.onArc ? "Arc" : "Other"}</strong></div>
+          <div><span>Gas</span><strong>{walletSnapshot?.onArc ? "USDC" : "Native"}</strong></div>
+          <button type="button" onClick={onAiOpen}><span>AI</span><strong>Ask Copilot</strong></button>
+        </div>
+      </aside>
     </section>
   );
 });
 
+function FastCommandBar({ onSelectView, onReceive, onAskCopilot }) {
+  const [command, setCommand] = useState("");
+  const [feedback, setFeedback] = useState("Ask about your wallet or open an action instantly.");
+
+  function runCommand(event) {
+    event.preventDefault();
+    const text = command.trim();
+    const lower = text.toLowerCase();
+    if (!text) return;
+
+    const route =
+      /\bbridge\b|move.*arc/.test(lower) ? "bridge" :
+      /\bswap\b|exchange|convert/.test(lower) ? "swap" :
+      /\brequest\b|invoice|payment link|qr/.test(lower) ? "request" :
+      /\breceive\b|my address/.test(lower) ? "receive" :
+      /\bsend\b|\bpay\b|transfer/.test(lower) ? "send" :
+      /\bportfolio\b|assets|holdings|tokens/.test(lower) ? "portfolio" :
+      /\bactivity\b|history|transactions/.test(lower) ? "activity" :
+      /\bcommunity\b|faucet|docs|ecosystem/.test(lower) ? "community" : null;
+
+    if (route === "receive") {
+      onReceive?.();
+      setFeedback("Receive address opened.");
+    } else if (route) {
+      onSelectView?.(route);
+      setFeedback(`Opening ${route}.`);
+    } else {
+      onAskCopilot?.(text);
+      setFeedback("Sent to Arc AI Copilot.");
+    }
+    setCommand("");
+  }
+
+  return (
+    <section className="pro-command-card">
+      <div className="pro-command-heading">
+        <span className="pro-ai-mark"><FeatureIcon name="ai" /></span>
+        <div>
+          <span>Arc AI</span>
+          <strong>Wallet command</strong>
+        </div>
+      </div>
+      <form onSubmit={runCommand}>
+        <input
+          value={command}
+          onChange={(event) => setCommand(event.target.value)}
+          placeholder='Try “show my balance” or “send 5 USDC”'
+          aria-label="Arc AI wallet command"
+        />
+        <button type="submit">Run</button>
+      </form>
+      <p>{feedback}</p>
+      <div className="pro-command-chips">
+        {["Analyze my wallet", "Show my balance", "Explain my last transaction"].map((label) => (
+          <button type="button" key={label} onClick={() => onAskCopilot?.(label)}>{label}</button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function WalletReadiness({ walletSnapshot, activityItems = [], onSelectView }) {
+  const funded = parseBalance(walletSnapshot?.usdcBalance) > 0;
+  const checks = [
+    { label: "Wallet", value: walletSnapshot?.address ? "Connected" : "Not connected", ok: Boolean(walletSnapshot?.address) },
+    { label: "Network", value: walletSnapshot?.onArc ? "Arc ready" : "Switch required", ok: Boolean(walletSnapshot?.onArc) },
+    { label: "USDC", value: funded ? walletSnapshot.usdcBalance : "Get test USDC", ok: funded },
+    { label: "Activity", value: activityItems.length ? `${activityItems.length} tracked` : "No activity yet", ok: activityItems.length > 0 }
+  ];
+
+  return (
+    <article className="pro-dashboard-card readiness-card">
+      <div className="pro-card-heading">
+        <div><span>Wallet status</span><strong>Ready for Arc</strong></div>
+        <button type="button" onClick={() => openExternal(CIRCLE_FAUCET_URL)}>Faucet</button>
+      </div>
+      <div className="readiness-list">
+        {checks.map((item) => (
+          <div key={item.label}>
+            <span className={`readiness-dot ${item.ok ? "is-ready" : ""}`}>{item.ok ? "✓" : "!"}</span>
+            <span><strong>{item.label}</strong><small>{item.value}</small></span>
+          </div>
+        ))}
+      </div>
+      {!walletSnapshot?.onArc ? (
+        <button className="pro-card-action" type="button" onClick={() => onSelectView?.("send")}>Open Send →</button>
+      ) : null}
+    </article>
+  );
+}
+
 function AssetsCard({ walletSnapshot, onSelectView }) {
   const assets = getReadyAssets(walletSnapshot);
-
   return (
     <article className="pro-dashboard-card assets-card">
       <div className="pro-card-heading">
-        <strong>Assets</strong>
-        <button type="button" onClick={() => onSelectView?.("portfolio")}>See all</button>
+        <div><span>Assets</span><strong>Arc portfolio</strong></div>
+        <button type="button" onClick={() => onSelectView?.("portfolio")}>View all</button>
       </div>
       <div className="pro-asset-list">
         {assets.length ? assets.map((asset) => (
@@ -103,65 +211,76 @@ function AssetsCard({ walletSnapshot, onSelectView }) {
             <span><strong>{asset.balance || `0 ${asset.symbol}`}</strong><small>{formatUsd(asset.valueUsd)}</small></span>
           </div>
         )) : (
-          <div className="pro-empty-row"><span>Balances are syncing.</span></div>
+          <div className="pro-empty-row"><span>Balances are syncing from Arc.</span></div>
         )}
       </div>
     </article>
   );
 }
 
-function RecentCard({ activityItems = [], onSelectView }) {
+function RecentCard({ activityItems = [], onSelectView, onAskCopilot }) {
   const items = activityItems.slice(0, 4);
-
   return (
     <article className="pro-dashboard-card recent-card">
       <div className="pro-card-heading">
-        <strong>Activity</strong>
-        <button type="button" onClick={() => onSelectView?.("activity")}>See all</button>
+        <div><span>Recent activity</span><strong>Latest wallet moves</strong></div>
+        <button type="button" onClick={() => onSelectView?.("activity")}>View all</button>
       </div>
       <div className="pro-recent-list">
         {items.length ? items.map((item) => (
-          <button type="button" key={item.id || item.txHash} onClick={() => onSelectView?.("activity")}>
+          <button type="button" key={item.id || item.txHash} onClick={() => onAskCopilot?.(`Explain transaction ${item.txHash || item.txHashShort || "latest"}`)}>
             <span className="pro-activity-icon">{item.kind === "sent" ? "↑" : item.kind === "received" ? "↓" : item.kind === "swap" ? "⇄" : "↗"}</span>
             <span><strong>{item.type || "Transaction"}</strong><small>{item.timeLabel || "Recently"}</small></span>
             <span><strong>{item.amount || "Tracked"}</strong><small>{item.txHashShort || shorten(item.txHash || "")}</small></span>
           </button>
         )) : (
-          <div className="pro-empty-row"><span>No activity yet.</span></div>
+          <div className="pro-empty-row"><span>Your Arc transactions will appear here.</span></div>
         )}
       </div>
     </article>
   );
 }
 
-export function FastDashboardPanel({ walletSnapshot, activityItems = [], onSelectView }) {
+export function FastDashboardPanel({ walletSnapshot, activityItems = [], onSelectView, onReceive, onAskCopilot }) {
   return (
-    <section className="fast-dashboard fast-dashboard-simple">
+    <section className="fast-dashboard">
+      <FastCommandBar onSelectView={onSelectView} onReceive={onReceive} onAskCopilot={onAskCopilot} />
       <div className="fast-dashboard-grid">
+        <WalletReadiness walletSnapshot={walletSnapshot} activityItems={activityItems} onSelectView={onSelectView} />
         <AssetsCard walletSnapshot={walletSnapshot} onSelectView={onSelectView} />
-        <RecentCard activityItems={activityItems} onSelectView={onSelectView} />
+        <RecentCard activityItems={activityItems} onSelectView={onSelectView} onAskCopilot={onAskCopilot} />
       </div>
     </section>
   );
 }
 
-export function TransactionGuardianBanner({ mode = "wallet" }) {
+export function TransactionGuardianBanner({ mode = "wallet", walletSnapshot }) {
   const labels = {
-    send: "Check address and amount before signing.",
-    swap: "Check quote and approval before signing.",
-    bridge: "Check source chain and amount before signing."
+    send: ["Send protection", "Review address, amount and fee before your wallet signs."],
+    swap: ["Swap protection", "Review token, quote and approval before your wallet signs."],
+    bridge: ["Bridge protection", "Review source network, amount and Arc destination before signing."]
   };
-  return <div className="pro-guardian pro-guardian-compact"><span>✓</span><p>{labels[mode] || "Your wallet controls every signature."}</p></div>;
+  const [title, text] = labels[mode] || ["Transaction protection", "Your wallet always controls the final signature."];
+
+  return (
+    <section className="pro-guardian">
+      <span>✓</span>
+      <div><strong>{title}</strong><p>{text}</p></div>
+      <small>{walletSnapshot?.onArc ? "Arc ready" : "Network check"} · Self-custody</small>
+    </section>
+  );
 }
 
 export function ActivityInterpreterPanel({ activityItems = [], onAskCopilot }) {
   const latest = activityItems[0];
-  if (!latest) return null;
-
   return (
-    <section className="pro-interpreter pro-interpreter-compact">
-      <div><strong>{latest.type || "Latest transaction"}</strong><span>{latest.amount || latest.txHashShort || ""}</span></div>
-      <button type="button" onClick={() => onAskCopilot?.(`Explain my latest transaction ${latest.txHash || ""}`)}>Explain</button>
+    <section className="pro-interpreter">
+      <div>
+        <span>AI transaction explainer</span>
+        <strong>{latest ? `${latest.type || "Transaction"} · ${latest.amount || "Tracked"}` : "No recent transaction"}</strong>
+        <p>{latest ? "Ask Arc AI for a plain-English explanation of your latest wallet action." : "Complete an Arc action to start building your activity history."}</p>
+      </div>
+      <button type="button" disabled={!latest} onClick={() => onAskCopilot?.(`Explain my latest transaction ${latest?.txHash || ""}`)}>Explain with AI</button>
     </section>
   );
 }
@@ -178,7 +297,7 @@ export function PaymentRequestPanel({ walletSnapshot }) {
 
   async function copyRequest() {
     if (!uri) return;
-    const message = `${amount || "0"} USDC${note ? ` · ${note}` : ""}\n${uri}`;
+    const message = `${amount || "0"} USDC requested on Arc${note ? ` — ${note}` : ""}\n${uri}`;
     try {
       await navigator.clipboard.writeText(message);
       setCopied(true);
@@ -187,17 +306,19 @@ export function PaymentRequestPanel({ walletSnapshot }) {
   }
 
   return (
-    <section className="pro-request-panel wallet-page-card">
-      <div className="simple-page-heading"><h2>Request USDC</h2></div>
+    <section className="pro-request-panel">
+      <div className="pro-page-heading"><span>Request payment</span><h2>Create an Arc USDC request</h2><p>Generate a QR request to your connected wallet.</p></div>
       <div className="pro-request-grid">
         <div className="pro-request-form">
-          <label><span>Amount</span><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="25.00" /></label>
-          <label><span>Note</span><input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional" maxLength={80} /></label>
-          <button className="button button-primary" type="button" onClick={copyRequest} disabled={!address || !amount}>{copied ? "Copied" : "Copy request"}</button>
+          <label><span>Amount (USDC)</span><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="25.00" /></label>
+          <label><span>Note</span><input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Payment for…" maxLength={80} /></label>
+          <label><span>Receive to</span><div className="pro-readonly-field">{address || "Connect wallet first"}</div></label>
+          <button className="button button-primary" type="button" onClick={copyRequest} disabled={!address || !amount}>{copied ? "Copied" : "Copy payment request"}</button>
         </div>
         <div className="pro-request-qr">
-          <div className="qr-surface">{uri ? <QRCodeSVG value={uri} size={180} level="M" /> : <span>Connect wallet</span>}</div>
+          <div className="qr-surface">{uri ? <QRCodeSVG value={uri} size={190} level="M" /> : <span>Connect wallet</span>}</div>
           <strong>{amount || "0.00"} USDC</strong>
+          <small>Arc Testnet · {shorten(address)}</small>
         </div>
       </div>
     </section>
@@ -206,21 +327,26 @@ export function PaymentRequestPanel({ walletSnapshot }) {
 
 export function CommunityHubPanel({ onSelectView }) {
   const links = [
-    { title: "Arc Docs", url: ARC_DOCS_URL },
-    { title: "Arc Community", url: ARC_COMMUNITY_URL },
-    { title: "ArcScan", url: ARC_EXPLORER_URL },
-    { title: "USDC Faucet", url: CIRCLE_FAUCET_URL }
+    { title: "Arc documentation", description: "Network and developer documentation.", url: ARC_DOCS_URL },
+    { title: "Arc community", description: "Updates, discussions and ecosystem resources.", url: ARC_COMMUNITY_URL },
+    { title: "ArcScan", description: "Inspect wallets, blocks and transactions.", url: ARC_EXPLORER_URL },
+    { title: "Circle faucet", description: "Get test USDC for supported test networks.", url: CIRCLE_FAUCET_URL }
   ];
 
   return (
-    <section className="wallet-page-card community-simple">
-      <div className="simple-page-heading"><h2>Explore Arc</h2></div>
-      <div className="community-link-grid">
+    <section className="pro-community-panel">
+      <div className="pro-page-heading"><span>Arc community</span><h2>Useful Arc resources</h2><p>Fund, explore and use your Arc wallet.</p></div>
+      <div className="pro-community-grid">
         {links.map((item) => (
-          <button type="button" key={item.title} onClick={() => openExternal(item.url)}><strong>{item.title}</strong><span>↗</span></button>
+          <button type="button" key={item.title} onClick={() => openExternal(item.url)}>
+            <span>↗</span><strong>{item.title}</strong><p>{item.description}</p>
+          </button>
         ))}
       </div>
-      <button className="button button-secondary" type="button" onClick={() => onSelectView?.("bridge")}>Bridge to Arc</button>
+      <div className="pro-community-actions">
+        <button type="button" className="button button-primary" onClick={() => onSelectView?.("bridge")}>Bridge USDC to Arc</button>
+        <button type="button" className="button button-secondary" onClick={() => onSelectView?.("request")}>Request payment</button>
+      </div>
     </section>
   );
 }
