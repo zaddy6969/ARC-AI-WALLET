@@ -23,7 +23,7 @@ function ThinkingBubble() {
   return (
     <div className="assistant-message assistant-message-assistant assistant-message-thinking">
       <span className="field-label">Arc AI</span>
-      <p>Analyzing<span className="typing-dots" aria-hidden="true"><i /><i /><i /></span></p>
+      <p>Thinking<span className="typing-dots" aria-hidden="true"><i /><i /><i /></span></p>
     </div>
   );
 }
@@ -37,7 +37,19 @@ function InsightCard({ item }) {
   );
 }
 
-function ActionButton({ action, onPrompt }) {
+function ActionButton({ action, onPrompt, onWalletAction }) {
+  if (action.kind === "wallet-action") {
+    return (
+      <button
+        type="button"
+        className="button button-primary copilot-action-button"
+        onClick={() => onWalletAction?.(action)}
+      >
+        {action.label || "Review action"}
+      </button>
+    );
+  }
+
   if (action.kind === "prompt") {
     return <button type="button" className="button button-secondary" onClick={() => onPrompt(action.prompt)}>{action.label}</button>;
   }
@@ -57,12 +69,13 @@ export default function WalletAssistant({
   walletSnapshot,
   activityItems,
   activityStatus,
-  initialPrompt
+  initialPrompt,
+  onWalletAction
 }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Arc AI is ready. Ask about balances, activity, risk, Send, Swap or Bridge."
+      content: "Arc AI Copilot is ready. Ask about your wallet or tell me to prepare a Send, Swap, Bridge, or network switch."
     }
   ]);
   const [question, setQuestion] = useState("");
@@ -120,6 +133,7 @@ export default function WalletAssistant({
     setQuestion("");
     setLoading(true);
     setError("");
+    setActions([]);
     requestRef.current?.abort();
     requestRef.current = new AbortController();
 
@@ -130,7 +144,7 @@ export default function WalletAssistant({
         signal: requestRef.current.signal,
         body: JSON.stringify({
           question: trimmed,
-          messages: nextMessages.slice(-6),
+          messages: nextMessages.slice(-8),
           context,
           stream: false
         })
@@ -180,7 +194,7 @@ export default function WalletAssistant({
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, actions]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -192,7 +206,7 @@ export default function WalletAssistant({
       <div className="assistant-hero">
         <div className="ai-orb-avatar" aria-hidden="true"><span /></div>
         <div><p className="section-kicker">Arc AI</p><h2>Wallet copilot</h2></div>
-        <span className="status-badge">{loading ? "Analyzing" : "Ready"}</span>
+        <span className="status-badge">{loading ? "Thinking" : "Ready"}</span>
       </div>
 
       <div className="copilot-summary-grid">
@@ -217,8 +231,15 @@ export default function WalletAssistant({
       </div>
 
       {actions.length ? (
-        <div className="action-row">
-          {actions.map((action) => <ActionButton key={action.id} action={action} onPrompt={askAssistant} />)}
+        <div className="action-row copilot-action-row">
+          {actions.map((action) => (
+            <ActionButton
+              key={action.id}
+              action={action}
+              onPrompt={askAssistant}
+              onWalletAction={onWalletAction}
+            />
+          ))}
         </div>
       ) : null}
 
@@ -227,11 +248,11 @@ export default function WalletAssistant({
           className="assistant-input"
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder='Ask “what is my balance?” or “explain my last transaction”'
+          placeholder='Try “send 5 USDC to 0x…” or “bridge 10 USDC from Base to Arc”'
           rows={3}
         />
         <div className="assistant-form-row">
-          <button type="submit" className="button button-primary" disabled={loading || !question.trim()}>{loading ? "Analyzing…" : "Ask Arc AI"}</button>
+          <button type="submit" className="button button-primary" disabled={loading || !question.trim()}>{loading ? "Thinking…" : "Ask Arc AI"}</button>
         </div>
       </form>
 
