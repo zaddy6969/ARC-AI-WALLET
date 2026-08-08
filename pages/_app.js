@@ -7,6 +7,7 @@ import "../styles/wallet-light.css";
 import "../styles/bridge-fix.css";
 import "../styles/bridge-networks.css";
 import "../styles/swap-fix.css";
+import "../styles/action-pages.css";
 
 export default function App({ Component, pageProps }) {
   return (
