@@ -1,6 +1,7 @@
 import Head from "next/head";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSwitchChain } from "wagmi";
 import AppShell from "../components/app-shell";
 import WalletLoginScreen from "../components/wallet-login-screen";
 import WalletSidebar from "../components/wallet-sidebar";
@@ -68,6 +69,14 @@ const SUPPORTED_VIEWS = new Set([
   "request"
 ]);
 
+function copilotNetworkChainId(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (normalized === "arc") return 5042002;
+  if (normalized === "ethereum-sepolia") return 11155111;
+  if (normalized === "base-sepolia") return 84532;
+  return null;
+}
+
 function ConnectedWalletExperience({ walletSnapshot }) {
   const {
     mergedActivity,
@@ -77,10 +86,12 @@ function ConnectedWalletExperience({ walletSnapshot }) {
     refreshActivity,
     updateLocalActivityByHash
   } = useWalletAppState(walletSnapshot);
+  const { switchChainAsync } = useSwitchChain();
   const [activeView, setActiveView] = useState("dashboard");
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState(null);
+  const [copilotAction, setCopilotAction] = useState(null);
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef(null);
 
@@ -98,8 +109,10 @@ function ConnectedWalletExperience({ walletSnapshot }) {
       }
 
       if (SUPPORTED_VIEWS.has(nextHash)) {
+        setCopilotAction(null);
         setActiveView(nextHash);
       } else if (nextHash) {
+        setCopilotAction(null);
         setActiveView("dashboard");
         window.history.replaceState(null, "", "/#dashboard");
       }
@@ -110,18 +123,34 @@ function ConnectedWalletExperience({ walletSnapshot }) {
     return () => window.removeEventListener("hashchange", syncViewFromHash);
   }, []);
 
+  const updateViewLocation = useCallback((view) => {
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `/#${view}`);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
+
   const handleSelectView = useCallback((view) => {
+    setCopilotAction(null);
     if (!SUPPORTED_VIEWS.has(view) || view === "receive") {
       if (view === "receive") setReceiveOpen(true);
       return;
     }
 
     setActiveView(view);
-    if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", `/#${view}`);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    updateViewLocation(view);
+  }, [updateViewLocation]);
+
+  const openCopilotView = useCallback((view, action) => {
+    if (!SUPPORTED_VIEWS.has(view) || view === "receive") {
+      if (view === "receive") setReceiveOpen(true);
+      return;
     }
-  }, []);
+    setCopilotAction({ ...action, id: action.id || `${Date.now()}-${Math.random()}` });
+    setActiveView(view);
+    updateViewLocation(view);
+    setAssistantOpen(false);
+  }, [updateViewLocation]);
 
   const handleCopyAddress = useCallback(async () => {
     if (!walletSnapshot.address) return;
@@ -144,6 +173,47 @@ function ConnectedWalletExperience({ walletSnapshot }) {
     });
     setAssistantOpen(true);
   }, []);
+
+  const handleCopilotAction = useCallback(async (action) => {
+    if (!action?.tool) return;
+
+    if (action.tool === "prepare_send") {
+      openCopilotView("send", action);
+      return;
+    }
+    if (action.tool === "prepare_swap") {
+      openCopilotView("swap", action);
+      return;
+    }
+    if (action.tool === "prepare_bridge") {
+      openCopilotView("bridge", action);
+      return;
+    }
+    if (action.tool === "open_wallet_view") {
+      const view = action?.args?.view;
+      if (view === "receive") {
+        setAssistantOpen(false);
+        setReceiveOpen(true);
+      } else if (SUPPORTED_VIEWS.has(view)) {
+        setAssistantOpen(false);
+        handleSelectView(view);
+      }
+      return;
+    }
+    if (action.tool === "switch_network") {
+      const chainId = copilotNetworkChainId(action?.args?.network);
+      if (!chainId || !switchChainAsync) return;
+      try {
+        await switchChainAsync({ chainId });
+        setAssistantOpen(false);
+      } catch {
+        setAssistantPrompt({
+          id: `${Date.now()}-switch-error`,
+          text: "My wallet did not complete the requested network switch. Tell me what to check next."
+        });
+      }
+    }
+  }, [handleSelectView, openCopilotView, switchChainAsync]);
 
   return (
     <AppShell walletSnapshot={walletSnapshot}>
@@ -204,12 +274,20 @@ function ConnectedWalletExperience({ walletSnapshot }) {
           ) : activeView === "swap" ? (
             <>
               <TransactionGuardianBanner mode="swap" walletSnapshot={walletSnapshot} />
-              <SwapUsdcPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} />
+              <SwapUsdcPanel
+                walletSnapshot={walletSnapshot}
+                onActivitySaved={saveLocalActivity}
+                copilotAction={copilotAction}
+              />
             </>
           ) : activeView === "bridge" ? (
             <>
               <TransactionGuardianBanner mode="bridge" walletSnapshot={walletSnapshot} />
-              <BridgeToArcPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} />
+              <BridgeToArcPanel
+                walletSnapshot={walletSnapshot}
+                onActivitySaved={saveLocalActivity}
+                copilotAction={copilotAction}
+              />
             </>
           ) : (
             <>
@@ -218,6 +296,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
                 walletSnapshot={walletSnapshot}
                 onActivitySaved={saveLocalActivity}
                 onActivityUpdated={updateLocalActivityByHash}
+                copilotAction={copilotAction}
               />
             </>
           )}
@@ -239,6 +318,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
         activityItems={mergedActivity}
         activityStatus={liveActivityStatus}
         initialPrompt={assistantPrompt}
+        onWalletAction={handleCopilotAction}
       />
     </AppShell>
   );
