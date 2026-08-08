@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { createArcAppKitClient, formatAppKitError } from "../lib/arc-app-kit";
-import { arcTestnet } from "../lib/arc-chain";
+import { ARC_CIRBTC_ERC20_ADDRESS, arcTestnet } from "../lib/arc-chain";
 import { createWalletActionRecord } from "../lib/local-activity";
 
 const SWAP_TOKENS = ["USDC", "EURC", "cirBTC"];
@@ -102,6 +102,10 @@ function getSwapFeeSummary(estimate) {
     .join(" + ");
 }
 
+function getSwapTokenIdentifier(token) {
+  return token === "cirBTC" ? ARC_CIRBTC_ERC20_ADDRESS : token;
+}
+
 async function loadKitKey() {
   const response = await fetch("/api/app-kit-config");
   const payload = await response.json();
@@ -111,6 +115,27 @@ async function loadKitKey() {
   }
 
   return payload.kitKey;
+}
+
+async function readProxyRequestBody(input, init) {
+  if (typeof init?.body === "string") {
+    return init.body;
+  }
+
+  if (typeof URLSearchParams !== "undefined" && init?.body instanceof URLSearchParams) {
+    return init.body.toString();
+  }
+
+  if (typeof Request !== "undefined" && input instanceof Request) {
+    try {
+      const body = await input.clone().text();
+      return body || undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
 }
 
 async function withCircleStablecoinProxy(operation) {
@@ -130,7 +155,7 @@ async function withCircleStablecoinProxy(operation) {
     ) {
       const url = new URL(requestUrl);
       const method = init?.method || input?.method || "GET";
-      const body = typeof init?.body === "string" ? init.body : undefined;
+      const body = await readProxyRequestBody(input, init);
 
       return originalFetch("/api/circle-stablecoin-proxy", {
         method: "POST",
@@ -227,8 +252,8 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
           adapter: client.adapter,
           chain: "Arc_Testnet"
         },
-        tokenIn,
-        tokenOut,
+        tokenIn: getSwapTokenIdentifier(tokenIn),
+        tokenOut: getSwapTokenIdentifier(tokenOut),
         amountIn,
         config: {
           kitKey,
