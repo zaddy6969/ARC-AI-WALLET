@@ -1,5 +1,5 @@
 import { BrowserProvider, Contract, formatUnits, parseUnits } from "ethers";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { isAddress } from "viem";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { ARC_USDC_ERC20_ADDRESS, arcTestnet } from "../lib/arc-chain";
@@ -12,19 +12,32 @@ const USDC_ABI = [
 ];
 
 function normalizeAmount(value) {
-  return String(value || "").replace(/[^\d.]/g, "");
+  const next = String(value || "").replace(/[^\d.]/g, "");
+  const [whole, ...rest] = next.split(".");
+  return rest.length ? `${whole}.${rest.join("").slice(0, 6)}` : whole;
 }
 
 function shortAddress(address) {
-  if (!address) {
-    return "";
-  }
+  if (!address) return "";
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
 
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+function parseDisplayedBalance(value) {
+  const numeric = Number(String(value || "").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function formatNumber(value, maximumFractionDigits = 6) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "0";
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits
+  }).format(numeric);
 }
 
 function formatGasFee(value) {
-  return `${Number(formatUnits(value, arcTestnet.nativeCurrency.decimals)).toFixed(6)} ${
+  return `${formatNumber(formatUnits(value, arcTestnet.nativeCurrency.decimals), 6)} ${
     arcTestnet.nativeCurrency.symbol
   }`;
 }
@@ -38,11 +51,11 @@ function formatSendError(error, fallback) {
     normalized.includes("user denied") ||
     normalized.includes("rejected the request")
   ) {
-    return "Transaction rejected by user.";
+    return "Transaction rejected in your wallet.";
   }
 
   if (normalized.includes("insufficient")) {
-    return "Insufficient USDC balance or Arc gas reserve.";
+    return "Not enough USDC for this transfer and the Arc network fee.";
   }
 
   if (
@@ -50,18 +63,15 @@ function formatSendError(error, fallback) {
     normalized.includes("chain") ||
     normalized.includes("unsupported")
   ) {
-    return "Wrong network, please switch to Arc Testnet.";
+    return "Switch your wallet to Arc Testnet and try again.";
   }
 
-  return fallback;
+  return message || fallback;
 }
 
 async function getTransferContext(connector, sender, recipient, amount) {
   const injectedProvider = await connector.getProvider();
-
-  if (!injectedProvider) {
-    throw new Error("Wallet provider is unavailable.");
-  }
+  if (!injectedProvider) throw new Error("Wallet provider is unavailable.");
 
   const provider = new BrowserProvider(injectedProvider);
   const signer = await provider.getSigner();
@@ -70,14 +80,7 @@ async function getTransferContext(connector, sender, recipient, amount) {
   const parsedAmount = parseUnits(amount, decimals);
   const balance = await contract.balanceOf(sender);
 
-  return {
-    provider,
-    signer,
-    contract,
-    decimals,
-    parsedAmount,
-    balance
-  };
+  return { provider, contract, parsedAmount, balance };
 }
 
 export default function SendUsdcPanel({
@@ -94,48 +97,48 @@ export default function SendUsdcPanel({
   const [error, setError] = useState("");
   const [estimate, setEstimate] = useState(null);
   const [result, setResult] = useState(null);
-  const estimateRequestRef = useRef(0);
 
+  const isSignedIn = Boolean(walletSnapshot?.isSignedIn);
   const recipientValid = Boolean(recipient) && isAddress(recipient);
   const amountValue = Number(amount || 0);
   const amountValid = Number.isFinite(amountValue) && amountValue > 0;
-  const isSignedIn = walletSnapshot?.isSignedIn;
+  const availableUsdc = parseDisplayedBalance(walletSnapshot?.usdcBalance);
+  const balanceReady = walletSnapshot?.balanceStatus === "ready";
+  const amountExceedsBalance = balanceReady && amountValue > availableUsdc + 0.0000001;
   const needsArcSwitch = isSignedIn && chainId !== arcTestnet.id;
-  const feeReady = Boolean(estimate);
-
-  useEffect(() => {
-    estimateRequestRef.current += 1;
-    setEstimate(null);
-    setResult(null);
-    setError("");
-    setStatus("idle");
-  }, [recipient, amount]);
+  const busy = isSwitchingChain || ["switching", "estimating", "sending", "confirming"].includes(status);
+  const feeValue = estimate
+    ? Number(formatUnits(estimate.fee, arcTestnet.nativeCurrency.decimals))
+    : 0;
+  const totalDebit = amountValue + feeValue;
+  const totalExceedsBalance = Boolean(
+    estimate && balanceReady && totalDebit > availableUsdc + 0.0000001
+  );
+  const safeMax = Math.max(0, availableUsdc - feeValue - 0.000001);
 
   const explorerUrl = useMemo(
     () => (result?.hash ? `${arcTestnet.blockExplorers.default.url}/tx/${result.hash}` : ""),
     [result]
   );
 
-  const ensureArcNetwork = async () => {
-    if (chainId === arcTestnet.id || !switchChainAsync) {
-      return;
-    }
+  const resetReview = () => {
+    setEstimate(null);
+    setResult(null);
+    setError("");
+    setStatus("idle");
+  };
 
+  const ensureArcNetwork = async () => {
+    if (chainId === arcTestnet.id) return;
+    if (!switchChainAsync) throw new Error("Wallet network switching is unavailable.");
+    setStatus("switching");
     await switchChainAsync({ chainId: arcTestnet.id });
   };
 
   const validateTransfer = async () => {
-    if (!connector || !isSignedIn) {
-      throw new Error("Wallet not connected.");
-    }
-
-    if (!recipientValid) {
-      throw new Error("Invalid wallet address.");
-    }
-
-    if (!amountValid) {
-      throw new Error("Enter valid USDC amount.");
-    }
+    if (!connector || !isSignedIn) throw new Error("Connect your wallet first.");
+    if (!recipientValid) throw new Error("Enter a valid wallet address.");
+    if (!amountValid) throw new Error("Enter a valid USDC amount.");
 
     const context = await getTransferContext(
       connector,
@@ -151,139 +154,53 @@ export default function SendUsdcPanel({
     return context;
   };
 
-  const estimateFee = async ({ silent = false } = {}) => {
-    if (!recipientValid || !amountValid || !isSignedIn || !connector) {
-      return null;
-    }
+  const createEstimate = async () => {
+    if (needsArcSwitch) await ensureArcNetwork();
+    setStatus("estimating");
+    const context = await validateTransfer();
+    const gasLimit = await context.contract.transfer.estimateGas(recipient, context.parsedAmount);
+    const feeData = await context.provider.getFeeData();
+    const gasPrice = feeData.gasPrice || feeData.maxFeePerGas;
 
-    const requestId = estimateRequestRef.current + 1;
-    estimateRequestRef.current = requestId;
+    if (!gasPrice) throw new Error("Unable to estimate the Arc network fee.");
 
-    if (!silent) {
-      setStatus("estimating");
-    }
+    const nextEstimate = {
+      gasLimit,
+      gasPrice,
+      fee: gasLimit * gasPrice
+    };
+    setEstimate(nextEstimate);
+    setStatus("ready");
+    return { context, nextEstimate };
+  };
+
+  const handleReview = async () => {
     setError("");
+    setResult(null);
 
     try {
-      if (needsArcSwitch) {
-        await ensureArcNetwork();
+      if (amountExceedsBalance) {
+        throw new Error(`Available balance: ${formatNumber(availableUsdc)} USDC.`);
       }
-
-      const { contract, provider, parsedAmount } = await validateTransfer();
-      const gasLimit = await contract.transfer.estimateGas(recipient, parsedAmount);
-      const feeData = await provider.getFeeData();
-      const gasPrice = feeData.gasPrice || feeData.maxFeePerGas;
-
-      if (!gasPrice) {
-        throw new Error("RPC fee estimation failed.");
-      }
-
-      if (requestId !== estimateRequestRef.current) {
-        return null;
-      }
-
-      const nextEstimate = {
-        gasLimit,
-        gasPrice,
-        fee: gasLimit * gasPrice
-      };
-      setEstimate(nextEstimate);
-      setStatus("ready");
-      return nextEstimate;
+      await createEstimate();
     } catch (nextError) {
-      if (requestId !== estimateRequestRef.current) {
-        return null;
-      }
-
       setEstimate(null);
       setStatus("error");
-      setError(
-        formatSendError(
-          nextError,
-          nextError instanceof Error && nextError.message
-            ? nextError.message
-            : "RPC fee estimation failed."
-        )
-      );
-      return null;
+      setError(formatSendError(nextError, "Unable to review this transfer."));
     }
   };
 
-  useEffect(() => {
-    if (!recipientValid || !amountValid || !isSignedIn || needsArcSwitch) {
-      return undefined;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      void estimateFee({ silent: true });
-    }, 500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [recipient, amount, isSignedIn, needsArcSwitch]);
-
-  const handleEstimate = async () => {
-    if (!isSignedIn) {
-      setError("Wallet not connected.");
-      return;
-    }
-
-    if (needsArcSwitch) {
-      try {
-        await ensureArcNetwork();
-      } catch {
-        setError("Wrong network, please switch to Arc Testnet.");
-        return;
-      }
-    }
-
-    await estimateFee();
-  };
-
-  const handleSend = async (event) => {
-    event.preventDefault();
-
-    if (!isSignedIn || !connector) {
-      setError("Wallet not connected.");
-      return;
-    }
-
-    if (!recipientValid) {
-      setError("Invalid wallet address.");
-      return;
-    }
-
-    if (!amountValid) {
-      setError("Enter valid USDC amount.");
-      return;
-    }
+  const handleSend = async () => {
+    if (!estimate || totalExceedsBalance) return;
 
     setStatus("sending");
     setError("");
     setResult(null);
 
     try {
-      if (needsArcSwitch) {
-        await ensureArcNetwork();
-      }
-
-      const { contract, provider, parsedAmount } = await validateTransfer();
-
-      if (!estimate) {
-        const gasLimit = await contract.transfer.estimateGas(recipient, parsedAmount);
-        const feeData = await provider.getFeeData();
-        const gasPrice = feeData.gasPrice || feeData.maxFeePerGas;
-
-        if (!gasPrice) {
-          throw new Error("RPC fee estimation failed.");
-        }
-
-        setEstimate({
-          gasLimit,
-          gasPrice,
-          fee: gasLimit * gasPrice
-        });
-      }
-
+      if (needsArcSwitch) await ensureArcNetwork();
+      const { contract, parsedAmount } = await validateTransfer();
+      setStatus("sending");
       const transaction = await contract.transfer(recipient, parsedAmount);
       setResult({ hash: transaction.hash });
 
@@ -301,10 +218,7 @@ export default function SendUsdcPanel({
           txHash: transaction.hash,
           explorerUrl: `${arcTestnet.blockExplorers.default.url}/tx/${transaction.hash}`,
           summary: `Sent ${amount} USDC to ${shortAddress(recipient)} on Arc Testnet.`,
-          metadata: {
-            token: "USDC",
-            network: "Arc_Testnet"
-          }
+          metadata: { token: "USDC", network: "Arc_Testnet" }
         })
       );
 
@@ -316,166 +230,165 @@ export default function SendUsdcPanel({
         blockNumber: Number(receipt?.blockNumber || 0)
       });
       setStatus(confirmed ? "success" : "error");
-
-      if (!confirmed) {
-        setError("Transaction failed.");
-      }
+      if (!confirmed) setError("Transaction failed on Arc Testnet.");
     } catch (nextError) {
       setStatus("error");
       setError(formatSendError(nextError, "Unable to send USDC."));
     }
   };
 
-  return (
-    <section className="card">
-      <div className="section-heading">
-        <div>
-          <p className="section-kicker">USDC Transfer</p>
-          <h2>Send USDC on Arc Testnet</h2>
+  const useMax = () => {
+    if (!balanceReady || availableUsdc <= 0) return;
+    const next = estimate ? safeMax : availableUsdc;
+    setAmount(next.toFixed(6).replace(/0+$/, "").replace(/\.$/, ""));
+    resetReview();
+  };
+
+  if (!isSignedIn) {
+    return (
+      <section className="card send-v2">
+        <div className="send-v2-head">
+          <div><span className="send-eyebrow">Arc Transfer</span><h2>Send USDC</h2></div>
+          <span className="send-network-pill">Arc Testnet</span>
         </div>
-        <span className="status-badge">
-          {!isSignedIn
-            ? "Wallet required"
-            : needsArcSwitch
-              ? "Switch on send"
-              : status === "sending"
-                ? "Sending USDC"
-                : status === "confirming"
-                  ? "Confirming transaction"
-                  : "Ready"}
-        </span>
+        <div className="send-empty-state"><strong>Connect wallet to send</strong><p>Your connected wallet signs every transfer.</p></div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="card send-v2">
+      <div className="send-v2-head">
+        <div>
+          <span className="send-eyebrow">Arc Transfer</span>
+          <h2>Send USDC</h2>
+          <p>Enter a recipient, review the fee, then confirm in your wallet.</p>
+        </div>
+        <span className="send-network-pill">Arc Testnet</span>
       </div>
 
-      {!isSignedIn ? (
-        <div className="empty-state">
-          <strong>Wallet not connected.</strong>
-          <p>Connect your wallet to send real Arc Testnet USDC.</p>
-        </div>
-      ) : (
-        <>
-          <div className="wallet-summary-grid">
-            <div className="wallet-summary-item">
-              <span className="field-label">Sender</span>
-              <strong>{walletSnapshot.address}</strong>
-            </div>
-            <div className="wallet-summary-item">
-              <span className="field-label">Token being sent</span>
-              <strong>USDC</strong>
-            </div>
-            <div className="wallet-summary-item">
-              <span className="field-label">USDC balance</span>
-              <strong>{walletSnapshot.usdcBalance || "Syncing..."}</strong>
-            </div>
-            <div className="wallet-summary-item">
-              <span className="field-label">Estimated gas units</span>
-              <strong>{estimate ? estimate.gasLimit.toString() : "Auto on send"}</strong>
-            </div>
-            <div className="wallet-summary-item">
-              <span className="field-label">Estimated network fee</span>
-              <strong>{estimate ? formatGasFee(estimate.fee) : "Auto on send"}</strong>
-            </div>
+      <div className="send-v2-section">
+        <div className="send-section-label"><span>1</span><div><strong>Recipient</strong><small>Arc-compatible wallet address</small></div></div>
+        <label className={`send-address-field ${recipient && !recipientValid ? "has-error" : ""}`}>
+          <input
+            value={recipient}
+            onChange={(event) => {
+              setRecipient(event.target.value.trim());
+              resetReview();
+            }}
+            placeholder="0x..."
+            spellCheck="false"
+            autoComplete="off"
+            aria-label="Recipient wallet address"
+          />
+          {recipientValid ? <span className="send-valid-mark">✓</span> : null}
+        </label>
+        {recipient && !recipientValid ? <small className="send-field-error">Enter a valid EVM wallet address.</small> : null}
+      </div>
+
+      <div className="send-v2-section">
+        <div className="send-section-label"><span>2</span><div><strong>Amount</strong><small>USDC to send</small></div></div>
+        <label className="send-amount-field">
+          <div>
+            <input
+              value={amount}
+              onChange={(event) => {
+                setAmount(normalizeAmount(event.target.value));
+                resetReview();
+              }}
+              inputMode="decimal"
+              placeholder="0.00"
+              aria-label="USDC amount"
+            />
+            <strong>USDC</strong>
           </div>
+          <span className="send-available-line">
+            Available {balanceReady ? `${formatNumber(availableUsdc)} USDC` : "syncing…"}
+            {balanceReady && availableUsdc > 0 ? <button type="button" onClick={useMax}>MAX</button> : null}
+          </span>
+        </label>
 
-          <form className="composer-form" onSubmit={handleSend}>
-            <label className="composer-field">
-              <span className="field-label">Receiver address</span>
-              <input
-                value={recipient}
-                onChange={(event) => setRecipient(event.target.value.trim())}
-                placeholder="0x..."
-                className="composer-input"
-              />
-            </label>
+        <div className="send-route-summary">
+          <div><span>From</span><strong>{shortAddress(walletSnapshot.address)}</strong></div>
+          <span className="send-route-arrow">→</span>
+          <div><span>To</span><strong>{recipientValid ? shortAddress(recipient) : "Recipient"}</strong></div>
+          <div className="send-route-network"><span>Network</span><strong>Arc Testnet</strong></div>
+        </div>
+      </div>
 
-            <label className="composer-field">
-              <span className="field-label">USDC Amount</span>
-              <input
-                value={amount}
-                onChange={(event) => setAmount(normalizeAmount(event.target.value))}
-                inputMode="decimal"
-                placeholder="1.00"
-                className="composer-input"
-              />
-            </label>
-
-            <div className="empty-state empty-state-compact">
-              <strong>Transaction check</strong>
-              <p>
-                {!recipientValid
-                  ? "Invalid wallet address."
-                  : !amountValid
-                    ? "Enter valid USDC amount."
-                    : needsArcSwitch
-                      ? "Your wallet will switch to Arc Testnet automatically when you send."
-                      : !feeReady
-                        ? "The Arc network fee will be estimated automatically when you send."
-                        : "Ready to submit a real Arc Testnet USDC transfer after wallet confirmation."}
-              </p>
-            </div>
-
-            <div className="composer-actions">
-              <button
-                type="button"
-                className="button button-secondary"
-                onClick={handleEstimate}
-                disabled={
-                  !recipientValid ||
-                  !amountValid ||
-                  !connector ||
-                  status === "estimating" ||
-                  status === "sending" ||
-                  status === "confirming"
-                }
-              >
-                {status === "estimating" ? "Estimating fee..." : "Estimate Fee"}
-              </button>
-              <button
-                type="submit"
-                className="button button-primary"
-                disabled={
-                  !recipientValid ||
-                  !amountValid ||
-                  !connector ||
-                  status === "estimating" ||
-                  status === "sending" ||
-                  status === "confirming" ||
-                  isSwitchingChain
-                }
-              >
-                {status === "sending"
-                  ? "Sending USDC..."
-                  : status === "confirming"
-                    ? "Confirming transaction..."
-                    : needsArcSwitch
-                      ? "Switch & Send USDC"
-                      : "Send USDC"}
-              </button>
-            </div>
-          </form>
-        </>
-      )}
-
-      {error ? (
-        <div className="empty-state empty-state-compact">
-          <strong>Send unavailable</strong>
-          <p>{error}</p>
+      {estimate ? (
+        <div className="send-v2-section send-review-section">
+          <div className="send-section-label"><span>3</span><div><strong>Review transfer</strong><small>Check before wallet approval</small></div></div>
+          <div className="send-review-grid">
+            <div><span>Send</span><strong>{amount} USDC</strong></div>
+            <div><span>Network fee</span><strong>{formatGasFee(estimate.fee)}</strong></div>
+            <div><span>Recipient</span><strong>{shortAddress(recipient)}</strong></div>
+            <div><span>Network</span><strong>Arc Testnet</strong></div>
+          </div>
         </div>
       ) : null}
+
+      {amountExceedsBalance || totalExceedsBalance ? (
+        <div className="send-warning" role="alert">
+          <span>!</span>
+          <div>
+            <strong>Not enough USDC</strong>
+            <p>
+              {totalExceedsBalance
+                ? `Transfer plus fee is about ${formatNumber(totalDebit)} USDC. Available: ${formatNumber(availableUsdc)} USDC.`
+                : `Available balance: ${formatNumber(availableUsdc)} USDC.`}
+            </p>
+          </div>
+          {balanceReady && availableUsdc > 0 ? <button type="button" onClick={useMax}>Use max</button> : null}
+        </div>
+      ) : null}
+
+      {error && !amountExceedsBalance && !totalExceedsBalance ? <p className="send-error" role="alert">{error}</p> : null}
 
       {result?.hash ? (
-        <div className="empty-state empty-state-compact">
+        <div className="send-success">
           <strong>{status === "success" ? "USDC sent" : "Transaction submitted"}</strong>
-          <p>
-            {amount} USDC to {shortAddress(recipient)}
-          </p>
-          <code>{result.hash}</code>
-          {explorerUrl ? (
-            <a href={explorerUrl} target="_blank" rel="noreferrer">
-              View transaction on ArcScan
-            </a>
-          ) : null}
+          <span>{result.hash.slice(0, 10)}…{result.hash.slice(-6)}</span>
+          {explorerUrl ? <a href={explorerUrl} target="_blank" rel="noreferrer">View transaction</a> : null}
         </div>
       ) : null}
+
+      <div className="send-v2-actions">
+        {!estimate ? (
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={handleReview}
+            disabled={!recipientValid || !amountValid || amountExceedsBalance || busy}
+          >
+            {status === "switching" || isSwitchingChain
+              ? "Switching to Arc…"
+              : status === "estimating"
+                ? "Getting fee…"
+                : needsArcSwitch
+                  ? "Switch to Arc & review"
+                  : "Review transfer"}
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={handleSend}
+              disabled={busy || totalExceedsBalance}
+            >
+              {status === "sending"
+                ? "Confirm in wallet…"
+                : status === "confirming"
+                  ? "Confirming…"
+                  : `Send ${amount} USDC`}
+            </button>
+            <button type="button" className="button button-secondary" onClick={resetReview} disabled={busy}>Edit</button>
+          </>
+        )}
+      </div>
+
+      <div className="send-v2-footnote"><span>✓ Self-custodial</span><span>✓ Review before signing</span><span>✓ ArcScan receipt</span></div>
     </section>
   );
 }
