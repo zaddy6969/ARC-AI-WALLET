@@ -4,6 +4,7 @@ import AppProviders from "../components/app-providers";
 import "../styles/globals.css";
 import "../styles/wallet-pro.css";
 import "../styles/wallet-light.css";
+import "../styles/bridge-fix.css";
 
 export default function App({ Component, pageProps }) {
   return (
