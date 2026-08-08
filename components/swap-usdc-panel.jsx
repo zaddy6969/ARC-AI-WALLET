@@ -189,7 +189,7 @@ async function withCircleStablecoinProxy(operation) {
   }
 }
 
-export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
+export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilotAction }) {
   const { connector } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain();
@@ -223,6 +223,21 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
     setError("");
     setStatus("idle");
   }, [tokenIn, tokenOut, amountIn, slippageBps]);
+
+  useEffect(() => {
+    if (copilotAction?.tool !== "prepare_swap") return;
+    const args = copilotAction.args || {};
+    const nextIn = SWAP_TOKENS.includes(args.tokenIn) ? args.tokenIn : "USDC";
+    const nextOut = SWAP_TOKENS.includes(args.tokenOut) ? args.tokenOut : "EURC";
+    setTokenIn(nextIn);
+    setTokenOut(nextOut === nextIn ? (nextIn === "USDC" ? "EURC" : "USDC") : nextOut);
+    setAmountIn(normalizeAmount(args.amount || ""));
+    setSlippageBps([50, 100, 300].includes(Number(args.slippageBps)) ? Number(args.slippageBps) : 100);
+    setEstimate(null);
+    setSwapResult(null);
+    setError("");
+    setStatus("idle");
+  }, [copilotAction]);
 
   const clearQuote = () => {
     setEstimate(null);
@@ -374,6 +389,10 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved }) {
         </div>
         <span className="swap-network-pill">Arc Testnet</span>
       </div>
+
+      {copilotAction?.tool === "prepare_swap" ? (
+        <div className="copilot-prepared-note"><strong>Prepared by Arc AI</strong><span>Live quote is still required before signing.</span></div>
+      ) : null}
 
       <div className="swap-v2-section swap-pair-section">
         <div className="swap-section-label">
