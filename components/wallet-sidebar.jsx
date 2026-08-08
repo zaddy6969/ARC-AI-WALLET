@@ -4,10 +4,13 @@ const ACTIONS = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard" },
   { id: "send", label: "Send", icon: "send" },
   { id: "receive", label: "Receive", icon: "receive" },
+  { id: "request", label: "Request", icon: "request" },
   { id: "swap", label: "Swap", icon: "swap" },
   { id: "bridge", label: "Bridge", icon: "bridge" },
   { id: "portfolio", label: "Portfolio", icon: "portfolio" },
   { id: "activity", label: "Activity", icon: "activity" },
+  { id: "community", label: "Community", icon: "community" },
+  { id: "developer", label: "Developer", icon: "developer" },
   { id: "ai", label: "AI Assistant", icon: "ai" }
 ];
 
@@ -29,6 +32,32 @@ export function FeatureIcon({ name }) {
           <path d="M12 4v12" />
           <path d="m7 11 5 5 5-5" />
           <path d="M5 20h14" />
+        </svg>
+      );
+    case "request":
+      return (
+        <svg {...commonProps}>
+          <rect x="4" y="4" width="16" height="16" rx="4" />
+          <path d="M8 9h8" />
+          <path d="M8 13h5" />
+          <path d="M8 17h3" />
+        </svg>
+      );
+    case "community":
+      return (
+        <svg {...commonProps}>
+          <circle cx="9" cy="9" r="3" />
+          <circle cx="17" cy="8" r="2" />
+          <path d="M4 19c.6-3 2.3-5 5-5s4.4 2 5 5" />
+          <path d="M14 14c2.8-.3 4.8 1.2 5.5 4" />
+        </svg>
+      );
+    case "developer":
+      return (
+        <svg {...commonProps}>
+          <path d="m8 7-5 5 5 5" />
+          <path d="m16 7 5 5-5 5" />
+          <path d="m14 4-4 16" />
         </svg>
       );
     case "ai":
@@ -106,14 +135,9 @@ export function FeatureIcon({ name }) {
   }
 }
 
-function WalletSidebar({
-  activeView,
-  onSelect,
-  onReceive,
-  onAiOpen
-}) {
+function WalletSidebar({ activeView, onSelect, onReceive, onAiOpen }) {
   return (
-    <aside className="wallet-sidebar floating-wallet-dock">
+    <aside className="wallet-sidebar floating-wallet-dock pro-wallet-sidebar">
       <nav aria-label="Wallet actions">
         {ACTIONS.map((action) => {
           const isActive = action.id === activeView;
@@ -142,9 +166,7 @@ function WalletSidebar({
               data-wallet-action={action.id}
               title={action.label}
             >
-              <span className="dock-icon">
-                <FeatureIcon name={action.icon} />
-              </span>
+              <span className="dock-icon"><FeatureIcon name={action.icon} /></span>
               <span>{action.label}</span>
             </button>
           );
@@ -153,8 +175,8 @@ function WalletSidebar({
       <div className="wallet-sidebar-status">
         <span className="status-dot" />
         <div>
-          <strong>Arc connected</strong>
-          <small>Wallet OS v1.0</small>
+          <strong>Arc command center</strong>
+          <small>Community build · v2.0</small>
         </div>
       </div>
     </aside>
