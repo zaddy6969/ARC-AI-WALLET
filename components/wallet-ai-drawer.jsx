@@ -8,7 +8,8 @@ export default function WalletAiDrawer({
   walletSnapshot,
   activityItems,
   activityStatus,
-  initialPrompt
+  initialPrompt,
+  onWalletAction
 }) {
   return (
     <>
@@ -55,6 +56,7 @@ export default function WalletAiDrawer({
                 activityItems={activityItems}
                 activityStatus={activityStatus}
                 initialPrompt={initialPrompt}
+                onWalletAction={onWalletAction}
               />
             </motion.aside>
           </>
