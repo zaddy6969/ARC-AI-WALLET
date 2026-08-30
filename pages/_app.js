@@ -9,6 +9,7 @@ import "../styles/bridge-networks.css";
 import "../styles/swap-fix.css";
 import "../styles/action-pages.css";
 import "../styles/copilot.css";
+import "../styles/arc-community.css";
 
 export default function App({ Component, pageProps }) {
   return (
