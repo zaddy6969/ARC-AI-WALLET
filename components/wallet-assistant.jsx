@@ -6,10 +6,10 @@ import { buildWalletInsights } from "../lib/wallet-copilot";
 const FREE_AGENT_MODEL = "liquid/lfm-2.5-1.2b-instruct:free";
 
 const quickPrompts = [
+  "Hi — what can you do?",
   "Live Arc network status",
-  "Latest Arc Node release",
   "Analyze my wallet",
-  "Open Unified Balance",
+  "Explain Arc in simple words",
   "How do I bridge to Arc?",
   "Check my wallet risk"
 ];
@@ -107,7 +107,7 @@ const freeAgentTools = [
         properties: {
           view: {
             type: "string",
-            enum: ["dashboard", "send", "receive", "swap", "bridge", "unified", "request", "portfolio", "activity", "community"]
+            enum: ["dashboard", "send", "receive", "swap", "bridge", "unified", "request", "portfolio", "activity", "community", "agent"]
           }
         },
         required: ["view"],
@@ -120,7 +120,7 @@ const freeAgentTools = [
 function MessageBubble({ role, content }) {
   return (
     <div className={`assistant-message assistant-message-${role}`}>
-      <span className="field-label">{role === "assistant" ? "Arc AI" : "You"}</span>
+      <span className="field-label">{role === "assistant" ? "Arc Agent" : "You"}</span>
       <p>{content || "..."}</p>
     </div>
   );
@@ -129,8 +129,8 @@ function MessageBubble({ role, content }) {
 function ThinkingBubble({ mode }) {
   return (
     <div className="assistant-message assistant-message-assistant assistant-message-thinking">
-      <span className="field-label">{mode === "free" ? "Fast Agent" : "Arc AI"}</span>
-      <p>Working<span className="typing-dots" aria-hidden="true"><i /><i /><i /></span></p>
+      <span className="field-label">{mode === "free" ? "Fast Free Agent" : "Arc Agent"}</span>
+      <p>Thinking<span className="typing-dots" aria-hidden="true"><i /><i /><i /></span></p>
     </div>
   );
 }
@@ -263,17 +263,16 @@ export default function WalletAssistant({
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Arc AI Agent is ready. I can inspect live Arc status, check the latest Arc Node release, analyze your wallet, and prepare Send, Swap, Bridge or navigation actions for your review."
+      content: "Hi — I’m the real Arc AI Agent. Ask me anything, or ask me to inspect Arc, explain your wallet, and prepare Send, Swap or Bridge actions for your review."
     }
   ]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("Live wallet intelligence");
+  const [notice, setNotice] = useState("Real AI · automatic provider");
   const [actions, setActions] = useState([]);
   const [agentMode, setAgentMode] = useState("arc");
   const [puterReady, setPuterReady] = useState(false);
-  const autoAnalyzeAddressRef = useRef("");
   const externalPromptRef = useRef("");
   const threadRef = useRef(null);
   const requestRef = useRef(null);
@@ -316,7 +315,7 @@ export default function WalletAssistant({
     };
   }, [activityItems, activityStatus, walletSnapshot]);
 
-  const freeAgentContext = useMemo(() => ({
+  const publicWalletContext = useMemo(() => ({
     wallet: {
       address: context.wallet.address,
       connected: context.wallet.connected,
@@ -333,36 +332,47 @@ export default function WalletAssistant({
     },
     activity: {
       status: context.activity.status,
-      count: context.activity.items.length
+      count: context.activity.items.length,
+      items: context.activity.items.slice(0, 5).map((item) => ({
+        type: item.type,
+        token: item.token,
+        amount: item.amount,
+        timeLabel: item.timeLabel,
+        txHashShort: item.txHashShort,
+        kind: item.kind
+      }))
     }
   }), [context]);
 
   const insights = useMemo(() => buildWalletInsights(context), [context]);
 
-  const askFreeAgent = async (trimmed, nextMessages) => {
+  const askPuterAgent = async (nextMessages) => {
     if (typeof window === "undefined" || !window.puter?.ai?.chat) {
-      throw new Error("Free Agent is still loading. Try again in a moment.");
+      throw new Error("Real free AI is still loading. Try again in a moment.");
     }
 
     const systemMessage = {
       role: "system",
       content: [
-        "You are Arc Fast Agent inside a self-custodial crypto wallet.",
+        "You are Arc AI Agent inside a self-custodial crypto wallet.",
+        "You are a real conversational AI: answer greetings, normal questions and follow-up conversation naturally. Do not repeat a wallet summary unless the user asks about their wallet.",
+        "You may answer general questions normally. For wallet-specific facts, use only the supplied public wallet context and live tools; never invent balances, activity or transaction status.",
         "Arc wallet transaction support is Arc Testnet only. Arc Testnet chain ID is 5042002.",
         "USDC is Arc gas. The native USDC view and ERC-20 USDC at 0x3600000000000000000000000000000000000000 expose the same balance pool, so never add or describe them as separate balances.",
         "Use get_arc_network_status for live network questions and get_arc_node_release for current Arc Node release questions.",
         "Use wallet action tools when the user asks to send, swap, bridge, switch network, or open a wallet feature.",
         "Wallet action tools only PREPARE an action. Never claim a transaction was signed, submitted or confirmed.",
         "Never request seed phrases, private keys or signing secrets.",
-        `Public wallet context: ${JSON.stringify(freeAgentContext)}`
+        `Public wallet context: ${JSON.stringify(publicWalletContext)}`
       ].join(" ")
     };
 
     const conversation = [
       systemMessage,
-      ...nextMessages.slice(-8).map((item) => ({ role: item.role, content: item.content }))
+      ...nextMessages.slice(-10).map((item) => ({ role: item.role, content: item.content }))
     ];
     const collectedActions = [];
+
     let response = await window.puter.ai.chat(conversation, {
       model: FREE_AGENT_MODEL,
       tools: freeAgentTools
@@ -372,7 +382,7 @@ export default function WalletAssistant({
       const toolCalls = Array.isArray(response?.message?.tool_calls) ? response.message.tool_calls : [];
       if (!toolCalls.length) {
         return {
-          answer: puterText(response) || "Fast Agent completed the request.",
+          answer: puterText(response) || "I’m ready. Ask me another question.",
           actions: collectedActions
         };
       }
@@ -396,9 +406,18 @@ export default function WalletAssistant({
     }
 
     return {
-      answer: puterText(response) || (collectedActions.length ? "I prepared the requested wallet action for your review." : "Fast Agent completed the request."),
+      answer: puterText(response) || (collectedActions.length ? "I prepared the requested wallet action for your review." : "I’m ready. Ask me another question."),
       actions: collectedActions
     };
+  };
+
+  const usePuterResult = (result, label) => {
+    setMessages((current) => [
+      ...current,
+      { role: "assistant", content: result.answer || "I could not generate an answer. Please try again." }
+    ]);
+    setNotice(label);
+    setActions(Array.isArray(result.actions) ? result.actions : []);
   };
 
   const askAssistant = async (nextQuestion) => {
@@ -416,63 +435,55 @@ export default function WalletAssistant({
 
     try {
       if (agentMode === "free") {
-        const result = await askFreeAgent(trimmed, nextMessages);
-        setMessages((current) => [
-          ...current,
-          { role: "assistant", content: result.answer || "Fast Agent could not generate an answer." }
-        ]);
-        setNotice(`Free Agent · ${FREE_AGENT_MODEL}`);
-        setActions(Array.isArray(result.actions) ? result.actions : []);
+        const result = await askPuterAgent(nextMessages);
+        usePuterResult(result, `Fast Free Agent · ${FREE_AGENT_MODEL}`);
         return;
       }
 
-      const response = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: requestRef.current.signal,
-        body: JSON.stringify({
-          question: trimmed,
-          messages: nextMessages.slice(-8),
-          context,
-          stream: false
-        })
-      });
-
       let payload = {};
+      let serverWorked = false;
+
       try {
-        payload = await response.json();
-      } catch {}
+        const response = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: requestRef.current.signal,
+          body: JSON.stringify({
+            question: trimmed,
+            messages: nextMessages.slice(-10),
+            context,
+            stream: false
+          })
+        });
 
-      if (!response.ok) throw new Error(payload.error || "Arc AI is unavailable.");
+        try {
+          payload = await response.json();
+        } catch {}
 
-      setMessages((current) => [
-        ...current,
-        {
-          role: "assistant",
-          content: payload.answer || "I could not generate a wallet answer. Please try again."
-        }
-      ]);
-      setNotice(payload.notice || "Arc AI ready");
-      setActions(Array.isArray(payload.actions) ? payload.actions : []);
+        serverWorked = response.ok && payload?.mode === "ai-copilot" && Boolean(payload?.answer);
+      } catch (serverError) {
+        if (serverError?.name === "AbortError") throw serverError;
+      }
+
+      if (serverWorked) {
+        setMessages((current) => [
+          ...current,
+          { role: "assistant", content: payload.answer }
+        ]);
+        setNotice(payload.notice || "Arc Agent · real AI");
+        setActions(Array.isArray(payload.actions) ? payload.actions : []);
+        return;
+      }
+
+      const result = await askPuterAgent(nextMessages);
+      usePuterResult(result, `Arc Agent · Real AI fallback · ${FREE_AGENT_MODEL}`);
     } catch (nextError) {
       if (nextError?.name === "AbortError") return;
-      setError(nextError instanceof Error ? nextError.message : "Arc AI could not complete that request. Try again.");
+      setError(nextError instanceof Error ? nextError.message : "Arc Agent could not complete that request. Try again.");
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (
-      agentMode === "arc" &&
-      walletSnapshot?.isSignedIn &&
-      walletSnapshot?.address &&
-      autoAnalyzeAddressRef.current !== walletSnapshot.address
-    ) {
-      autoAnalyzeAddressRef.current = walletSnapshot.address;
-      void askAssistant("Analyze my wallet");
-    }
-  }, [agentMode, walletSnapshot?.address, walletSnapshot?.isSignedIn]);
 
   useEffect(() => {
     if (initialPrompt?.id && initialPrompt?.text && externalPromptRef.current !== initialPrompt.id) {
@@ -495,7 +506,7 @@ export default function WalletAssistant({
     setAgentMode(mode);
     setActions([]);
     setError("");
-    setNotice(mode === "free" ? "Free Agent · Puter.js · no developer API key" : "Live wallet intelligence");
+    setNotice(mode === "free" ? "Fast Free Agent · Puter.js" : "Real AI · server first, Puter fallback");
   };
 
   return (
@@ -509,36 +520,37 @@ export default function WalletAssistant({
 
       <div className="assistant-hero">
         <div className="ai-orb-avatar" aria-hidden="true"><span /></div>
-        <div><p className="section-kicker">Arc AI</p><h2>AI agent</h2></div>
-        <span className={`status-badge ${agentMode === "free" ? "agent-status-free" : ""}`}>{loading ? "Working" : "Ready"}</span>
+        <div><p className="section-kicker">Arc AI</p><h2>Real AI agent</h2></div>
+        <span className={`status-badge ${agentMode === "free" ? "agent-status-free" : ""}`}>{loading ? "Thinking" : "Live"}</span>
       </div>
 
       <div className="agent-mode-switch" role="group" aria-label="AI agent mode">
         <button type="button" className={agentMode === "arc" ? "is-active" : ""} onClick={() => setMode("arc")} disabled={loading}>
-          <strong>Arc Agent</strong><small>Wallet AI + actions</small>
+          <strong>Arc Agent</strong><small>Real AI · automatic fallback</small>
         </button>
         <button type="button" className={agentMode === "free" ? "is-active" : ""} onClick={() => setMode("free")} disabled={loading}>
-          <strong>Fast Free Agent</strong><small>{puterReady ? "Puter ready" : "Loading Puter…"}</small>
+          <strong>Fast Free Agent</strong><small>{puterReady ? "Puter AI ready" : "Loading real AI…"}</small>
         </button>
       </div>
 
-      {agentMode === "free" ? (
-        <div className="agent-provider-note">
-          <span className="agent-live-dot" />
-          <div><strong>Free model agent</strong><p>No developer API key. Puter may ask you to sign in and usage follows your Puter allowance. Prompts and the minimal public wallet context shown here are sent to Puter AI.</p></div>
+      <div className="agent-provider-note">
+        <span className="agent-live-dot" />
+        <div>
+          <strong>{agentMode === "free" ? "Real free model active" : "Real AI provider chain"}</strong>
+          <p>{agentMode === "free" ? "This mode talks directly to the Puter AI model in your browser." : "Arc Agent tries the server AI first. If Vercel AI is unavailable, it automatically switches to Puter AI instead of showing a canned wallet response."}</p>
         </div>
-      ) : null}
+      </div>
 
       <div className="copilot-summary-grid">
         <div className="summary-card"><span className="field-label">Wallet</span><strong>{walletSnapshot?.address ? `${walletSnapshot.address.slice(0, 6)}…${walletSnapshot.address.slice(-4)}` : "Not connected"}</strong><small>{walletSnapshot?.onArc ? "Arc connected" : "Network check"}</small></div>
         <div className="summary-card"><span className="field-label">USDC</span><strong>{walletSnapshot?.usdcBalance || "Syncing…"}</strong><small>Live Arc balance</small></div>
-        <div className="summary-card"><span className="field-label">Agent tools</span><strong>Live + wallet</strong><small>RPC · Node · Actions</small></div>
+        <div className="summary-card"><span className="field-label">AI status</span><strong>{puterReady ? "Real model ready" : "Loading model"}</strong><small>Chat · tools · actions</small></div>
       </div>
 
       <p className="helper-copy">{notice}</p>
 
       <div className="agent-capability-strip">
-        <span>Live Arc RPC</span><span>Arc Node GitHub</span><span>Send</span><span>Swap</span><span>Bridge</span><span>Unified</span>
+        <span>Normal chat</span><span>General Q&A</span><span>Live Arc RPC</span><span>Wallet analysis</span><span>Send</span><span>Swap</span><span>Bridge</span><span>Unified</span>
       </div>
 
       <div className="prompt-row">
@@ -546,6 +558,12 @@ export default function WalletAssistant({
           <button key={prompt} type="button" className="prompt-chip" onClick={() => askAssistant(prompt)} disabled={loading}>{prompt}</button>
         ))}
       </div>
+
+      {insights.length ? (
+        <div className="copilot-insights-grid">
+          {insights.slice(0, 3).map((item) => <InsightCard key={item.id} item={item} />)}
+        </div>
+      ) : null}
 
       <div className="assistant-thread" ref={threadRef}>
         {messages.map((message, index) => (
@@ -572,17 +590,17 @@ export default function WalletAssistant({
           className="assistant-input"
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder={agentMode === "free" ? 'Try “check Arc status and latest node release”' : 'Try “send 5 USDC to 0x…” or “bridge 10 USDC from Base to Arc”'}
+          placeholder={'Ask anything — “hi”, “what is Arc?”, “analyze my wallet”, or “send 5 USDC to 0x…”'}
           rows={3}
         />
         <div className="assistant-form-row">
-          <button type="submit" className="button button-primary" disabled={loading || !question.trim() || (agentMode === "free" && !puterReady)}>{loading ? "Agent working…" : agentMode === "free" ? "Run Free Agent" : "Run Arc Agent"}</button>
+          <button type="submit" className="button button-primary" disabled={loading || !question.trim()}>{loading ? "AI thinking…" : agentMode === "free" ? "Ask Free AI" : "Ask Arc Agent"}</button>
         </div>
       </form>
 
-      <p className="agent-security-line">Agent actions never sign transactions. Review every recipient, amount, quote and network in your wallet before approving. Never enter a seed phrase or private key.</p>
+      <p className="agent-security-line">AI actions never sign transactions. Review every recipient, amount, quote and network in your wallet before approving. Never enter a seed phrase or private key.</p>
 
-      {error ? <div className="empty-state empty-state-compact"><strong>AI agent unavailable</strong><p>{error}</p></div> : null}
+      {error ? <div className="empty-state empty-state-compact"><strong>Real AI unavailable</strong><p>{error}</p></div> : null}
     </section>
   );
 }
