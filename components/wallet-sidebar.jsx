@@ -11,7 +11,7 @@ const ACTIONS = [
   { id: "portfolio", label: "Portfolio", icon: "portfolio" },
   { id: "activity", label: "Activity", icon: "activity" },
   { id: "community", label: "Community", icon: "community" },
-  { id: "ai", label: "Arc AI", icon: "ai" }
+  { id: "agent", label: "AI Agent", icon: "ai" }
 ];
 
 export function FeatureIcon({ name }) {
@@ -51,7 +51,7 @@ export function FeatureIcon({ name }) {
   }
 }
 
-function WalletSidebar({ activeView, onSelect, onReceive, onAiOpen }) {
+function WalletSidebar({ activeView, onSelect, onReceive }) {
   return (
     <aside className="wallet-sidebar floating-wallet-dock pro-wallet-sidebar">
       <nav aria-label="Wallet actions">
@@ -59,7 +59,6 @@ function WalletSidebar({ activeView, onSelect, onReceive, onAiOpen }) {
           const isActive = action.id === activeView;
           const handleClick = () => {
             if (action.id === "receive") return onReceive?.();
-            if (action.id === "ai") return onAiOpen?.();
             onSelect?.(action.id);
           };
 
