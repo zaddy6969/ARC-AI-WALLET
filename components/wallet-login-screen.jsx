@@ -16,8 +16,8 @@ const LOGIN_FEATURES = [
   },
   {
     icon: "AI",
-    title: "Arc AI",
-    body: "Understand balances, activity and wallet actions."
+    title: "AI Agent",
+    body: "Use live Arc data, analyze your wallet and prepare actions with a real agent."
   }
 ];
 
@@ -49,7 +49,7 @@ export default function WalletLoginScreen({
           </span>
           <span>
             <strong>Arc AI Wallet</strong>
-            <small>Smart USDC wallet for Arc</small>
+            <small>USDC wallet + live AI Agent</small>
           </span>
         </div>
         <span className="login-network-pill">
@@ -59,10 +59,10 @@ export default function WalletLoginScreen({
 
       <section className="login-layout">
         <div className="login-hero-copy">
-          <p className="login-eyebrow">Self-custodial · USDC-first · AI-assisted</p>
-          <h1>A smarter way to use Arc.</h1>
+          <p className="login-eyebrow">Self-custodial · USDC-first · Agent-powered</p>
+          <h1>Your Arc wallet now has an AI Agent.</h1>
           <p className="login-hero-description">
-            Send, receive, swap and bridge from one wallet with clear controls and AI assistance when you need it.
+            Send, receive, swap and bridge with a real agent that can inspect live Arc network data, understand your wallet and prepare actions for your approval.
           </p>
 
           <div className="login-feature-grid">
@@ -91,7 +91,7 @@ export default function WalletLoginScreen({
           </div>
           <h2>Connect wallet</h2>
           <p className="login-connect-copy">
-            Your wallet keeps control of your keys and every transaction approval.
+            Your wallet keeps control of your keys and every transaction approval. The AI Agent can prepare actions, but only you can sign them.
           </p>
 
           {providerUnavailable ? (
@@ -137,7 +137,7 @@ export default function WalletLoginScreen({
             <span>Works with</span>
             <strong>Browser wallets · Safe{hasWalletConnectProjectId ? " · WalletConnect" : ""}</strong>
           </div>
-          <p className="login-security-note"><span>✓</span> No custody. No seed phrase sharing.</p>
+          <p className="login-security-note"><span>✓</span> No custody. No seed phrase sharing. Agent cannot sign.</p>
         </aside>
       </section>
     </main>
