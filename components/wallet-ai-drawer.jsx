@@ -20,7 +20,7 @@ export default function WalletAiDrawer({
         aria-expanded={open}
       >
         <span className="ai-fab-orb" />
-        <span>Copilot</span>
+        <span>AI Agent</span>
       </button>
 
       <AnimatePresence>
@@ -28,7 +28,7 @@ export default function WalletAiDrawer({
           <>
             <motion.button
               type="button"
-              aria-label="Close AI assistant"
+              aria-label="Close AI agent"
               className="ai-drawer-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -47,7 +47,7 @@ export default function WalletAiDrawer({
                 type="button"
                 className="receive-close-button ai-close-button"
                 onClick={onClose}
-                aria-label="Close AI assistant"
+                aria-label="Close AI agent"
               >
                 x
               </button>
