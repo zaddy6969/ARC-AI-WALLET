@@ -31,6 +31,8 @@ const SwapUsdcPanel = dynamic(() => import("../components/swap-usdc-panel"), { l
 const TransactionActivity = dynamic(() => import("../components/transaction-activity"), { loading: PanelLoading });
 const WalletAiDrawer = dynamic(() => import("../components/wallet-ai-drawer"), { ssr: false });
 const ReceiveModal = dynamic(() => import("../components/wallet/ReceiveModal"), { ssr: false });
+const UnifiedBalancePanel = dynamic(() => import("../components/unified-balance-panel"), { loading: PanelLoading });
+const ArcCommunityHubPanel = dynamic(() => import("../components/arc-community-hub"), { loading: PanelLoading });
 const WalletOverviewCard = dynamic(
   () => import("../components/wallet-pro-suite").then((module) => module.WalletOverviewCard),
   { loading: PanelLoading }
@@ -47,10 +49,6 @@ const ActivityInterpreterPanel = dynamic(
   () => import("../components/wallet-pro-suite").then((module) => module.ActivityInterpreterPanel),
   { loading: PanelLoading }
 );
-const CommunityHubPanel = dynamic(
-  () => import("../components/wallet-pro-suite").then((module) => module.CommunityHubPanel),
-  { loading: PanelLoading }
-);
 const PaymentRequestPanel = dynamic(
   () => import("../components/wallet-pro-suite").then((module) => module.PaymentRequestPanel),
   { loading: PanelLoading }
@@ -63,6 +61,7 @@ const SUPPORTED_VIEWS = new Set([
   "receive",
   "swap",
   "bridge",
+  "unified",
   "activity",
   "portfolio",
   "community",
@@ -221,7 +220,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
         <div>
           <p className="section-kicker">Arc AI Wallet</p>
           <h1>Your wallet, simplified by AI.</h1>
-          <p>Manage USDC, bridge across supported chains, and understand every move.</p>
+          <p>Manage USDC, bridge supported chains, inspect Unified Balance, and understand every move.</p>
         </div>
         <span className="dashboard-live-pill"><i /> {arcTestnet.name}</span>
       </section>
@@ -267,8 +266,10 @@ function ConnectedWalletExperience({ walletSnapshot }) {
             </>
           ) : activeView === "portfolio" ? (
             <PortfolioPanel walletSnapshot={walletSnapshot} activityItems={mergedActivity} />
+          ) : activeView === "unified" ? (
+            <UnifiedBalancePanel walletSnapshot={walletSnapshot} onSelectView={handleSelectView} />
           ) : activeView === "community" ? (
-            <CommunityHubPanel onSelectView={handleSelectView} />
+            <ArcCommunityHubPanel walletSnapshot={walletSnapshot} onAskCopilot={askCopilot} />
           ) : activeView === "request" ? (
             <PaymentRequestPanel walletSnapshot={walletSnapshot} />
           ) : activeView === "swap" ? (
@@ -330,10 +331,10 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Arc AI Wallet | Professional USDC Wallet</title>
+        <title>Arc AI Wallet | USDC, Unified Balance & Arc AI</title>
         <meta
           name="description"
-          content="A self-custodial USDC wallet for Arc with Send, Receive, Swap, Bridge, portfolio, activity and Arc AI assistance."
+          content="A self-custodial Arc wallet with USDC send, receive, swap, bridge, Circle App Kit Unified Balance, portfolio, activity, community tools and Arc AI assistance."
         />
         <meta name="theme-color" content="#f5f7fb" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
