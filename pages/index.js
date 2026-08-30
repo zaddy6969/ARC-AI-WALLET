@@ -29,8 +29,7 @@ const PortfolioPanel = dynamic(
 const SendUsdcPanel = dynamic(() => import("../components/send-usdc-panel"), { loading: PanelLoading });
 const SwapUsdcPanel = dynamic(() => import("../components/swap-usdc-panel"), { loading: PanelLoading });
 const TransactionActivity = dynamic(() => import("../components/transaction-activity"), { loading: PanelLoading });
-const WalletAiDrawer = dynamic(() => import("../components/wallet-ai-drawer"), { ssr: false });
-const WalletAssistant = dynamic(() => import("../components/wallet-assistant"), { ssr: false, loading: PanelLoading });
+const AiAgentWorkspace = dynamic(() => import("../components/ai-agent-workspace"), { ssr: false, loading: PanelLoading });
 const ReceiveModal = dynamic(() => import("../components/wallet/ReceiveModal"), { ssr: false });
 const UnifiedBalancePanel = dynamic(() => import("../components/unified-balance-panel"), { loading: PanelLoading });
 const ArcCommunityHubPanel = dynamic(() => import("../components/arc-community-hub"), { loading: PanelLoading });
@@ -90,7 +89,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
   const { switchChainAsync } = useSwitchChain();
   const [activeView, setActiveView] = useState("dashboard");
   const [receiveOpen, setReceiveOpen] = useState(false);
-  const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState(null);
   const [copilotAction, setCopilotAction] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -150,7 +148,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
     setCopilotAction({ ...action, id: action.id || `${Date.now()}-${Math.random()}` });
     setActiveView(view);
     updateViewLocation(view);
-    setAssistantOpen(false);
   }, [updateViewLocation]);
 
   const handleCopyAddress = useCallback(async () => {
@@ -165,15 +162,14 @@ function ConnectedWalletExperience({ walletSnapshot }) {
 
   const openReceive = useCallback(() => setReceiveOpen(true), []);
   const closeReceive = useCallback(() => setReceiveOpen(false), []);
-  const openAssistant = useCallback(() => setAssistantOpen(true), []);
-  const closeAssistant = useCallback(() => setAssistantOpen(false), []);
+
   const askCopilot = useCallback((prompt) => {
     setAssistantPrompt({
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       text: prompt
     });
-    setAssistantOpen(true);
-  }, []);
+    handleSelectView("agent");
+  }, [handleSelectView]);
 
   const handleCopilotAction = useCallback(async (action) => {
     if (!action?.tool) return;
@@ -193,10 +189,8 @@ function ConnectedWalletExperience({ walletSnapshot }) {
     if (action.tool === "open_wallet_view") {
       const view = action?.args?.view;
       if (view === "receive") {
-        setAssistantOpen(false);
         setReceiveOpen(true);
       } else if (SUPPORTED_VIEWS.has(view)) {
-        setAssistantOpen(false);
         handleSelectView(view);
       }
       return;
@@ -206,12 +200,12 @@ function ConnectedWalletExperience({ walletSnapshot }) {
       if (!chainId || !switchChainAsync) return;
       try {
         await switchChainAsync({ chainId });
-        setAssistantOpen(false);
       } catch {
         setAssistantPrompt({
           id: `${Date.now()}-switch-error`,
           text: "My wallet did not complete the requested network switch. Tell me what to check next."
         });
+        handleSelectView("agent");
       }
     }
   }, [handleSelectView, openCopilotView, switchChainAsync]);
@@ -255,7 +249,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
               onAskCopilot={askCopilot}
             />
           ) : activeView === "agent" ? (
-            <WalletAssistant
+            <AiAgentWorkspace
               walletSnapshot={walletSnapshot}
               activityItems={mergedActivity}
               activityStatus={liveActivityStatus}
@@ -319,19 +313,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
         address={walletSnapshot.address}
         networkLabel={arcTestnet.name}
       />
-
-      {activeView !== "agent" ? (
-        <WalletAiDrawer
-          open={assistantOpen}
-          onOpen={openAssistant}
-          onClose={closeAssistant}
-          walletSnapshot={walletSnapshot}
-          activityItems={mergedActivity}
-          activityStatus={liveActivityStatus}
-          initialPrompt={assistantPrompt}
-          onWalletAction={handleCopilotAction}
-        />
-      ) : null}
     </AppShell>
   );
 }
