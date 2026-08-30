@@ -11,6 +11,7 @@ import "../styles/action-pages.css";
 import "../styles/copilot.css";
 import "../styles/arc-community.css";
 import "../styles/arc-community-upgrade.css";
+import "../styles/agent-upgrade.css";
 
 export default function App({ Component, pageProps }) {
   return (
