@@ -30,6 +30,7 @@ const SendUsdcPanel = dynamic(() => import("../components/send-usdc-panel"), { l
 const SwapUsdcPanel = dynamic(() => import("../components/swap-usdc-panel"), { loading: PanelLoading });
 const TransactionActivity = dynamic(() => import("../components/transaction-activity"), { loading: PanelLoading });
 const WalletAiDrawer = dynamic(() => import("../components/wallet-ai-drawer"), { ssr: false });
+const WalletAssistant = dynamic(() => import("../components/wallet-assistant"), { ssr: false, loading: PanelLoading });
 const ReceiveModal = dynamic(() => import("../components/wallet/ReceiveModal"), { ssr: false });
 const UnifiedBalancePanel = dynamic(() => import("../components/unified-balance-panel"), { loading: PanelLoading });
 const ArcCommunityHubPanel = dynamic(() => import("../components/arc-community-hub"), { loading: PanelLoading });
@@ -65,7 +66,8 @@ const SUPPORTED_VIEWS = new Set([
   "activity",
   "portfolio",
   "community",
-  "request"
+  "request",
+  "agent"
 ]);
 
 function copilotNetworkChainId(value) {
@@ -219,8 +221,8 @@ function ConnectedWalletExperience({ walletSnapshot }) {
       <section className="wallet-dashboard-hero pro-wallet-hero">
         <div>
           <p className="section-kicker">Arc AI Wallet</p>
-          <h1>Your wallet, simplified by AI.</h1>
-          <p>Manage USDC, bridge supported chains, inspect Unified Balance, and understand every move.</p>
+          <h1>Your wallet, powered by an AI Agent.</h1>
+          <p>Manage USDC, use Unified Balance, inspect live Arc data, and let the AI Agent prepare wallet actions for your approval.</p>
         </div>
         <span className="dashboard-live-pill"><i /> {arcTestnet.name}</span>
       </section>
@@ -233,7 +235,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
         onDisconnect={walletSnapshot.disconnectWallet}
         onSelectView={handleSelectView}
         onReceive={openReceive}
-        onAiOpen={openAssistant}
+        onAiOpen={() => handleSelectView("agent")}
       />
 
       <div className="wallet-workspace">
@@ -241,7 +243,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
           activeView={activeView}
           onSelect={handleSelectView}
           onReceive={openReceive}
-          onAiOpen={openAssistant}
         />
 
         <div className="wallet-main-panel">
@@ -252,6 +253,14 @@ function ConnectedWalletExperience({ walletSnapshot }) {
               onSelectView={handleSelectView}
               onReceive={openReceive}
               onAskCopilot={askCopilot}
+            />
+          ) : activeView === "agent" ? (
+            <WalletAssistant
+              walletSnapshot={walletSnapshot}
+              activityItems={mergedActivity}
+              activityStatus={liveActivityStatus}
+              initialPrompt={assistantPrompt}
+              onWalletAction={handleCopilotAction}
             />
           ) : activeView === "activity" ? (
             <>
@@ -311,16 +320,18 @@ function ConnectedWalletExperience({ walletSnapshot }) {
         networkLabel={arcTestnet.name}
       />
 
-      <WalletAiDrawer
-        open={assistantOpen}
-        onOpen={openAssistant}
-        onClose={closeAssistant}
-        walletSnapshot={walletSnapshot}
-        activityItems={mergedActivity}
-        activityStatus={liveActivityStatus}
-        initialPrompt={assistantPrompt}
-        onWalletAction={handleCopilotAction}
-      />
+      {activeView !== "agent" ? (
+        <WalletAiDrawer
+          open={assistantOpen}
+          onOpen={openAssistant}
+          onClose={closeAssistant}
+          walletSnapshot={walletSnapshot}
+          activityItems={mergedActivity}
+          activityStatus={liveActivityStatus}
+          initialPrompt={assistantPrompt}
+          onWalletAction={handleCopilotAction}
+        />
+      ) : null}
     </AppShell>
   );
 }
@@ -331,10 +342,10 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Arc AI Wallet | USDC, Unified Balance & Arc AI</title>
+        <title>Arc AI Wallet | USDC, Unified Balance & AI Agent</title>
         <meta
           name="description"
-          content="A self-custodial Arc wallet with USDC send, receive, swap, bridge, Circle App Kit Unified Balance, portfolio, activity, community tools and Arc AI assistance."
+          content="A self-custodial Arc wallet with USDC send, receive, swap, bridge, Circle App Kit Unified Balance, live Arc data, community tools and a real AI Agent that prepares wallet actions for user approval."
         />
         <meta name="theme-color" content="#f5f7fb" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
