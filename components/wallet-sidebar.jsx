@@ -8,10 +8,10 @@ const ACTIONS = [
   { id: "bridge", label: "Bridge", icon: "bridge" },
   { id: "unified", label: "Unified", icon: "unified" },
   { id: "request", label: "Request", icon: "request" },
-  { id: "portfolio", label: "Portfolio", icon: "portfolio" },
+  { id: "portfolio", label: "Assets", icon: "portfolio" },
   { id: "activity", label: "Activity", icon: "activity" },
-  { id: "community", label: "Community", icon: "community" },
-  { id: "agent", label: "AI Agent", icon: "ai" }
+  { id: "community", label: "Explore", icon: "community" },
+  { id: "agent", label: "Assistant", icon: "ai" }
 ];
 
 export function FeatureIcon({ name }) {
@@ -57,7 +57,6 @@ function WalletSidebar({ activeView, onSelect, onReceive }) {
       <nav aria-label="Wallet actions">
         {ACTIONS.map((action) => {
           const isActive = action.id === activeView;
-          const isAgent = action.id === "agent";
           const handleClick = () => {
             if (action.id === "receive") return onReceive?.();
             onSelect?.(action.id);
@@ -67,23 +66,18 @@ function WalletSidebar({ activeView, onSelect, onReceive }) {
             <button
               key={action.id}
               type="button"
-              className={`sidebar-action ${isActive ? "sidebar-action-active" : ""} ${isAgent ? "sidebar-action-agent" : ""}`}
+              className={`sidebar-action ${isActive ? "sidebar-action-active" : ""}`}
               onClick={handleClick}
               aria-label={action.label}
               aria-current={isActive ? "page" : undefined}
               title={action.label}
             >
-              {isAgent ? <em className="agent-nav-live">LIVE</em> : null}
               <span className="dock-icon"><FeatureIcon name={action.icon} /></span>
               <span>{action.label}</span>
             </button>
           );
         })}
       </nav>
-      <div className="wallet-sidebar-status">
-        <span className="status-dot" />
-        <div><strong>Arc ready</strong><small>Self-custodial wallet</small></div>
-      </div>
     </aside>
   );
 }
