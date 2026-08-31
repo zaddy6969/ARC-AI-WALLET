@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ARC_MAINNET_REQUESTED } from "../lib/arc-chain";
 import NetworkSwitcher from "./network-switcher";
 
 function shortAddress(address) {
@@ -30,6 +31,11 @@ export default function AppNav({ walletSnapshot }) {
         </Link>
 
         <div className="app-nav-actions simple-wallet-nav-actions">
+          {!ARC_MAINNET_REQUESTED ? (
+            <span className="status-badge" title="Arc Mainnet support is prepared for public launch">
+              MAINNET READY · SEP 16
+            </span>
+          ) : null}
           <NetworkSwitcher compact />
           {isConnected ? (
             <span className="simple-wallet-address" title={walletSnapshot.address}>
