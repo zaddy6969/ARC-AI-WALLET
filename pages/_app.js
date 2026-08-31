@@ -15,6 +15,7 @@ import "../styles/agent-upgrade.css";
 import "../styles/wallet-polish.css";
 import "../styles/wallet-entry-polish.css";
 import "../styles/premium-rebuild.css";
+import "../styles/premium-header.css";
 
 export default function App({ Component, pageProps }) {
   return (
