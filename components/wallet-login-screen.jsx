@@ -1,7 +1,12 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { arcTestnet, hasWalletConnectProjectId } from "../lib/arc-chain";
+import {
+  ARC_MAINNET_REQUESTED,
+  ARC_MAINNET_READY,
+  arcActiveChain,
+  hasWalletConnectProjectId
+} from "../lib/arc-chain";
 
 export default function WalletLoginScreen({
   providerError = "",
@@ -14,6 +19,8 @@ export default function WalletLoginScreen({
     const timeoutId = window.setTimeout(() => setFallbackReady(true), 2500);
     return () => window.clearTimeout(timeoutId);
   }, []);
+
+  const mainnetLocked = ARC_MAINNET_REQUESTED && !ARC_MAINNET_READY;
 
   return (
     <main className="login-page-shell wallet-entry-page">
@@ -31,13 +38,13 @@ export default function WalletLoginScreen({
           </span>
           <strong>Arc AI Wallet</strong>
         </div>
-        <span className="wallet-entry-network"><i /> {arcTestnet.name}</span>
+        <span className="wallet-entry-network"><i /> {arcActiveChain.name}</span>
       </header>
 
       <section className="wallet-entry-main">
         <div className="wallet-entry-copy">
           <h1>Your Arc wallet.</h1>
-          <p>Manage USDC on Arc Testnet from one place.</p>
+          <p>Manage USDC on {arcActiveChain.name} from one place.</p>
         </div>
 
         <aside className="wallet-entry-card">
@@ -52,10 +59,14 @@ export default function WalletLoginScreen({
             />
           </div>
 
-          <h2>Connect wallet</h2>
-          <p>Connect your wallet to view balances and manage your assets.</p>
+          <h2>{mainnetLocked ? "Mainnet setup required" : "Connect wallet"}</h2>
+          <p>
+            {mainnetLocked
+              ? "Mainnet is locked until the official production endpoint configuration is complete and explicitly enabled."
+              : "Connect your wallet to view balances and manage your assets."}
+          </p>
 
-          {providerUnavailable ? (
+          {providerUnavailable || mainnetLocked ? (
             <button
               type="button"
               className="button button-primary wallet-entry-connect"
@@ -97,7 +108,7 @@ export default function WalletLoginScreen({
           <div className="wallet-entry-meta">
             <span>Self-custodial</span>
             <span>USDC gas</span>
-            <span>Testnet</span>
+            <span>{arcActiveChain.testnet ? "Testnet" : "Mainnet"}</span>
           </div>
 
           <small className="wallet-entry-note">
