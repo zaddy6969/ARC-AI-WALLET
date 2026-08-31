@@ -17,6 +17,7 @@ import "../styles/wallet-entry-polish.css";
 import "../styles/premium-rebuild.css";
 import "../styles/premium-header.css";
 import "../styles/premium-wallet-v2.css";
+import "../styles/premium-ai-assistant.css";
 
 export default function App({ Component, pageProps }) {
   return (
