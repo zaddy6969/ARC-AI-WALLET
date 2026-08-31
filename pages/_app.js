@@ -18,6 +18,7 @@ import "../styles/premium-rebuild.css";
 import "../styles/premium-header.css";
 import "../styles/premium-wallet-v2.css";
 import "../styles/premium-ai-assistant.css";
+import "../styles/assistant-layout-fix.css";
 
 export default function App({ Component, pageProps }) {
   return (
