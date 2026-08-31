@@ -4,6 +4,8 @@ import { formatUnits } from "viem";
 import { getPrimaryExplorerUrl, getPrimaryTxHash } from "../lib/arc-app-kit";
 import {
   APP_KIT_EVM_CHAIN_OPTIONS,
+  ARC_APP_KIT_READY,
+  ARC_MAINNET_REQUESTED,
   ARC_USDC_ERC20_ADDRESS,
   arcTestnet
 } from "../lib/arc-chain";
@@ -15,12 +17,24 @@ import {
 import { createWalletActionRecord } from "../lib/local-activity";
 
 const BRIDGE_NETWORK_OPTIONS = APP_KIT_EVM_CHAIN_OPTIONS;
+const ETHEREUM_CHAIN_ID = ARC_MAINNET_REQUESTED ? 1 : 11155111;
+const BASE_CHAIN_ID = ARC_MAINNET_REQUESTED ? 8453 : 84532;
+const BRIDGE_CONFIGURED =
+  (!ARC_MAINNET_REQUESTED || ARC_APP_KIT_READY) &&
+  BRIDGE_NETWORK_OPTIONS.length >= 2 &&
+  BRIDGE_NETWORK_OPTIONS.every((option) => Boolean(option.appKitChain));
 
-const SOURCE_USDC_ADDRESSES = {
-  [arcTestnet.id]: ARC_USDC_ERC20_ADDRESS,
-  11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-  84532: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
-};
+const SOURCE_USDC_ADDRESSES = ARC_MAINNET_REQUESTED
+  ? {
+      [arcTestnet.id]: ARC_USDC_ERC20_ADDRESS,
+      1: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      8453: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    }
+  : {
+      [arcTestnet.id]: ARC_USDC_ERC20_ADDRESS,
+      11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      84532: "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+    };
 
 const ERC20_BALANCE_ABI = [
   {
@@ -53,18 +67,28 @@ function networkFromId(chainId) {
 function copilotNetworkId(value) {
   const normalized = String(value || "").toLowerCase();
   if (normalized === "arc") return arcTestnet.id;
+
+  if (ARC_MAINNET_REQUESTED) {
+    if (normalized === "ethereum" || normalized === "ethereum-mainnet") return 1;
+    if (normalized === "base" || normalized === "base-mainnet") return 8453;
+    return null;
+  }
+
   if (normalized === "ethereum-sepolia") return 11155111;
   if (normalized === "base-sepolia") return 84532;
   return null;
 }
 
 function defaultDestinationId(sourceChainId) {
-  return sourceChainId === arcTestnet.id ? 84532 : arcTestnet.id;
+  if (sourceChainId !== arcTestnet.id) return arcTestnet.id;
+  return BRIDGE_NETWORK_OPTIONS.some((option) => option.id === BASE_CHAIN_ID)
+    ? BASE_CHAIN_ID
+    : BRIDGE_NETWORK_OPTIONS.find((option) => option.id !== arcTestnet.id)?.id || arcTestnet.id;
 }
 
 function chainIcon(option) {
   if (option.id === arcTestnet.id) return "A";
-  if (option.id === 11155111) return "Ξ";
+  if (option.id === ETHEREUM_CHAIN_ID) return "Ξ";
   return "B";
 }
 
@@ -145,9 +169,12 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
   const balancesReady = sourceBalances.status === "ready";
   const walletOnSelectedSource = currentChainId === sourceChain.id;
   const canContinue = Boolean(
-    connector &&
+    BRIDGE_CONFIGURED &&
+      connector &&
       connectedAddress &&
       validAmount(amount) &&
+      sourceChain?.appKitChain &&
+      destinationChain?.appKitChain &&
       sourceChain.id !== destinationChain.id
   );
   const amountExceedsBalance =
@@ -255,6 +282,13 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
   };
 
   const getReadyProvider = async () => {
+    if (!BRIDGE_CONFIGURED) {
+      throw new Error(
+        ARC_MAINNET_REQUESTED
+          ? "Arc Mainnet bridge support is locked until Circle App Kit production chain identifiers are configured."
+          : "Bridge configuration is unavailable."
+      );
+    }
     if (!connector) throw new Error("Connect your wallet first.");
 
     if (currentChainId !== sourceChain.id) {
@@ -272,6 +306,13 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
   };
 
   const createQuote = async () => {
+    if (!BRIDGE_CONFIGURED) {
+      throw new Error(
+        ARC_MAINNET_REQUESTED
+          ? "Arc Mainnet bridge support is not enabled yet."
+          : "Bridge support is not configured."
+      );
+    }
     if (!canContinue) throw new Error("Enter a valid USDC amount and route.");
     if (amountExceedsBalance) {
       throw new Error(
@@ -395,9 +436,13 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
         )} USDC.`
       : sourceGasMissing
         ? sourceChain.id === arcTestnet.id
-          ? "Keep a small USDC balance on Arc to pay the source transaction fee."
+          ? "Keep a small USDC amount available on Arc for the source transaction fee."
           : `You need ${sourceChain.gasToken} on ${sourceChain.shortName} to pay source-chain gas.`
         : "";
+
+  const routeHelper = ARC_MAINNET_REQUESTED
+    ? "Arc, Ethereum and Base"
+    : "Arc, Ethereum Sepolia and Base Sepolia";
 
   return (
     <section className="bridge-wallet-card wallet-page-card bridge-v2">
@@ -412,6 +457,16 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
         </span>
       </div>
 
+      {!BRIDGE_CONFIGURED && ARC_MAINNET_REQUESTED ? (
+        <div className="bridge-funding-warning" role="status">
+          <span>!</span>
+          <div>
+            <strong>Mainnet bridge locked</strong>
+            <p>Circle App Kit production chain identifiers must be configured before real-value bridging is enabled.</p>
+          </div>
+        </div>
+      ) : null}
+
       {copilotAction?.tool === "prepare_bridge" ? (
         <div className="copilot-prepared-note"><strong>Prepared by Arc AI</strong><span>Balances and Circle fees are checked before signing.</span></div>
       ) : null}
@@ -421,7 +476,7 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
           <span>1</span>
           <div>
             <strong>Choose route</strong>
-            <small>Arc, Ethereum Sepolia and Base Sepolia</small>
+            <small>{routeHelper}</small>
           </div>
         </div>
 
@@ -439,7 +494,7 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
                 key={option.id}
                 className={`bridge-source-card ${active ? "is-active" : ""}`}
                 onClick={() => selectSource(option.id)}
-                disabled={busy}
+                disabled={busy || !BRIDGE_CONFIGURED}
                 aria-pressed={active}
               >
                 <span className="bridge-chain-icon">{chainIcon(option)}</span>
@@ -473,7 +528,7 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
                 key={option.id}
                 className={`bridge-source-card ${active ? "is-active" : ""}`}
                 onClick={() => selectDestination(option.id)}
-                disabled={busy}
+                disabled={busy || !BRIDGE_CONFIGURED}
                 aria-pressed={active}
               >
                 <span className="bridge-chain-icon">{chainIcon(option)}</span>
@@ -499,7 +554,7 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
             </strong>
           </div>
           <div>
-            <span>Gas balance</span>
+            <span>{sourceChain.id === arcTestnet.id ? "Arc gas view" : "Gas balance"}</span>
             <strong>
               {sourceBalances.status === "loading"
                 ? "Checking…"
@@ -519,7 +574,7 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
         </div>
         {sourceBalances.status === "error" ? (
           <p className="bridge-balance-note">
-            Live source balances could not be loaded. You can still request a quote.
+            Live source balances could not be loaded. You can still request a quote when the route is enabled.
           </p>
         ) : null}
       </div>
@@ -544,6 +599,7 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
               inputMode="decimal"
               placeholder="0.00"
               aria-label="USDC amount to bridge"
+              disabled={!BRIDGE_CONFIGURED}
             />
             <strong>USDC</strong>
           </div>
@@ -663,13 +719,15 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
             onClick={handleReview}
             disabled={!canContinue || busy || amountExceedsBalance}
           >
-            {status === "switching" || isSwitching
-              ? `Switching to ${sourceChain.shortName}…`
-              : status === "estimating"
-                ? "Getting quote…"
-                : walletOnSelectedSource
-                  ? "Review bridge"
-                  : `Switch to ${sourceChain.shortName} & review`}
+            {!BRIDGE_CONFIGURED
+              ? "Mainnet bridge not enabled"
+              : status === "switching" || isSwitching
+                ? `Switching to ${sourceChain.shortName}…`
+                : status === "estimating"
+                  ? "Getting quote…"
+                  : walletOnSelectedSource
+                    ? "Review bridge"
+                    : `Switch to ${sourceChain.shortName} & review`}
           </button>
         ) : (
           <button
@@ -701,7 +759,7 @@ export default function BridgeToArcPanel({ walletSnapshot, onActivitySaved, copi
 
       <div className="bridge-v2-footnote">
         <span>✓ Self-custodial</span>
-        <span>✓ Circle CCTP</span>
+        <span>✓ Circle route</span>
         <span>✓ Arc ↔ Base / Ethereum</span>
       </div>
     </section>
