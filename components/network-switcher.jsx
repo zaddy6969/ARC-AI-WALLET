@@ -42,9 +42,7 @@ export default function NetworkSwitcher({ compact = false }) {
 
   const addAndSwitchChain = async (chain) => {
     const provider = await connector?.getProvider?.();
-    if (!provider?.request) {
-      throw new Error("Wallet network switching is unavailable.");
-    }
+    if (!provider?.request) throw new Error("Wallet network switching is unavailable.");
 
     const hexId = chainIdHex(chain.id);
     await provider.request({
@@ -100,7 +98,6 @@ export default function NetworkSwitcher({ compact = false }) {
     <div className={`network-switcher ${compact ? "network-switcher-compact" : ""}`}>
       <label>
         <span className="sr-only">Network</span>
-        <span className="network-switcher-dot" aria-hidden="true" />
         <select
           value={currentChain ? currentChain.id : ""}
           onChange={handleChange}
@@ -109,24 +106,16 @@ export default function NetworkSwitcher({ compact = false }) {
         >
           {!currentChain ? <option value="">Unsupported network</option> : null}
           {MULTICHAIN_WALLET_CHAINS.map((chain) => (
-            <option key={chain.id} value={chain.id}>
-              {chain.name}
-            </option>
+            <option key={chain.id} value={chain.id}>{chain.name}</option>
           ))}
           {!ARC_MAINNET_REQUESTED ? (
             <option value={ARC_MAINNET_CHAIN_ID} disabled>
-              Arc Mainnet — pre-launch {launchLabel}
+              Arc Mainnet — {launchLabel}
             </option>
           ) : null}
         </select>
       </label>
-      {busy ? (
-        <small>Switching…</small>
-      ) : error ? (
-        <small role="alert">{error}</small>
-      ) : !ARC_MAINNET_REQUESTED ? (
-        <small>Mainnet-ready build · Arc Mainnet goes live {launchLabel}</small>
-      ) : null}
+      {busy ? <small>Switching…</small> : error ? <small role="alert">{error}</small> : null}
     </div>
   );
 }
