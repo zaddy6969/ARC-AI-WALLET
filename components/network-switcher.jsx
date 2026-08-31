@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
-import { MULTICHAIN_WALLET_CHAINS } from "../lib/arc-chain";
+import {
+  ARC_MAINNET_CHAIN_ID,
+  ARC_MAINNET_REQUESTED,
+  ARC_PUBLIC_MAINNET_LAUNCH_DATE,
+  MULTICHAIN_WALLET_CHAINS
+} from "../lib/arc-chain";
 
 function getChain(chainId) {
   return MULTICHAIN_WALLET_CHAINS.find((chain) => chain.id === chainId) || null;
@@ -16,6 +21,15 @@ function isUnknownChainError(error) {
   return code === 4902 || message.includes("unrecognized chain") || message.includes("unknown chain") || message.includes("not added");
 }
 
+function formatLaunchDate(value) {
+  if (!value) return "Sep 16";
+  const [year, month, day] = String(value).split("-").map(Number);
+  if (!year || !month || !day) return "Sep 16";
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(
+    new Date(Date.UTC(year, month - 1, day))
+  );
+}
+
 export default function NetworkSwitcher({ compact = false }) {
   const chainId = useChainId();
   const { connector } = useAccount();
@@ -24,6 +38,7 @@ export default function NetworkSwitcher({ compact = false }) {
   const [manualPending, setManualPending] = useState(false);
   const currentChain = getChain(chainId);
   const busy = isPending || manualPending;
+  const launchLabel = formatLaunchDate(ARC_PUBLIC_MAINNET_LAUNCH_DATE);
 
   const addAndSwitchChain = async (chain) => {
     const provider = await connector?.getProvider?.();
@@ -98,9 +113,20 @@ export default function NetworkSwitcher({ compact = false }) {
               {chain.name}
             </option>
           ))}
+          {!ARC_MAINNET_REQUESTED ? (
+            <option value={ARC_MAINNET_CHAIN_ID} disabled>
+              Arc Mainnet — pre-launch {launchLabel}
+            </option>
+          ) : null}
         </select>
       </label>
-      {busy ? <small>Switching…</small> : error ? <small role="alert">{error}</small> : null}
+      {busy ? (
+        <small>Switching…</small>
+      ) : error ? (
+        <small role="alert">{error}</small>
+      ) : !ARC_MAINNET_REQUESTED ? (
+        <small>Mainnet-ready build · Arc Mainnet goes live {launchLabel}</small>
+      ) : null}
     </div>
   );
 }
