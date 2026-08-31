@@ -5,10 +5,21 @@ import {
   formatAppKitError,
   formatUnifiedBalanceBreakdown
 } from "../lib/arc-app-kit";
+import {
+  ARC_APP_KIT_READY,
+  ARC_MAINNET_REQUESTED,
+  UNIFIED_BALANCE_SOURCE_OPTIONS,
+  arcTestnet
+} from "../lib/arc-chain";
 
 const UNIFIED_BALANCE_DOCS = "https://docs.arc.io/app-kit/unified-balance";
 const UNIFIED_BALANCE_FEES = "https://docs.arc.io/app-kit/concepts/unified-balance-fees";
-const SUPPORTED_CHAINS = ["Arc_Testnet", "Base_Sepolia", "Ethereum_Sepolia"];
+const SUPPORTED_CHAINS = UNIFIED_BALANCE_SOURCE_OPTIONS
+  .map((option) => option.appKitChain)
+  .filter(Boolean);
+const NETWORK_TYPE = ARC_MAINNET_REQUESTED ? "mainnet" : "testnet";
+const UNIFIED_BALANCE_READY =
+  (!ARC_MAINNET_REQUESTED || ARC_APP_KIT_READY) && SUPPORTED_CHAINS.length > 0;
 
 function openExternal(url) {
   if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer");
@@ -40,6 +51,17 @@ export default function UnifiedBalancePanel({ walletSnapshot, onSelectView }) {
   );
 
   const loadBalance = useCallback(async () => {
+    if (!UNIFIED_BALANCE_READY) {
+      setStatus("locked");
+      setResult(null);
+      setError(
+        ARC_MAINNET_REQUESTED
+          ? "Unified Balance is locked until Circle App Kit production chain identifiers are configured."
+          : "Unified Balance configuration is unavailable."
+      );
+      return;
+    }
+
     if (!connector || !walletSnapshot?.address) {
       setStatus("idle");
       setResult(null);
@@ -56,7 +78,7 @@ export default function UnifiedBalancePanel({ walletSnapshot, onSelectView }) {
       const { kit, adapter } = await createArcAppKitClient(provider);
       const balances = await kit.unifiedBalance.getBalances({
         sources: { adapter, chains: SUPPORTED_CHAINS },
-        networkType: "testnet",
+        networkType: NETWORK_TYPE,
         includePending: true
       });
       setResult(balances);
@@ -73,6 +95,8 @@ export default function UnifiedBalancePanel({ walletSnapshot, onSelectView }) {
 
   const confirmed = result?.totalConfirmedBalance || "0";
   const pending = result?.totalPendingBalance || "0";
+  const environmentLabel = arcTestnet.testnet ? "Testnet" : "Mainnet";
+  const supportedNames = UNIFIED_BALANCE_SOURCE_OPTIONS.map((option) => option.shortName).join(", ");
 
   return (
     <section className="arc-ub-page">
@@ -81,7 +105,7 @@ export default function UnifiedBalancePanel({ walletSnapshot, onSelectView }) {
           <p className="section-kicker">Circle App Kit · Unified Balance</p>
           <h2>One spendable USDC balance across chains.</h2>
           <p>
-            This reads your actual App Kit Unified Balance. It does not add ordinary wallet balances together or double-count Arc's native and ERC-20 USDC views.
+            This reads your actual App Kit Unified Balance. It does not add ordinary wallet balances together or double-count Arc&apos;s native and ERC-20 USDC views.
           </p>
         </div>
         <div className="arc-ub-total">
@@ -94,11 +118,19 @@ export default function UnifiedBalancePanel({ walletSnapshot, onSelectView }) {
       <div className="arc-ub-toolbar">
         <div>
           <span className={`arc-status-dot ${status === "ready" ? "is-live" : ""}`} />
-          <strong>{status === "loading" ? "Querying App Kit" : status === "error" ? "App Kit check failed" : "Unified Balance ready"}</strong>
+          <strong>
+            {status === "loading"
+              ? "Querying App Kit"
+              : status === "locked"
+                ? "Mainnet integration locked"
+                : status === "error"
+                  ? "App Kit check failed"
+                  : "Unified Balance ready"}
+          </strong>
           <small>{shortAddress(walletSnapshot?.address)}</small>
         </div>
         <div>
-          <button type="button" className="button button-secondary" onClick={loadBalance} disabled={status === "loading" || !walletSnapshot?.address}>Refresh</button>
+          <button type="button" className="button button-secondary" onClick={loadBalance} disabled={status === "loading" || !walletSnapshot?.address || !UNIFIED_BALANCE_READY}>Refresh</button>
           <button type="button" className="button button-secondary" onClick={() => openExternal(UNIFIED_BALANCE_DOCS)}>How it works ↗</button>
         </div>
       </div>
@@ -109,11 +141,16 @@ export default function UnifiedBalancePanel({ walletSnapshot, onSelectView }) {
         <article className="arc-ub-card">
           <div className="arc-ub-card-head">
             <div><span>Deposited sources</span><strong>USDC breakdown</strong></div>
-            <small>Testnet</small>
+            <small>{environmentLabel}</small>
           </div>
           <div className="arc-ub-chain-list">
-            {status === "loading" ? (
-              <div className="arc-ub-empty">Loading Arc, Base and Ethereum Sepolia deposits…</div>
+            {status === "locked" ? (
+              <div className="arc-ub-empty">
+                <strong>Mainnet Unified Balance is not enabled yet.</strong>
+                <span>The wallet will wait for verified production App Kit chain identifiers instead of guessing them.</span>
+              </div>
+            ) : status === "loading" ? (
+              <div className="arc-ub-empty">Loading {supportedNames || "supported chains"} deposits…</div>
             ) : breakdown.length ? (
               breakdown.map((item) => (
                 <div className="arc-ub-chain-row" key={`${item.account}-${item.appKitChain}`}>
@@ -141,10 +178,10 @@ export default function UnifiedBalancePanel({ walletSnapshot, onSelectView }) {
             <div><span>03</span><p><strong>Route</strong> source liquidity through App Kit instead of manually bridging first.</p></div>
           </div>
           <div className="arc-ub-actions">
-            <button type="button" className="button button-primary" onClick={() => onSelectView?.("bridge")}>Move USDC</button>
+            <button type="button" className="button button-primary" onClick={() => onSelectView?.("bridge")} disabled={!UNIFIED_BALANCE_READY}>Move USDC</button>
             <button type="button" className="button button-secondary" onClick={() => openExternal(UNIFIED_BALANCE_FEES)}>Review fees ↗</button>
           </div>
-          <p className="arc-ub-note">Deposits and spends still require wallet approval. This screen currently performs the safe read-only balance query; money-moving Unified Balance actions are not silently executed.</p>
+          <p className="arc-ub-note">Deposits and spends still require wallet approval. This screen performs the safe read-only balance query; money-moving Unified Balance actions are not silently executed.</p>
         </article>
       </div>
     </section>
