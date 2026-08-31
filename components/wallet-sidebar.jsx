@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { memo } from "react";
 
 const ACTIONS = [
@@ -10,8 +11,7 @@ const ACTIONS = [
   { id: "request", label: "Request", icon: "request" },
   { id: "portfolio", label: "Assets", icon: "portfolio" },
   { id: "activity", label: "Activity", icon: "activity" },
-  { id: "community", label: "Explore", icon: "community" },
-  { id: "agent", label: "Assistant", icon: "ai" }
+  { id: "agent", label: "AI Agent", icon: "ai" }
 ];
 
 export function FeatureIcon({ name }) {
@@ -53,8 +53,13 @@ export function FeatureIcon({ name }) {
 
 function WalletSidebar({ activeView, onSelect, onReceive }) {
   return (
-    <aside className="wallet-sidebar floating-wallet-dock pro-wallet-sidebar">
-      <nav aria-label="Wallet actions">
+    <aside className="wallet-sidebar floating-wallet-dock pro-wallet-sidebar premium-v2-sidebar">
+      <button type="button" className="premium-v2-sidebar-brand" onClick={() => onSelect?.("dashboard")}>
+        <span className="premium-v2-sidebar-logo"><Image src="/arc-ai-wallet-mark-v2.png" alt="" width={48} height={48} sizes="48px" /></span>
+        <strong>Arc AI Wallet</strong>
+      </button>
+
+      <nav aria-label="Wallet actions" className="premium-v2-sidebar-nav">
         {ACTIONS.map((action) => {
           const isActive = action.id === activeView;
           const handleClick = () => {
@@ -78,6 +83,19 @@ function WalletSidebar({ activeView, onSelect, onReceive }) {
           );
         })}
       </nav>
+
+      <button type="button" className="premium-v2-agent-promo" onClick={() => onSelect?.("agent")}>
+        <span className="premium-v2-agent-orb" aria-hidden="true"><Image src="/arc-ai-wallet-mark-v2.png" alt="" width={68} height={68} sizes="68px" /></span>
+        <span className="premium-v2-agent-promo-copy">
+          <strong>Arc AI Agent</strong>
+          <small>Wallet insights and actions in one place.</small>
+        </span>
+        <span className="premium-v2-agent-open">Open Agent <b>→</b></span>
+      </button>
+
+      <div className="premium-v2-sidebar-foot">
+        <span><i /> Self-custodial</span>
+      </div>
     </aside>
   );
 }
