@@ -13,6 +13,7 @@ import "../styles/arc-community.css";
 import "../styles/arc-community-upgrade.css";
 import "../styles/agent-upgrade.css";
 import "../styles/wallet-polish.css";
+import "../styles/wallet-entry-polish.css";
 
 export default function App({ Component, pageProps }) {
   return (
