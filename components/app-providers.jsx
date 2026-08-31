@@ -12,8 +12,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Component, useMemo, useState } from "react";
 import { createConfig, http, WagmiProvider } from "wagmi";
 import {
+  ARC_MAINNET_REQUESTED,
+  ARC_MAINNET_READY,
   MULTICHAIN_WALLET_CHAINS,
-  arcTestnet,
+  arcActiveChain,
   hasWalletConnectProjectId,
   walletConnectProjectId
 } from "../lib/arc-chain";
@@ -65,6 +67,21 @@ class ProviderErrorBoundary extends Component {
 }
 
 function createWalletConfig() {
+  if (ARC_MAINNET_REQUESTED && !ARC_MAINNET_READY) {
+    throw new Error(
+      "Arc Mainnet mode is locked. Configure the official mainnet RPC and explorer, then explicitly enable mainnet before connecting a wallet."
+    );
+  }
+
+  const chainsWithoutRpc = MULTICHAIN_WALLET_CHAINS.filter(
+    (chain) => !chain?.rpcUrls?.default?.http?.[0]
+  );
+  if (chainsWithoutRpc.length) {
+    throw new Error(
+      `Missing RPC configuration for: ${chainsWithoutRpc.map((chain) => chain.name).join(", ")}.`
+    );
+  }
+
   const wallets = [injectedWallet, safeWallet];
 
   if (hasWalletConnectProjectId) {
@@ -156,7 +173,7 @@ export default function AppProviders({ children }) {
     <ProviderErrorBoundary>
       <WagmiProvider config={walletConfigState.config}>
         <QueryClientProvider client={queryClient}>
-          <RainbowKitProvider initialChain={arcTestnet} theme={rainbowTheme}>
+          <RainbowKitProvider initialChain={arcActiveChain} theme={rainbowTheme}>
             {children}
           </RainbowKitProvider>
         </QueryClientProvider>
