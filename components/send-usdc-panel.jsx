@@ -11,6 +11,9 @@ const USDC_ABI = [
   "function decimals() view returns (uint8)"
 ];
 
+const ARC_NETWORK_LABEL = arcTestnet.name || "Arc";
+const ARC_NETWORK_KEY = arcTestnet.testnet ? "Arc_Testnet" : "Arc_Mainnet";
+
 function normalizeAmount(value) {
   const next = String(value || "").replace(/[^\d.]/g, "");
   const [whole, ...rest] = next.split(".");
@@ -63,7 +66,7 @@ function formatSendError(error, fallback) {
     normalized.includes("chain") ||
     normalized.includes("unsupported")
   ) {
-    return "Switch your wallet to Arc Testnet and try again.";
+    return `Switch your wallet to ${ARC_NETWORK_LABEL} and try again.`;
   }
 
   return message || fallback;
@@ -118,7 +121,10 @@ export default function SendUsdcPanel({
   const safeMax = Math.max(0, availableUsdc - feeValue - 0.000001);
 
   const explorerUrl = useMemo(
-    () => (result?.hash ? `${arcTestnet.blockExplorers.default.url}/tx/${result.hash}` : ""),
+    () =>
+      result?.hash && arcTestnet.blockExplorers?.default?.url
+        ? `${arcTestnet.blockExplorers.default.url}/tx/${result.hash}`
+        : "",
     [result]
   );
 
@@ -223,15 +229,17 @@ export default function SendUsdcPanel({
           type: "Sent USDC",
           kind: "sent",
           amount: `${amount} USDC`,
-          chain: arcTestnet.name,
+          chain: ARC_NETWORK_LABEL,
           sender: walletSnapshot.address,
           receiver: recipient,
           recipient,
           status: "Pending",
           txHash: transaction.hash,
-          explorerUrl: `${arcTestnet.blockExplorers.default.url}/tx/${transaction.hash}`,
-          summary: `Sent ${amount} USDC to ${shortAddress(recipient)} on Arc Testnet.`,
-          metadata: { token: "USDC", network: "Arc_Testnet" }
+          explorerUrl: arcTestnet.blockExplorers?.default?.url
+            ? `${arcTestnet.blockExplorers.default.url}/tx/${transaction.hash}`
+            : "",
+          summary: `Sent ${amount} USDC to ${shortAddress(recipient)} on ${ARC_NETWORK_LABEL}.`,
+          metadata: { token: "USDC", network: ARC_NETWORK_KEY }
         })
       );
 
@@ -243,7 +251,7 @@ export default function SendUsdcPanel({
         blockNumber: Number(receipt?.blockNumber || 0)
       });
       setStatus(confirmed ? "success" : "error");
-      if (!confirmed) setError("Transaction failed on Arc Testnet.");
+      if (!confirmed) setError(`Transaction failed on ${ARC_NETWORK_LABEL}.`);
     } catch (nextError) {
       setStatus("error");
       setError(formatSendError(nextError, "Unable to send USDC."));
@@ -262,7 +270,7 @@ export default function SendUsdcPanel({
       <section className="card send-v2">
         <div className="send-v2-head">
           <div><span className="send-eyebrow">Arc Transfer</span><h2>Send USDC</h2></div>
-          <span className="send-network-pill">Arc Testnet</span>
+          <span className="send-network-pill">{ARC_NETWORK_LABEL}</span>
         </div>
         <div className="send-empty-state"><strong>Connect wallet to send</strong><p>Your connected wallet signs every transfer.</p></div>
       </section>
@@ -277,7 +285,7 @@ export default function SendUsdcPanel({
           <h2>Send USDC</h2>
           <p>Enter a recipient, review the fee, then confirm in your wallet.</p>
         </div>
-        <span className="send-network-pill">Arc Testnet</span>
+        <span className="send-network-pill">{ARC_NETWORK_LABEL}</span>
       </div>
 
       {copilotAction?.tool === "prepare_send" ? (
@@ -329,7 +337,7 @@ export default function SendUsdcPanel({
           <div><span>From</span><strong>{shortAddress(walletSnapshot.address)}</strong></div>
           <span className="send-route-arrow">→</span>
           <div><span>To</span><strong>{recipientValid ? shortAddress(recipient) : "Recipient"}</strong></div>
-          <div className="send-route-network"><span>Network</span><strong>Arc Testnet</strong></div>
+          <div className="send-route-network"><span>Network</span><strong>{ARC_NETWORK_LABEL}</strong></div>
         </div>
       </div>
 
@@ -340,7 +348,7 @@ export default function SendUsdcPanel({
             <div><span>Send</span><strong>{amount} USDC</strong></div>
             <div><span>Network fee</span><strong>{formatGasFee(estimate.fee)}</strong></div>
             <div><span>Recipient</span><strong>{shortAddress(recipient)}</strong></div>
-            <div><span>Network</span><strong>Arc Testnet</strong></div>
+            <div><span>Network</span><strong>{ARC_NETWORK_LABEL}</strong></div>
           </div>
         </div>
       ) : null}
@@ -405,7 +413,7 @@ export default function SendUsdcPanel({
         )}
       </div>
 
-      <div className="send-v2-footnote"><span>✓ Self-custodial</span><span>✓ Review before signing</span><span>✓ ArcScan receipt</span></div>
+      <div className="send-v2-footnote"><span>✓ Self-custodial</span><span>✓ Review before signing</span><span>✓ Explorer receipt</span></div>
     </section>
   );
 }
