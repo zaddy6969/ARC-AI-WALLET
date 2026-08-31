@@ -5,7 +5,7 @@ import { useSwitchChain } from "wagmi";
 import AppShell from "../components/app-shell";
 import WalletLoginScreen from "../components/wallet-login-screen";
 import WalletSidebar from "../components/wallet-sidebar";
-import { arcTestnet } from "../lib/arc-chain";
+import { ARC_NETWORK_MODE, arcTestnet } from "../lib/arc-chain";
 import { useArcWalletSnapshot } from "../lib/use-arc-wallet-snapshot";
 import { useWalletAppState } from "../lib/use-wallet-app-state";
 
@@ -71,7 +71,14 @@ const SUPPORTED_VIEWS = new Set([
 
 function copilotNetworkChainId(value) {
   const normalized = String(value || "").toLowerCase();
-  if (normalized === "arc") return 5042002;
+  if (normalized === "arc") return arcTestnet.id;
+
+  if (ARC_NETWORK_MODE === "mainnet") {
+    if (normalized === "ethereum" || normalized === "ethereum-mainnet") return 1;
+    if (normalized === "base" || normalized === "base-mainnet") return 8453;
+    return null;
+  }
+
   if (normalized === "ethereum-sepolia") return 11155111;
   if (normalized === "base-sepolia") return 84532;
   return null;
