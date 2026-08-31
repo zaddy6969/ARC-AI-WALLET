@@ -14,7 +14,7 @@ export default function AppNav({ walletSnapshot }) {
   return (
     <header className="app-nav-shell">
       <div className="app-nav-bar simple-wallet-nav">
-        <Link href="/" className="app-nav-brand" aria-label="Arc AI Wallet dashboard">
+        <Link href="/#dashboard" className="app-nav-brand" aria-label="Arc AI Wallet dashboard">
           <div className="app-nav-logo" aria-hidden="true">
             <Image
               src="/arc-ai-wallet-mark-v2.png"
@@ -33,14 +33,18 @@ export default function AppNav({ walletSnapshot }) {
         <div className="app-nav-actions simple-wallet-nav-actions">
           {!ARC_MAINNET_REQUESTED ? (
             <span className="status-badge" title="Arc Mainnet support is prepared for public launch">
-              MAINNET READY · SEP 16
+              Mainnet ready
             </span>
           ) : null}
           <NetworkSwitcher compact />
           {isConnected ? (
-            <span className="simple-wallet-address" title={walletSnapshot.address}>
-              {shortAddress(walletSnapshot.address)}
-            </span>
+            <div className="premium-wallet-account">
+              <span className="premium-wallet-avatar" aria-hidden="true">
+                <Image src="/arc-ai-wallet-mark-v2.png" alt="" width={24} height={24} sizes="24px" />
+              </span>
+              <span className="premium-wallet-address" title={walletSnapshot.address}>{shortAddress(walletSnapshot.address)}</span>
+              <button type="button" className="premium-wallet-disconnect" onClick={walletSnapshot.disconnectWallet} title="Disconnect wallet" aria-label="Disconnect wallet">↗</button>
+            </div>
           ) : null}
         </div>
       </div>
