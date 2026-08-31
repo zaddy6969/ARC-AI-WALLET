@@ -1,10 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { createArcAppKitClient, formatAppKitError } from "../lib/arc-app-kit";
-import { ARC_CIRBTC_ERC20_ADDRESS, arcTestnet } from "../lib/arc-chain";
+import {
+  ARC_APP_KIT_READY,
+  ARC_BRIDGE_DESTINATION,
+  ARC_CIRBTC_ERC20_ADDRESS,
+  ARC_MAINNET_REQUESTED,
+  ARC_PORTFOLIO_TOKENS,
+  arcTestnet
+} from "../lib/arc-chain";
 import { createWalletActionRecord } from "../lib/local-activity";
 
-const SWAP_TOKENS = ["USDC", "EURC", "cirBTC"];
+const SWAP_TOKENS = ARC_PORTFOLIO_TOKENS.map((token) => token.symbol);
+const DEFAULT_TOKEN_IN = SWAP_TOKENS.includes("USDC") ? "USDC" : SWAP_TOKENS[0] || "USDC";
+const DEFAULT_TOKEN_OUT = SWAP_TOKENS.find((token) => token !== DEFAULT_TOKEN_IN) || DEFAULT_TOKEN_IN;
+const SWAP_CONFIGURED =
+  (!ARC_MAINNET_REQUESTED || ARC_APP_KIT_READY) &&
+  Boolean(ARC_BRIDGE_DESTINATION.appKitChain) &&
+  SWAP_TOKENS.length >= 2;
+const ARC_NETWORK_LABEL = arcTestnet.name || "Arc";
+
 const TOKEN_META = {
   USDC: { name: "USD Coin", mark: "$" },
   EURC: { name: "Euro Coin", mark: "€" },
@@ -193,8 +208,8 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
   const { connector } = useAccount();
   const chainId = useChainId();
   const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain();
-  const [tokenIn, setTokenIn] = useState("USDC");
-  const [tokenOut, setTokenOut] = useState("EURC");
+  const [tokenIn, setTokenIn] = useState(DEFAULT_TOKEN_IN);
+  const [tokenOut, setTokenOut] = useState(DEFAULT_TOKEN_OUT);
   const [amountIn, setAmountIn] = useState("1.00");
   const [slippageBps, setSlippageBps] = useState(100);
   const [status, setStatus] = useState("idle");
@@ -205,7 +220,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
   const isSignedIn = Boolean(walletSnapshot?.isSignedIn);
   const needsArcSwitch = isSignedIn && chainId !== arcTestnet.id;
   const amountLooksValid = isValidAmount(amountIn);
-  const tokensValid = tokenIn !== tokenOut;
+  const tokensValid = SWAP_CONFIGURED && tokenIn !== tokenOut;
   const inputAsset = useMemo(() => getAsset(walletSnapshot, tokenIn), [walletSnapshot, tokenIn]);
   const outputAsset = useMemo(() => getAsset(walletSnapshot, tokenOut), [walletSnapshot, tokenOut]);
   const inputBalanceKnown = inputAsset?.status === "ready";
@@ -225,12 +240,13 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
   }, [tokenIn, tokenOut, amountIn, slippageBps]);
 
   useEffect(() => {
-    if (copilotAction?.tool !== "prepare_swap") return;
+    if (copilotAction?.tool !== "prepare_swap" || !SWAP_CONFIGURED) return;
     const args = copilotAction.args || {};
-    const nextIn = SWAP_TOKENS.includes(args.tokenIn) ? args.tokenIn : "USDC";
-    const nextOut = SWAP_TOKENS.includes(args.tokenOut) ? args.tokenOut : "EURC";
+    const nextIn = SWAP_TOKENS.includes(args.tokenIn) ? args.tokenIn : DEFAULT_TOKEN_IN;
+    const fallbackOut = SWAP_TOKENS.find((token) => token !== nextIn) || nextIn;
+    const nextOut = SWAP_TOKENS.includes(args.tokenOut) ? args.tokenOut : fallbackOut;
     setTokenIn(nextIn);
-    setTokenOut(nextOut === nextIn ? (nextIn === "USDC" ? "EURC" : "USDC") : nextOut);
+    setTokenOut(nextOut === nextIn ? fallbackOut : nextOut);
     setAmountIn(normalizeAmount(args.amount || ""));
     setSlippageBps([50, 100, 300].includes(Number(args.slippageBps)) ? Number(args.slippageBps) : 100);
     setEstimate(null);
@@ -273,6 +289,13 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
   };
 
   const getSwapParams = async () => {
+    if (!SWAP_CONFIGURED) {
+      throw new Error(
+        ARC_MAINNET_REQUESTED
+          ? "Arc Mainnet swap support is locked until Circle App Kit production support and at least two verified mainnet assets are configured."
+          : "Swap support is not configured."
+      );
+    }
     if (!connector || !isSignedIn) throw new Error("Connect your wallet before swapping.");
     if (!amountLooksValid) throw new Error("Enter a valid swap amount.");
     if (!tokensValid) throw new Error("Choose two different tokens.");
@@ -291,7 +314,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
       params: {
         from: {
           adapter: client.adapter,
-          chain: "Arc_Testnet"
+          chain: ARC_BRIDGE_DESTINATION.appKitChain
         },
         tokenIn: getSwapTokenIdentifier(tokenIn),
         tokenOut: getSwapTokenIdentifier(tokenOut),
@@ -332,7 +355,10 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
       setStatus(result?.state === "error" ? "error" : "success");
 
       const hash = getSwapTxHash(result);
-      const url = getSwapExplorerUrl(result) || (hash ? `${arcTestnet.blockExplorers.default.url}/tx/${hash}` : "");
+      const url = getSwapExplorerUrl(result) ||
+        (hash && arcTestnet.blockExplorers?.default?.url
+          ? `${arcTestnet.blockExplorers.default.url}/tx/${hash}`
+          : "");
       const outputAmount = result?.amountOut
         ? `${result.amountOut} ${tokenOut}`
         : estimateOutput || `${tokenOut} output confirmed in wallet`;
@@ -343,13 +369,13 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
           type: "Swap",
           kind: "swap",
           amount: `${amountIn} ${tokenIn} -> ${outputAmount}`,
-          chain: arcTestnet.name,
+          chain: ARC_NETWORK_LABEL,
           status: result?.state === "error" ? "Failed" : "Confirmed",
           sender: getSwapSender(result, walletSnapshot.address),
           receiver: getSwapReceiver(result, walletSnapshot.address),
           txHash: hash,
           explorerUrl: url,
-          summary: `Swapped ${amountIn} ${tokenIn} for ${outputAmount} on Arc Testnet.`,
+          summary: `Swapped ${amountIn} ${tokenIn} for ${outputAmount} on ${ARC_NETWORK_LABEL}.`,
           metadata: {
             tokenIn,
             tokenOut,
@@ -369,11 +395,34 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
       <section className="card swap-panel swap-v2">
         <div className="swap-v2-head">
           <div><span className="swap-eyebrow">Arc Swap</span><h2>Swap tokens</h2></div>
-          <span className="swap-network-pill">Arc Testnet</span>
+          <span className="swap-network-pill">{ARC_NETWORK_LABEL}</span>
         </div>
         <div className="swap-empty-state">
           <strong>Connect wallet to swap</strong>
           <p>Connect your wallet to use live Arc balances, quotes and wallet approval.</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!SWAP_CONFIGURED) {
+    return (
+      <section className="card swap-panel swap-v2">
+        <div className="swap-v2-head">
+          <div>
+            <span className="swap-eyebrow">Arc Swap</span>
+            <h2>Swap tokens</h2>
+            <p>Swap support will unlock only after production routes and verified assets are configured.</p>
+          </div>
+          <span className="swap-network-pill">{ARC_NETWORK_LABEL}</span>
+        </div>
+        <div className="swap-empty-state">
+          <strong>{ARC_MAINNET_REQUESTED ? "Mainnet swap locked" : "Swap unavailable"}</strong>
+          <p>
+            {ARC_MAINNET_REQUESTED
+              ? "This prevents the wallet from guessing production token or Circle App Kit configuration."
+              : "Circle App Kit swap configuration is unavailable."}
+          </p>
         </div>
       </section>
     );
@@ -387,7 +436,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
           <h2>Swap tokens</h2>
           <p>Choose a pair, review the live quote, then confirm in your wallet.</p>
         </div>
-        <span className="swap-network-pill">Arc Testnet</span>
+        <span className="swap-network-pill">{ARC_NETWORK_LABEL}</span>
       </div>
 
       {copilotAction?.tool === "prepare_swap" ? (
@@ -472,7 +521,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
       {needsArcSwitch ? (
         <div className="swap-network-note">
           <span>↗</span>
-          <div><strong>Arc network required</strong><p>Your wallet will switch to Arc Testnet when you review the swap.</p></div>
+          <div><strong>Arc network required</strong><p>Your wallet will switch to {ARC_NETWORK_LABEL} when you review the swap.</p></div>
         </div>
       ) : null}
 
@@ -496,7 +545,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
           <div className="swap-v2-quote">
             <div><span>Pay</span><strong>{amountIn} {tokenIn}</strong></div>
             <div className="swap-quote-output"><span>Estimated receive</span><strong>{estimateOutput || tokenOut}</strong></div>
-            <div><span>Network</span><strong>Arc Testnet</strong></div>
+            <div><span>Network</span><strong>{ARC_NETWORK_LABEL}</strong></div>
             <div><span>Slippage</span><strong>{(slippageBps / 100).toFixed(slippageBps % 100 === 0 ? 0 : 1)}%</strong></div>
             {feeRows.map((fee) => <div key={fee.id}><span>{fee.label}</span><strong>{fee.value}</strong></div>)}
             <div><span>Wallet</span><strong>{shortAddress(walletSnapshot?.address)}</strong></div>
@@ -513,7 +562,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
             <span>{amountIn} {tokenIn} → {estimateOutput || tokenOut}</span>
           </div>
           {txHash ? <code>{shortHash(txHash)}</code> : null}
-          {explorerUrl ? <a href={explorerUrl} target="_blank" rel="noreferrer">View on ArcScan</a> : null}
+          {explorerUrl ? <a href={explorerUrl} target="_blank" rel="noreferrer">View transaction</a> : null}
         </div>
       ) : null}
 
@@ -543,7 +592,7 @@ export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilot
       </div>
 
       <div className="swap-v2-footnote">
-        <span>Self-custodial</span><span>•</span><span>Wallet approval required</span><span>•</span><span>Arc Testnet</span>
+        <span>Self-custodial</span><span>•</span><span>Wallet approval required</span><span>•</span><span>{ARC_NETWORK_LABEL}</span>
       </div>
     </section>
   );
