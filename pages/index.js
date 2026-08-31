@@ -1,6 +1,6 @@
 import Head from "next/head";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSwitchChain } from "wagmi";
 import AppShell from "../components/app-shell";
 import WalletLoginScreen from "../components/wallet-login-screen";
@@ -21,6 +21,7 @@ function PanelLoading() {
   );
 }
 
+const PremiumWalletDashboard = dynamic(() => import("../components/premium-wallet-dashboard"), { loading: PanelLoading });
 const BridgeToArcPanel = dynamic(() => import("../components/bridge-to-arc-panel"), { loading: PanelLoading });
 const PortfolioPanel = dynamic(
   () => import("../components/wallet-feature-panels").then((module) => module.PortfolioPanel),
@@ -33,14 +34,6 @@ const AiAgentWorkspace = dynamic(() => import("../components/ai-agent-workspace"
 const ReceiveModal = dynamic(() => import("../components/wallet/ReceiveModal"), { ssr: false });
 const UnifiedBalancePanel = dynamic(() => import("../components/unified-balance-panel"), { loading: PanelLoading });
 const ArcCommunityHubPanel = dynamic(() => import("../components/arc-community-hub"), { loading: PanelLoading });
-const WalletOverviewCard = dynamic(
-  () => import("../components/wallet-pro-suite").then((module) => module.WalletOverviewCard),
-  { loading: PanelLoading }
-);
-const FastDashboardPanel = dynamic(
-  () => import("../components/wallet-pro-suite").then((module) => module.FastDashboardPanel),
-  { loading: PanelLoading }
-);
 const TransactionGuardianBanner = dynamic(
   () => import("../components/wallet-pro-suite").then((module) => module.TransactionGuardianBanner),
   { loading: PanelLoading }
@@ -98,12 +91,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
   const [receiveOpen, setReceiveOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState(null);
   const [copilotAction, setCopilotAction] = useState(null);
-  const [copied, setCopied] = useState(false);
-  const copyTimeoutRef = useRef(null);
-
-  useEffect(() => () => {
-    if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
-  }, []);
 
   useEffect(() => {
     const syncViewFromHash = () => {
@@ -157,16 +144,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
     updateViewLocation(view);
   }, [updateViewLocation]);
 
-  const handleCopyAddress = useCallback(async () => {
-    if (!walletSnapshot.address) return;
-    try {
-      await navigator.clipboard.writeText(walletSnapshot.address);
-      setCopied(true);
-      if (copyTimeoutRef.current) window.clearTimeout(copyTimeoutRef.current);
-      copyTimeoutRef.current = window.setTimeout(() => setCopied(false), 1400);
-    } catch {}
-  }, [walletSnapshot.address]);
-
   const openReceive = useCallback(() => setReceiveOpen(true), []);
   const closeReceive = useCallback(() => setReceiveOpen(false), []);
 
@@ -219,36 +196,16 @@ function ConnectedWalletExperience({ walletSnapshot }) {
 
   return (
     <AppShell walletSnapshot={walletSnapshot}>
-      <section className="wallet-dashboard-hero pro-wallet-hero">
-        <div>
-          <p className="section-kicker">Arc AI Wallet</p>
-          <h1>Your wallet, powered by an AI Agent.</h1>
-          <p>Manage USDC, use Unified Balance, inspect live Arc data, and let the AI Agent prepare wallet actions for your approval.</p>
-        </div>
-        <span className="dashboard-live-pill"><i /> {arcTestnet.name}</span>
-      </section>
-
-      <WalletOverviewCard
-        walletSnapshot={walletSnapshot}
-        activityItems={mergedActivity}
-        onCopy={handleCopyAddress}
-        copied={copied}
-        onDisconnect={walletSnapshot.disconnectWallet}
-        onSelectView={handleSelectView}
-        onReceive={openReceive}
-        onAiOpen={() => handleSelectView("agent")}
-      />
-
-      <div className="wallet-workspace">
+      <div className="wallet-workspace premium-wallet-workspace">
         <WalletSidebar
           activeView={activeView}
           onSelect={handleSelectView}
           onReceive={openReceive}
         />
 
-        <div className="wallet-main-panel">
+        <div className="wallet-main-panel premium-wallet-main">
           {activeView === "dashboard" ? (
-            <FastDashboardPanel
+            <PremiumWalletDashboard
               walletSnapshot={walletSnapshot}
               activityItems={mergedActivity}
               onSelectView={handleSelectView}
@@ -335,7 +292,7 @@ export default function Home() {
           name="description"
           content="A self-custodial Arc wallet with USDC send, receive, swap, bridge, Circle App Kit Unified Balance, live Arc data, community tools and a real AI Agent that prepares wallet actions for user approval."
         />
-        <meta name="theme-color" content="#f5f7fb" />
+        <meta name="theme-color" content="#f3f6fb" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="canonical" href={SITE_URL} />
       </Head>
