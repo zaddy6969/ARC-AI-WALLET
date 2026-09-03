@@ -136,7 +136,7 @@ function PremiumWalletCard({
         </div>
         <div>
           <p className="section-kicker">AI Native Wallet</p>
-          <h1>Arc AI Wallet</h1>
+          <h1>Lumexa AI Wallet</h1>
         </div>
         <span className={`status-badge ${isConnected && onArc ? "status-good" : ""}`}>
           {isConnected ? (onArc ? "Connected" : "Wrong network") : "Ready"}

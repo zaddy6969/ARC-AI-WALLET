@@ -30,7 +30,7 @@ async function getLatestArcNodeRelease() {
     const response = await fetch(ARC_NODE_RELEASES_URL, {
       headers: {
         Accept: "application/vnd.github+json",
-        "User-Agent": "arc-ai-wallet-agent"
+        "User-Agent": "lumexa-ai-wallet-agent"
       }
     });
 

@@ -123,7 +123,7 @@ export default function ReceiveModal({
     try {
       setIsSharing(true);
       await navigator.share({
-        title: "Arc AI Wallet address",
+        title: "Lumexa AI Wallet address",
         text: `Receive on ${networkLabel}: ${address}`
       });
       setFeedback({ tone: "success", message: "Address shared." });

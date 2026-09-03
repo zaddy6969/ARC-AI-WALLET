@@ -13,6 +13,6 @@ export default function handler(req, res) {
   res.setHeader("Cache-Control", "private, max-age=60");
   return res.status(200).json({
     hasKitKey: Boolean(kitKey),
-    kitKey: kitKey ? "KIT_KEY:arc-ai-wallet:server-proxy" : ""
+    kitKey: kitKey ? "KIT_KEY:lumexa-ai-wallet:server-proxy" : ""
   });
 }

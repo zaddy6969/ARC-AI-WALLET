@@ -163,7 +163,7 @@ const PremiumWalletDashboard = memo(function PremiumWalletDashboard({
         <div className="premium-hero-art premium-v2-hero-art" aria-hidden="true">
           <div className="premium-orbit premium-orbit-one" />
           <div className="premium-orbit premium-orbit-two" />
-          <Image src="/arc-ai-wallet-mark-v2.png" alt="" width={230} height={230} priority />
+          <Image src="/lumexa-ai-wallet-mark-v2.png" alt="" width={230} height={230} priority />
         </div>
       </section>
 
