@@ -1,13 +1,14 @@
 import Head from "next/head";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
-import { useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import AppShell from "../components/app-shell";
 import WalletLoginScreen from "../components/wallet-login-screen";
 import WalletSidebar from "../components/wallet-sidebar";
-import { ARC_NETWORK_MODE, arcTestnet } from "../lib/arc-chain";
+import { ARC_NETWORK_MODE, MULTICHAIN_WALLET_CHAINS, arcTestnet } from "../lib/arc-chain";
 import { useArcWalletSnapshot } from "../lib/use-arc-wallet-snapshot";
 import { useWalletAppState } from "../lib/use-wallet-app-state";
+import { switchWalletNetwork } from "../lib/wallet-network";
 
 function PanelLoading() {
   return (
@@ -18,11 +19,11 @@ function PanelLoading() {
   );
 }
 
-const PremiumWalletDashboard = dynamic(() => import("../components/premium-wallet-dashboard"), { loading: PanelLoading });
-const BridgeToArcPanel = dynamic(() => import("../components/bridge-to-arc-panel"), { loading: PanelLoading });
+const WalletDashboardV4 = dynamic(() => import("../components/wallet-dashboard-v4"), { loading: PanelLoading });
+const BridgeToArcPanel = dynamic(() => import("../components/bridge-to-arc-panel-v4"), { loading: PanelLoading });
 const PortfolioPanel = dynamic(() => import("../components/wallet-feature-panels").then((module) => module.PortfolioPanel), { loading: PanelLoading });
 const SendUsdcPanel = dynamic(() => import("../components/send-usdc-panel"), { loading: PanelLoading });
-const SwapUsdcPanel = dynamic(() => import("../components/swap-usdc-panel"), { loading: PanelLoading });
+const SwapUsdcPanel = dynamic(() => import("../components/swap-usdc-panel-v4"), { loading: PanelLoading });
 const TransactionActivity = dynamic(() => import("../components/transaction-activity"), { loading: PanelLoading });
 const AiAgentWorkspace = dynamic(() => import("../components/ai-agent-workspace"), { ssr: false, loading: PanelLoading });
 const ReceiveModal = dynamic(() => import("../components/wallet/ReceiveModal"), { ssr: false });
@@ -56,6 +57,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
     refreshActivity,
     updateLocalActivityByHash
   } = useWalletAppState(walletSnapshot);
+  const { connector } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   const [activeView, setActiveView] = useState("dashboard");
   const [receiveOpen, setReceiveOpen] = useState(false);
@@ -113,11 +115,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
   const openReceive = useCallback(() => setReceiveOpen(true), []);
   const closeReceive = useCallback(() => setReceiveOpen(false), []);
 
-  const askCopilot = useCallback((prompt) => {
-    setAssistantPrompt({ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, text: prompt });
-    handleSelectView("agent");
-  }, [handleSelectView]);
-
   const handleCopilotAction = useCallback(async (action) => {
     if (!action?.tool) return;
     if (action.tool === "prepare_send") return openCopilotView("send", action);
@@ -131,15 +128,16 @@ function ConnectedWalletExperience({ walletSnapshot }) {
     }
     if (action.tool === "switch_network") {
       const chainId = copilotNetworkChainId(action?.args?.network);
-      if (!chainId || !switchChainAsync) return;
+      const chain = MULTICHAIN_WALLET_CHAINS.find((item) => item.id === Number(chainId));
+      if (!chain || !connector) return;
       try {
-        await switchChainAsync({ chainId });
+        await switchWalletNetwork({ connector, chain, switchChainAsync });
       } catch {
         setAssistantPrompt({ id: `${Date.now()}-switch-error`, text: "My wallet did not complete the requested network switch. Tell me what to check next." });
         handleSelectView("agent");
       }
     }
-  }, [handleSelectView, openCopilotView, switchChainAsync]);
+  }, [connector, handleSelectView, openCopilotView, switchChainAsync]);
 
   return (
     <AppShell walletSnapshot={walletSnapshot}>
@@ -148,7 +146,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
 
         <div className="wallet-main-panel premium-wallet-main">
           {activeView === "dashboard" ? (
-            <PremiumWalletDashboard walletSnapshot={walletSnapshot} activityItems={mergedActivity} onSelectView={handleSelectView} onReceive={openReceive} onAskCopilot={askCopilot} />
+            <WalletDashboardV4 walletSnapshot={walletSnapshot} activityItems={mergedActivity} onSelectView={handleSelectView} onReceive={openReceive} />
           ) : activeView === "agent" ? (
             <AiAgentWorkspace walletSnapshot={walletSnapshot} activityItems={mergedActivity} activityStatus={liveActivityStatus} initialPrompt={assistantPrompt} onWalletAction={handleCopilotAction} />
           ) : activeView === "activity" ? (
@@ -158,7 +156,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
           ) : activeView === "unified" ? (
             <UnifiedBalancePanel walletSnapshot={walletSnapshot} onSelectView={handleSelectView} />
           ) : activeView === "community" ? (
-            <ArcCommunityHubPanel walletSnapshot={walletSnapshot} onAskCopilot={askCopilot} />
+            <ArcCommunityHubPanel walletSnapshot={walletSnapshot} />
           ) : activeView === "request" ? (
             <PaymentRequestPanel walletSnapshot={walletSnapshot} />
           ) : activeView === "swap" ? (
@@ -192,7 +190,7 @@ export default function Home() {
       <Head>
         <title>Lumexa AI Wallet | USDC, Unified Balance & AI Assistant</title>
         <meta name="description" content="Lumexa AI Wallet is a self-custodial multichain USDC wallet built on Arc, with send, receive, swap, bridge, Unified Balance, activity tracking and one AI Assistant that prepares wallet actions for user approval." />
-        <meta name="theme-color" content="#f4f6f9" />
+        <meta name="theme-color" content="#070b12" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="canonical" href={SITE_URL} />
       </Head>

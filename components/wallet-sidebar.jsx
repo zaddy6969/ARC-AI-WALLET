@@ -9,8 +9,7 @@ const ACTIONS = [
   { id: "unified", label: "Unified", icon: "unified" },
   { id: "request", label: "Request", icon: "request" },
   { id: "portfolio", label: "Assets", icon: "portfolio" },
-  { id: "activity", label: "Activity", icon: "activity" },
-  { id: "agent", label: "Assistant", icon: "ai" }
+  { id: "activity", label: "Activity", icon: "activity" }
 ];
 
 export function FeatureIcon({ name }) {
@@ -41,7 +40,7 @@ export function FeatureIcon({ name }) {
 
 function WalletSidebar({ activeView, onSelect, onReceive }) {
   return (
-    <aside className="wallet-v3-sidebar">
+    <aside className="wallet-v3-sidebar wallet-v4-sidebar">
       <nav aria-label="Wallet navigation">
         {ACTIONS.map((action) => {
           const active = action.id === activeView;
@@ -59,7 +58,7 @@ function WalletSidebar({ activeView, onSelect, onReceive }) {
           );
         })}
       </nav>
-      <div className="wallet-v3-sidebar-security"><i /><span><strong>Self-custodial</strong><small>You approve every transaction</small></span></div>
+      <div className="wallet-v3-sidebar-security wallet-v4-sidebar-security"><i /><span><strong>Self-custodial</strong><small>You approve every transaction</small></span></div>
     </aside>
   );
 }
