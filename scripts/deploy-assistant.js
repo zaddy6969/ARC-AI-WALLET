@@ -7,22 +7,22 @@ const DEPLOYMENT_PATH = path.join(
   "..",
   "lib",
   "generated",
-  "arc-assistant-deployment.json"
+  "lumexa-assistant-deployment.json"
 );
 
 async function main() {
-  const assistantName = process.env.ARC_ASSISTANT_NAME || "arc-ai-wallet";
+  const assistantName = process.env.LUMEXA_ASSISTANT_NAME || "Lumexa AI Agent";
   const rpcUrl =
     process.env.ARC_TESTNET_RPC_URL || "https://rpc.testnet.arc.network";
 
   if (!process.env.ARC_TESTNET_PRIVATE_KEY) {
     throw new Error(
-      "Set ARC_TESTNET_PRIVATE_KEY before deploying to Arc Testnet."
+      "Set ARC_TESTNET_PRIVATE_KEY before deploying LumexaWalletAssistant to Arc Testnet."
     );
   }
 
   const assistantFactory = await hre.ethers.getContractFactory(
-    "ArcAiWalletAssistant"
+    "LumexaWalletAssistant"
   );
   const assistant = await assistantFactory.deploy(assistantName);
 
@@ -49,7 +49,7 @@ async function main() {
     ) + "\n"
   );
 
-  console.log(`ArcAiWalletAssistant deployed to ${deployedAddress}`);
+  console.log(`LumexaWalletAssistant deployed to ${deployedAddress}`);
   if (deploymentTransaction) {
     console.log(`Deployment tx: ${deploymentTransaction.hash}`);
   }
