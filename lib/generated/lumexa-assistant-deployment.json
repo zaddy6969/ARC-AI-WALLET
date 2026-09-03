@@ -3,7 +3,7 @@
   "chainId": 5042002,
   "rpcUrl": "https://rpc.testnet.arc.network",
   "assistantName": "Lumexa AI Agent",
-  "address": "",
-  "txHash": "",
-  "deployedAt": ""
+  "address": "0x2e564DB13Ea3B859f46d99E16C4A4451499C4f8c",
+  "txHash": "0x83ebf59e4d3170e00f71b614f33d768b8f8b24772d21f8527cac1125aebaf83e",
+  "deployedAt": "2026-09-03T11:06:48.576Z"
 }
