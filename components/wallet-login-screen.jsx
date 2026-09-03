@@ -28,7 +28,7 @@ export default function WalletLoginScreen({
         <div className="wallet-entry-brand">
           <span className="wallet-entry-logo">
             <Image
-              src="/arc-ai-wallet-mark-v2.png"
+              src="/lumexa-ai-wallet-mark-v2.png"
               alt=""
               width={42}
               height={42}
@@ -50,7 +50,7 @@ export default function WalletLoginScreen({
         <aside className="wallet-entry-card">
           <div className="wallet-entry-card-logo" aria-hidden="true">
             <Image
-              src="/arc-ai-wallet-mark-v2.png"
+              src="/lumexa-ai-wallet-mark-v2.png"
               alt=""
               width={76}
               height={76}
