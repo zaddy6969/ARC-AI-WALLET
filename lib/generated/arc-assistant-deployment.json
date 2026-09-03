@@ -1,9 +1,0 @@
-{
-  "network": "arcTestnet",
-  "chainId": 5042002,
-  "rpcUrl": "https://rpc.testnet.arc.network",
-  "assistantName": "arc-ai-wallet",
-  "address": "0x7528E86382606f6A91D904F81d6aAb489A9c4e6F",
-  "txHash": "0x15be61ac0a84cfe9cbd8eb9a3f5c4212d5858f1f8f6fd82fc0e61bbeab4c616f",
-  "deployedAt": "2026-05-10T18:25:08.295Z"
-}
