@@ -1,6 +1,6 @@
-# Arc AI Wallet
+# Lumexa AI Wallet
 
-A simple, working Arc wallet app built around Arc App Kit.
+Lumexa AI Wallet is a self-custodial USDC wallet built on Arc and enhanced with AI-assisted wallet actions.
 
 ## What it includes
 
@@ -8,10 +8,10 @@ A simple, working Arc wallet app built around Arc App Kit.
 - real `Send USDC`
 - real `Receive`
 - real `Bridge USDC to Arc`
-- floating `AI Assistant`
+- integrated `Lumexa AI Agent`
 - live `Activity`
 
-The app keeps the current Arc AI Wallet branding and dark premium UI, but removes the old demo-heavy portfolio flow and focuses on real App Kit actions.
+The app uses Lumexa as the product brand while Arc remains the underlying network and infrastructure.
 
 ## Stack
 
@@ -95,10 +95,10 @@ Open:
 9. Check the step feed and ArcScan/explorer links
 10. Confirm the bridge action appears in the `Activity` tab
 
-### 4. AI Assistant
+### 4. Lumexa AI Agent
 
 1. Open `/`
-2. Open the floating AI Assistant panel
+2. Open the Lumexa AI Agent panel
 3. Connect wallet for live context, or ask general Arc/App Kit questions without connecting
 4. Ask:
    - `Analyze my wallet`
