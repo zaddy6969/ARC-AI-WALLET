@@ -18,7 +18,7 @@ permissions:
 
 concurrency:
   group: lumexa-assistant-arc-testnet
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -56,9 +56,6 @@ jobs:
 
       - name: Compile contract
         run: pnpm contract:compile
-
-      - name: Build production app
-        run: pnpm build
 
       - name: Deploy and verify LumexaWalletAssistant
         env:
