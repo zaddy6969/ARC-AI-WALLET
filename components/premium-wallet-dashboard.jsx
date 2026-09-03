@@ -49,8 +49,7 @@ const PremiumWalletDashboard = memo(function PremiumWalletDashboard({
   walletSnapshot,
   activityItems = [],
   onSelectView,
-  onReceive,
-  onAskCopilot
+  onReceive
 }) {
   const assets = readyAssets(walletSnapshot);
   const portfolioValue = useMemo(() => assets.reduce((sum, asset) => sum + assetValue(asset), 0), [assets]);
@@ -181,7 +180,6 @@ const PremiumWalletDashboard = memo(function PremiumWalletDashboard({
           <h2>One place for wallet intelligence.</h2>
           <p>Understand activity, check network status, or prepare a send, swap, bridge, or network switch.</p>
           <button type="button" className="wallet-v3-primary-button" onClick={() => onSelectView?.("agent")}>Ask Lumexa <span>→</span></button>
-          <button type="button" className="wallet-v3-text-button" onClick={() => onAskCopilot?.("Analyze my wallet and summarize the most important thing I should know.")}>Analyze this wallet</button>
         </article>
       </div>
     </section>
