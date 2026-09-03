@@ -10,6 +10,7 @@ Lumexa AI Wallet is a self-custodial USDC wallet built on Arc and enhanced with 
 - real `Bridge USDC to Arc`
 - integrated `Lumexa AI Agent`
 - live `Activity`
+- `LumexaWalletAssistant` smart contract on Arc Testnet
 
 The app uses Lumexa as the product brand while Arc remains the underlying network and infrastructure.
 
@@ -22,6 +23,7 @@ The app uses Lumexa as the product brand while Arc remains the underlying networ
 - viem
 - Arc App Kit
 - OpenAI API
+- Hardhat / Solidity
 
 ## Routes
 
@@ -35,11 +37,12 @@ Copy `.env.example` to `.env.local` and set:
 
 ```bash
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
-NEXT_PUBLIC_SITE_URL=https://arc-ai-wallet.vercel.app
+NEXT_PUBLIC_SITE_URL=https://lumexa-ai-wallet.vercel.app
 NEXT_PUBLIC_ARC_RPC_URL=https://rpc.testnet.arc.network
 NEXT_PUBLIC_ARC_TESTNET_USDC_ADDRESS=0x3600000000000000000000000000000000000000
 NEXT_PUBLIC_ARC_TESTNET_EURC_ADDRESS=0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a
 NEXT_PUBLIC_ARC_TESTNET_CIRBTC_ADDRESS=0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF
+NEXT_PUBLIC_LUMEXA_ASSISTANT_CONTRACT_ADDRESS=
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-5.4-mini
 ```
@@ -47,9 +50,9 @@ OPENAI_MODEL=gpt-5.4-mini
 Notes:
 
 - `OPENAI_API_KEY` is only used server-side through `/api/ai`
-- do not put private keys or seed phrases in frontend env vars
-- `KIT_KEY` is intentionally not used by the public dashboard today because a secure
-  browser-wallet Swap flow needs a larger architecture change before launch
+- do not put private keys or seed phrases in frontend environment variables
+- `ARC_TESTNET_PRIVATE_KEY` is only for secure contract deployment and must be kept in a local secret store or GitHub Actions secret
+- `KIT_KEY` is intentionally not used by the public dashboard today because a secure browser-wallet Swap flow needs a larger architecture change before launch
 
 ## Local development
 
@@ -118,6 +121,24 @@ Open:
    - `Approval`
 4. Confirm in-app Send and Bridge actions are matched to live Arc activity when the tx hash is available
 
+## Lumexa assistant contract
+
+The contract source is `contracts/LumexaWalletAssistant.sol` and deployment metadata is stored in `lib/generated/lumexa-assistant-deployment.json`.
+
+Compile:
+
+```bash
+pnpm contract:compile
+```
+
+Deploy to Arc Testnet:
+
+```bash
+ARC_TESTNET_PRIVATE_KEY=... LUMEXA_ASSISTANT_NAME="Lumexa AI Agent" pnpm contract:deploy:arc
+```
+
+For automated deployment, add `ARC_TESTNET_PRIVATE_KEY` as a GitHub Actions secret. Never commit the private key.
+
 ## Deployment
 
 1. Push `main` to GitHub
@@ -126,6 +147,7 @@ Open:
    - `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
    - `NEXT_PUBLIC_SITE_URL`
    - `NEXT_PUBLIC_ARC_RPC_URL`
+   - `NEXT_PUBLIC_LUMEXA_ASSISTANT_CONTRACT_ADDRESS`
    - `OPENAI_API_KEY`
    - `OPENAI_MODEL`
 4. Redeploy

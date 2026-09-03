@@ -47,7 +47,7 @@ const PaymentRequestPanel = dynamic(
   { loading: PanelLoading }
 );
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://arc-ai-wallet.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://lumexa-ai-wallet.vercel.app";
 const SUPPORTED_VIEWS = new Set([
   "dashboard",
   "send",

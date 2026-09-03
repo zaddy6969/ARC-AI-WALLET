@@ -1,0 +1,144 @@
+name: Deploy Lumexa Assistant to Arc Testnet
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "contracts/LumexaWalletAssistant.sol"
+      - "scripts/deploy-assistant.js"
+      - "hardhat.config.js"
+      - ".github/workflows/deploy-lumexa-assistant.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lumexa-assistant-arc-testnet
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Remove remaining legacy product identifiers
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const roots = ['components', 'lib', 'pages', 'scripts', 'contracts', 'styles'];
+          const extraFiles = ['README.md', 'package.json', 'next.config.js', 'hardhat.config.js'];
+          const textExtensions = new Set(['.js', '.jsx', '.ts', '.tsx', '.json', '.md', '.sol', '.css']);
+          const replacements = [
+            ['./generated/arc-assistant-deployment.json', './generated/lumexa-assistant-deployment.json'],
+            ['ArcAiWalletAssistant', 'LumexaWalletAssistant'],
+            ['ARC_AI_WALLET_ASSISTANT', 'LUMEXA_WALLET_ASSISTANT'],
+            ['Arc AI Wallet', 'Lumexa AI Wallet'],
+            ['arc-ai-wallet', 'lumexa-ai-wallet']
+          ];
+
+          function updateFile(file) {
+            if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return;
+            const ext = path.extname(file);
+            if (!textExtensions.has(ext) && !extraFiles.includes(file)) return;
+            let text = fs.readFileSync(file, 'utf8');
+            const original = text;
+            for (const [from, to] of replacements) text = text.split(from).join(to);
+            if (text !== original) fs.writeFileSync(file, text);
+          }
+
+          function walk(dir) {
+            if (!fs.existsSync(dir)) return;
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const file = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(file);
+              else updateFile(file);
+            }
+          }
+
+          roots.forEach(walk);
+          extraFiles.forEach(updateFile);
+
+          const legacyDeployment = 'lib/generated/arc-assistant-deployment.json';
+          if (fs.existsSync(legacyDeployment)) fs.rmSync(legacyDeployment);
+          NODE
+
+      - name: Commit backend cleanup
+        run: |
+          if git diff --quiet; then
+            echo "No additional legacy product identifiers found."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Finish Lumexa backend identifier cleanup"
+            git push origin HEAD:main
+          fi
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify deployment secret
+        env:
+          ARC_TESTNET_PRIVATE_KEY: ${{ secrets.ARC_TESTNET_PRIVATE_KEY }}
+        run: |
+          if [ -z "$ARC_TESTNET_PRIVATE_KEY" ]; then
+            echo "::error::GitHub Actions secret ARC_TESTNET_PRIVATE_KEY is required to deploy LumexaWalletAssistant to Arc Testnet."
+            exit 1
+          fi
+
+      - name: Compile contract
+        run: pnpm contract:compile
+
+      - name: Deploy LumexaWalletAssistant
+        env:
+          ARC_TESTNET_PRIVATE_KEY: ${{ secrets.ARC_TESTNET_PRIVATE_KEY }}
+          ARC_TESTNET_RPC_URL: https://rpc.testnet.arc.network
+          LUMEXA_ASSISTANT_NAME: Lumexa AI Agent
+        run: pnpm contract:deploy:arc
+
+      - name: Validate deployment metadata
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const file = 'lib/generated/lumexa-assistant-deployment.json';
+          const deployment = JSON.parse(fs.readFileSync(file, 'utf8'));
+          if (!/^0x[a-fA-F0-9]{40}$/.test(deployment.address || '')) {
+            throw new Error('Deployment did not produce a valid contract address.');
+          }
+          if (!/^0x[a-fA-F0-9]{64}$/.test(deployment.txHash || '')) {
+            throw new Error('Deployment did not produce a valid transaction hash.');
+          }
+          console.log(`LumexaWalletAssistant: ${deployment.address}`);
+          console.log(`Deployment transaction: ${deployment.txHash}`);
+          NODE
+
+      - name: Commit deployment metadata
+        run: |
+          if git diff --quiet -- lib/generated/lumexa-assistant-deployment.json; then
+            echo "Deployment metadata is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/generated/lumexa-assistant-deployment.json
+          git commit -m "Record Lumexa assistant Arc deployment"
+          git push origin HEAD:main

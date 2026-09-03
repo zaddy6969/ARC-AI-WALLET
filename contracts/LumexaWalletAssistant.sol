@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-contract ArcAiWalletAssistant {
+contract LumexaWalletAssistant {
     uint256 public constant MAX_PROMPT_LENGTH = 280;
     uint256 public constant MAX_RESPONSE_LENGTH = 560;
 
