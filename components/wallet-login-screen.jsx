@@ -36,14 +36,14 @@ export default function WalletLoginScreen({
               sizes="42px"
             />
           </span>
-          <strong>Arc AI Wallet</strong>
+          <strong>Lumexa AI Wallet</strong>
         </div>
         <span className="wallet-entry-network"><i /> {arcActiveChain.name}</span>
       </header>
 
       <section className="wallet-entry-main">
         <div className="wallet-entry-copy">
-          <h1>Your Arc wallet.</h1>
+          <h1>Your Lumexa wallet.</h1>
           <p>Manage USDC on {arcActiveChain.name} from one place.</p>
         </div>
 
