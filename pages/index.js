@@ -13,20 +13,14 @@ function PanelLoading() {
   return (
     <section className="card panel-loading" role="status" aria-live="polite">
       <span className="panel-loading-orb" />
-      <div>
-        <strong>Loading wallet</strong>
-        <p>Syncing Arc data…</p>
-      </div>
+      <div><strong>Loading wallet</strong><p>Syncing wallet data…</p></div>
     </section>
   );
 }
 
 const PremiumWalletDashboard = dynamic(() => import("../components/premium-wallet-dashboard"), { loading: PanelLoading });
 const BridgeToArcPanel = dynamic(() => import("../components/bridge-to-arc-panel"), { loading: PanelLoading });
-const PortfolioPanel = dynamic(
-  () => import("../components/wallet-feature-panels").then((module) => module.PortfolioPanel),
-  { loading: PanelLoading }
-);
+const PortfolioPanel = dynamic(() => import("../components/wallet-feature-panels").then((module) => module.PortfolioPanel), { loading: PanelLoading });
 const SendUsdcPanel = dynamic(() => import("../components/send-usdc-panel"), { loading: PanelLoading });
 const SwapUsdcPanel = dynamic(() => import("../components/swap-usdc-panel"), { loading: PanelLoading });
 const TransactionActivity = dynamic(() => import("../components/transaction-activity"), { loading: PanelLoading });
@@ -34,44 +28,20 @@ const AiAgentWorkspace = dynamic(() => import("../components/ai-agent-workspace"
 const ReceiveModal = dynamic(() => import("../components/wallet/ReceiveModal"), { ssr: false });
 const UnifiedBalancePanel = dynamic(() => import("../components/unified-balance-panel"), { loading: PanelLoading });
 const ArcCommunityHubPanel = dynamic(() => import("../components/arc-community-hub"), { loading: PanelLoading });
-const TransactionGuardianBanner = dynamic(
-  () => import("../components/wallet-pro-suite").then((module) => module.TransactionGuardianBanner),
-  { loading: PanelLoading }
-);
-const ActivityInterpreterPanel = dynamic(
-  () => import("../components/wallet-pro-suite").then((module) => module.ActivityInterpreterPanel),
-  { loading: PanelLoading }
-);
-const PaymentRequestPanel = dynamic(
-  () => import("../components/wallet-pro-suite").then((module) => module.PaymentRequestPanel),
-  { loading: PanelLoading }
-);
+const TransactionGuardianBanner = dynamic(() => import("../components/wallet-pro-suite").then((module) => module.TransactionGuardianBanner), { loading: PanelLoading });
+const PaymentRequestPanel = dynamic(() => import("../components/wallet-pro-suite").then((module) => module.PaymentRequestPanel), { loading: PanelLoading });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://lumexa-ai-wallet.vercel.app";
-const SUPPORTED_VIEWS = new Set([
-  "dashboard",
-  "send",
-  "receive",
-  "swap",
-  "bridge",
-  "unified",
-  "activity",
-  "portfolio",
-  "community",
-  "request",
-  "agent"
-]);
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://lumexa-aiwallet.vercel.app";
+const SUPPORTED_VIEWS = new Set(["dashboard", "send", "receive", "swap", "bridge", "unified", "activity", "portfolio", "community", "request", "agent"]);
 
 function copilotNetworkChainId(value) {
   const normalized = String(value || "").toLowerCase();
   if (normalized === "arc") return arcTestnet.id;
-
   if (ARC_NETWORK_MODE === "mainnet") {
     if (normalized === "ethereum" || normalized === "ethereum-mainnet") return 1;
     if (normalized === "base" || normalized === "base-mainnet") return 8453;
     return null;
   }
-
   if (normalized === "ethereum-sepolia") return 11155111;
   if (normalized === "base-sepolia") return 84532;
   return null;
@@ -95,12 +65,10 @@ function ConnectedWalletExperience({ walletSnapshot }) {
   useEffect(() => {
     const syncViewFromHash = () => {
       const nextHash = String(window.location.hash || "").replace(/^#/, "");
-
       if (nextHash === "receive") {
         setReceiveOpen(true);
         return;
       }
-
       if (SUPPORTED_VIEWS.has(nextHash)) {
         setCopilotAction(null);
         setActiveView(nextHash);
@@ -110,7 +78,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
         window.history.replaceState(null, "", "/#dashboard");
       }
     };
-
     syncViewFromHash();
     window.addEventListener("hashchange", syncViewFromHash);
     return () => window.removeEventListener("hashchange", syncViewFromHash);
@@ -129,7 +96,6 @@ function ConnectedWalletExperience({ walletSnapshot }) {
       if (view === "receive") setReceiveOpen(true);
       return;
     }
-
     setActiveView(view);
     updateViewLocation(view);
   }, [updateViewLocation]);
@@ -148,35 +114,19 @@ function ConnectedWalletExperience({ walletSnapshot }) {
   const closeReceive = useCallback(() => setReceiveOpen(false), []);
 
   const askCopilot = useCallback((prompt) => {
-    setAssistantPrompt({
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      text: prompt
-    });
+    setAssistantPrompt({ id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, text: prompt });
     handleSelectView("agent");
   }, [handleSelectView]);
 
   const handleCopilotAction = useCallback(async (action) => {
     if (!action?.tool) return;
-
-    if (action.tool === "prepare_send") {
-      openCopilotView("send", action);
-      return;
-    }
-    if (action.tool === "prepare_swap") {
-      openCopilotView("swap", action);
-      return;
-    }
-    if (action.tool === "prepare_bridge") {
-      openCopilotView("bridge", action);
-      return;
-    }
+    if (action.tool === "prepare_send") return openCopilotView("send", action);
+    if (action.tool === "prepare_swap") return openCopilotView("swap", action);
+    if (action.tool === "prepare_bridge") return openCopilotView("bridge", action);
     if (action.tool === "open_wallet_view") {
       const view = action?.args?.view;
-      if (view === "receive") {
-        setReceiveOpen(true);
-      } else if (SUPPORTED_VIEWS.has(view)) {
-        handleSelectView(view);
-      }
+      if (view === "receive") setReceiveOpen(true);
+      else if (SUPPORTED_VIEWS.has(view)) handleSelectView(view);
       return;
     }
     if (action.tool === "switch_network") {
@@ -185,10 +135,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
       try {
         await switchChainAsync({ chainId });
       } catch {
-        setAssistantPrompt({
-          id: `${Date.now()}-switch-error`,
-          text: "My wallet did not complete the requested network switch. Tell me what to check next."
-        });
+        setAssistantPrompt({ id: `${Date.now()}-switch-error`, text: "My wallet did not complete the requested network switch. Tell me what to check next." });
         handleSelectView("agent");
       }
     }
@@ -197,40 +144,15 @@ function ConnectedWalletExperience({ walletSnapshot }) {
   return (
     <AppShell walletSnapshot={walletSnapshot}>
       <div className="wallet-workspace premium-wallet-workspace">
-        <WalletSidebar
-          activeView={activeView}
-          onSelect={handleSelectView}
-          onReceive={openReceive}
-        />
+        <WalletSidebar activeView={activeView} onSelect={handleSelectView} onReceive={openReceive} />
 
         <div className="wallet-main-panel premium-wallet-main">
           {activeView === "dashboard" ? (
-            <PremiumWalletDashboard
-              walletSnapshot={walletSnapshot}
-              activityItems={mergedActivity}
-              onSelectView={handleSelectView}
-              onReceive={openReceive}
-              onAskCopilot={askCopilot}
-            />
+            <PremiumWalletDashboard walletSnapshot={walletSnapshot} activityItems={mergedActivity} onSelectView={handleSelectView} onReceive={openReceive} onAskCopilot={askCopilot} />
           ) : activeView === "agent" ? (
-            <AiAgentWorkspace
-              walletSnapshot={walletSnapshot}
-              activityItems={mergedActivity}
-              activityStatus={liveActivityStatus}
-              initialPrompt={assistantPrompt}
-              onWalletAction={handleCopilotAction}
-            />
+            <AiAgentWorkspace walletSnapshot={walletSnapshot} activityItems={mergedActivity} activityStatus={liveActivityStatus} initialPrompt={assistantPrompt} onWalletAction={handleCopilotAction} />
           ) : activeView === "activity" ? (
-            <>
-              <ActivityInterpreterPanel activityItems={mergedActivity} onAskCopilot={askCopilot} />
-              <TransactionActivity
-                walletSnapshot={walletSnapshot}
-                items={mergedActivity}
-                liveStatus={liveActivityStatus}
-                liveError={liveActivityError}
-                onRefresh={refreshActivity}
-              />
-            </>
+            <TransactionActivity walletSnapshot={walletSnapshot} items={mergedActivity} liveStatus={liveActivityStatus} liveError={liveActivityError} onRefresh={refreshActivity} />
           ) : activeView === "portfolio" ? (
             <PortfolioPanel walletSnapshot={walletSnapshot} activityItems={mergedActivity} />
           ) : activeView === "unified" ? (
@@ -242,66 +164,39 @@ function ConnectedWalletExperience({ walletSnapshot }) {
           ) : activeView === "swap" ? (
             <>
               <TransactionGuardianBanner mode="swap" walletSnapshot={walletSnapshot} />
-              <SwapUsdcPanel
-                walletSnapshot={walletSnapshot}
-                onActivitySaved={saveLocalActivity}
-                copilotAction={copilotAction}
-              />
+              <SwapUsdcPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} copilotAction={copilotAction} />
             </>
           ) : activeView === "bridge" ? (
             <>
               <TransactionGuardianBanner mode="bridge" walletSnapshot={walletSnapshot} />
-              <BridgeToArcPanel
-                walletSnapshot={walletSnapshot}
-                onActivitySaved={saveLocalActivity}
-                copilotAction={copilotAction}
-              />
+              <BridgeToArcPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} copilotAction={copilotAction} />
             </>
           ) : (
             <>
               <TransactionGuardianBanner mode="send" walletSnapshot={walletSnapshot} />
-              <SendUsdcPanel
-                walletSnapshot={walletSnapshot}
-                onActivitySaved={saveLocalActivity}
-                onActivityUpdated={updateLocalActivityByHash}
-                copilotAction={copilotAction}
-              />
+              <SendUsdcPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} onActivityUpdated={updateLocalActivityByHash} copilotAction={copilotAction} />
             </>
           )}
         </div>
       </div>
 
-      <ReceiveModal
-        open={receiveOpen}
-        onClose={closeReceive}
-        address={walletSnapshot.address}
-        networkLabel={arcTestnet.name}
-      />
+      <ReceiveModal open={receiveOpen} onClose={closeReceive} address={walletSnapshot.address} networkLabel={walletSnapshot?.activeChainName || arcTestnet.name} />
     </AppShell>
   );
 }
 
 export default function Home() {
   const walletSnapshot = useArcWalletSnapshot();
-
   return (
     <>
       <Head>
-        <title>Lumexa AI Wallet | USDC, Unified Balance & AI Agent</title>
-        <meta
-          name="description"
-          content="Lumexa AI Wallet is a self-custodial USDC wallet built on Arc, with send, receive, swap, bridge, Unified Balance, live network data, community tools and an AI Agent that prepares wallet actions for user approval."
-        />
-        <meta name="theme-color" content="#f3f6fb" />
+        <title>Lumexa AI Wallet | USDC, Unified Balance & AI Assistant</title>
+        <meta name="description" content="Lumexa AI Wallet is a self-custodial multichain USDC wallet built on Arc, with send, receive, swap, bridge, Unified Balance, activity tracking and one AI Assistant that prepares wallet actions for user approval." />
+        <meta name="theme-color" content="#f4f6f9" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="canonical" href={SITE_URL} />
       </Head>
-
-      {walletSnapshot.isSignedIn ? (
-        <ConnectedWalletExperience walletSnapshot={walletSnapshot} />
-      ) : (
-        <WalletLoginScreen />
-      )}
+      {walletSnapshot.isSignedIn ? <ConnectedWalletExperience walletSnapshot={walletSnapshot} /> : <WalletLoginScreen />}
     </>
   );
 }

@@ -10,26 +10,17 @@ import {
   arcTestnet
 } from "../lib/arc-chain";
 import { createWalletActionRecord } from "../lib/local-activity";
+import { FeatureIcon } from "./wallet-sidebar";
 
-const SWAP_TOKENS = ARC_PORTFOLIO_TOKENS.map((token) => token.symbol);
+const SWAP_TOKENS = ARC_PORTFOLIO_TOKENS.filter((token) => token.address).map((token) => token.symbol);
 const DEFAULT_TOKEN_IN = SWAP_TOKENS.includes("USDC") ? "USDC" : SWAP_TOKENS[0] || "USDC";
 const DEFAULT_TOKEN_OUT = SWAP_TOKENS.find((token) => token !== DEFAULT_TOKEN_IN) || DEFAULT_TOKEN_IN;
-const SWAP_CONFIGURED =
-  (!ARC_MAINNET_REQUESTED || ARC_APP_KIT_READY) &&
-  Boolean(ARC_BRIDGE_DESTINATION.appKitChain) &&
-  SWAP_TOKENS.length >= 2;
-const ARC_NETWORK_LABEL = arcTestnet.name || "Arc";
-
+const SWAP_CONFIGURED = (!ARC_MAINNET_REQUESTED || ARC_APP_KIT_READY) && Boolean(ARC_BRIDGE_DESTINATION.appKitChain) && SWAP_TOKENS.length >= 2;
 const TOKEN_META = {
   USDC: { name: "USD Coin", mark: "$" },
   EURC: { name: "Euro Coin", mark: "€" },
   cirBTC: { name: "Circle Bitcoin", mark: "₿" }
 };
-const SLIPPAGE_OPTIONS = [
-  { label: "0.5%", value: 50 },
-  { label: "1%", value: 100 },
-  { label: "3%", value: 300 }
-];
 
 function normalizeAmount(value) {
   const next = String(value || "").replace(/[^\d.]/g, "");
@@ -37,166 +28,85 @@ function normalizeAmount(value) {
   return rest.length ? `${whole}.${rest.join("").slice(0, 8)}` : whole;
 }
 
-function isValidAmount(value) {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) && numeric > 0;
-}
-
-function parseBalanceValue(balance) {
-  const numeric = Number(String(balance || "").replace(/[^\d.-]/g, ""));
-  return Number.isFinite(numeric) ? numeric : 0;
-}
-
-function shortHash(hash) {
-  if (!hash || hash.length < 14) return hash || "";
-  return `${hash.slice(0, 10)}...${hash.slice(-6)}`;
-}
-
-function shortAddress(address) {
-  if (!address) return "";
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
-
-function getSwapTxHash(result) {
-  if (result?.txHash) return result.txHash;
-  const stepWithHash = Array.isArray(result?.steps)
-    ? result.steps.find((step) => step.txHash)
-    : null;
-  return stepWithHash?.txHash || "";
-}
-
-function getSwapExplorerUrl(result) {
-  if (result?.explorerUrl) return result.explorerUrl;
-  const stepWithUrl = Array.isArray(result?.steps)
-    ? result.steps.find((step) => step.explorerUrl)
-    : null;
-  return stepWithUrl?.explorerUrl || "";
-}
-
-function getSwapSender(result, fallbackAddress) {
-  return result?.fromAddress || result?.sender || result?.from || fallbackAddress || "";
-}
-
-function getSwapReceiver(result, fallbackAddress) {
-  return result?.toAddress || result?.receiver || result?.to || fallbackAddress || "";
-}
-
-function getEstimatedOutput(estimate) {
-  if (estimate?.estimatedOutput?.amount) {
-    return `${estimate.estimatedOutput.amount} ${estimate.estimatedOutput.token || ""}`.trim();
-  }
-
-  return (
-    estimate?.estimatedOutput ||
-    estimate?.amountOut ||
-    estimate?.outputAmount ||
-    estimate?.toAmount ||
-    ""
-  );
-}
-
-function getSwapFeeRows(estimate) {
-  const fees = Array.isArray(estimate?.fees) ? estimate.fees : [];
-  return fees.map((fee, index) => ({
-    id: `${fee?.type || fee?.name || "fee"}-${index}`,
-    label: fee?.name || fee?.type || "Swap fee",
-    value: fee?.amount
-      ? `${fee.amount}${fee.token ? ` ${fee.token}` : ""}`
-      : fee?.formatted || "Included"
-  }));
-}
-
-function getSwapTokenIdentifier(token) {
-  return token === "cirBTC" ? ARC_CIRBTC_ERC20_ADDRESS : token;
+function validAmount(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0;
 }
 
 function getAsset(walletSnapshot, symbol) {
-  const assets = Array.isArray(walletSnapshot?.assets) ? walletSnapshot.assets : [];
-  const asset = assets.find((item) => item?.symbol === symbol);
-
-  if (asset) return asset;
-
-  if (symbol === "USDC") {
-    return {
-      symbol,
-      balance: walletSnapshot?.usdcBalance || "",
-      balanceValue: parseBalanceValue(walletSnapshot?.usdcBalance),
-      status: walletSnapshot?.balanceStatus === "ready" ? "ready" : walletSnapshot?.balanceStatus || "idle"
-    };
-  }
-
-  return { symbol, balance: "", balanceValue: 0, status: "idle" };
+  return (walletSnapshot?.assets || []).find((item) => item?.symbol === symbol) || null;
 }
 
-function formatAvailable(asset, symbol) {
-  if (asset?.status !== "ready") return "Syncing…";
-  if (asset?.balance) return asset.balance;
-  return `${Number(asset?.balanceValue || 0).toLocaleString("en-US", { maximumFractionDigits: 8 })} ${symbol}`;
+function getTokenIdentifier(symbol) {
+  return symbol === "cirBTC" ? ARC_CIRBTC_ERC20_ADDRESS : symbol;
 }
 
-async function loadKitKey() {
-  const response = await fetch("/api/app-kit-config");
-  const payload = await response.json();
-
-  if (!response.ok || !payload?.hasKitKey || !payload?.kitKey) {
-    throw new Error("Circle App Kit key is not configured.");
-  }
-
-  return payload.kitKey;
+function getEstimatedOutput(estimate, tokenOut) {
+  if (estimate?.estimatedOutput?.amount) return `${estimate.estimatedOutput.amount} ${estimate.estimatedOutput.token || tokenOut}`;
+  const value = estimate?.estimatedOutput || estimate?.amountOut || estimate?.outputAmount || estimate?.toAmount || "";
+  return value ? `${value}` : "";
 }
 
-async function readProxyRequestBody(input, init) {
-  if (typeof init?.body === "string") return init.body;
-
-  if (typeof URLSearchParams !== "undefined" && init?.body instanceof URLSearchParams) {
-    return init.body.toString();
-  }
-
-  if (typeof Request !== "undefined" && input instanceof Request) {
-    try {
-      const body = await input.clone().text();
-      return body || undefined;
-    } catch {
-      return undefined;
-    }
-  }
-
-  return undefined;
+function getTxHash(result) {
+  if (result?.txHash) return result.txHash;
+  const step = Array.isArray(result?.steps) ? result.steps.find((item) => item?.txHash) : null;
+  return step?.txHash || "";
 }
 
-async function withCircleStablecoinProxy(operation) {
-  if (typeof window === "undefined" || typeof globalThis.fetch !== "function") {
-    return operation();
-  }
+function getExplorerUrl(result, hash) {
+  if (result?.explorerUrl) return result.explorerUrl;
+  const step = Array.isArray(result?.steps) ? result.steps.find((item) => item?.explorerUrl) : null;
+  if (step?.explorerUrl) return step.explorerUrl;
+  return hash && arcTestnet.blockExplorers?.default?.url ? `${arcTestnet.blockExplorers.default.url}/tx/${hash}` : "";
+}
 
+function feeRows(estimate) {
+  return (Array.isArray(estimate?.fees) ? estimate.fees : []).map((fee, index) => ({
+    id: `${fee?.type || fee?.name || "fee"}-${index}`,
+    label: fee?.name || fee?.type || "Fee",
+    value: fee?.amount ? `${fee.amount}${fee.token ? ` ${fee.token}` : ""}` : fee?.formatted || "Included"
+  }));
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
+}
+
+async function verifyProviderChain(provider, expectedChainId) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const value = await provider?.request?.({ method: "eth_chainId" });
+    const chainId = typeof value === "string" ? Number.parseInt(value, 16) : Number(value);
+    if (chainId === expectedChainId) return;
+    await sleep(250 + attempt * 80);
+  }
+  throw new Error("Wallet did not switch to Arc.");
+}
+
+async function loadLegacyKitProxyToken() {
+  const response = await fetch("/api/app-kit-config", { cache: "no-store" });
+  const payload = await response.json().catch(() => ({}));
+  return response.ok && payload?.hasKitKey && payload?.kitKey ? payload.kitKey : "";
+}
+
+async function proxyCircleRequest(operation) {
+  if (typeof window === "undefined" || typeof globalThis.fetch !== "function") return operation();
   const originalFetch = globalThis.fetch.bind(globalThis);
-
   globalThis.fetch = async (input, init = {}) => {
-    const requestUrl =
-      typeof input === "string" ? input : input instanceof URL ? input.toString() : input?.url;
-
-    if (
-      typeof requestUrl === "string" &&
-      requestUrl.startsWith("https://api.circle.com/v1/stablecoinKits/")
-    ) {
+    const requestUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input?.url;
+    if (typeof requestUrl === "string" && requestUrl.startsWith("https://api.circle.com/v1/stablecoinKits/")) {
       const url = new URL(requestUrl);
-      const method = init?.method || input?.method || "GET";
-      const body = await readProxyRequestBody(input, init);
-
+      let body = typeof init?.body === "string" ? init.body : undefined;
+      if (!body && typeof Request !== "undefined" && input instanceof Request) {
+        try { body = await input.clone().text(); } catch { body = undefined; }
+      }
       return originalFetch("/api/circle-stablecoin-proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          path: `${url.pathname}${url.search}`,
-          method,
-          body
-        })
+        body: JSON.stringify({ path: `${url.pathname}${url.search}`, method: init?.method || input?.method || "GET", body })
       });
     }
-
     return originalFetch(input, init);
   };
-
   try {
     return await operation();
   } finally {
@@ -204,396 +114,217 @@ async function withCircleStablecoinProxy(operation) {
   }
 }
 
+function shouldTryLegacyProxy(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("kit key") || message.includes("api key") || message.includes("unauthorized") || message.includes("401") || message.includes("stablecoinkit");
+}
+
 export default function SwapUsdcPanel({ walletSnapshot, onActivitySaved, copilotAction }) {
   const { connector } = useAccount();
   const chainId = useChainId();
-  const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain();
+  const { switchChainAsync, isPending: switching } = useSwitchChain();
   const [tokenIn, setTokenIn] = useState(DEFAULT_TOKEN_IN);
   const [tokenOut, setTokenOut] = useState(DEFAULT_TOKEN_OUT);
-  const [amountIn, setAmountIn] = useState("1.00");
+  const [amountIn, setAmountIn] = useState("1");
   const [slippageBps, setSlippageBps] = useState(100);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [estimate, setEstimate] = useState(null);
-  const [swapResult, setSwapResult] = useState(null);
+  const [result, setResult] = useState(null);
+  const [quoteMode, setQuoteMode] = useState("permissionless");
 
-  const isSignedIn = Boolean(walletSnapshot?.isSignedIn);
-  const needsArcSwitch = isSignedIn && chainId !== arcTestnet.id;
-  const amountLooksValid = isValidAmount(amountIn);
-  const tokensValid = SWAP_CONFIGURED && tokenIn !== tokenOut;
   const inputAsset = useMemo(() => getAsset(walletSnapshot, tokenIn), [walletSnapshot, tokenIn]);
   const outputAsset = useMemo(() => getAsset(walletSnapshot, tokenOut), [walletSnapshot, tokenOut]);
-  const inputBalanceKnown = inputAsset?.status === "ready";
-  const inputBalanceValue = Number(inputAsset?.balanceValue || 0);
-  const hasEnoughBalance = !inputBalanceKnown || Number(amountIn || 0) <= inputBalanceValue;
-  const estimateOutput = getEstimatedOutput(estimate);
-  const feeRows = useMemo(() => getSwapFeeRows(estimate), [estimate]);
-  const txHash = useMemo(() => getSwapTxHash(swapResult), [swapResult]);
-  const explorerUrl = useMemo(() => getSwapExplorerUrl(swapResult), [swapResult]);
-  const busy = isSwitchingChain || status === "estimating" || status === "swapping";
+  const balanceKnown = inputAsset?.status === "ready";
+  const balanceValue = Number(inputAsset?.balanceValue || 0);
+  const enoughBalance = !balanceKnown || Number(amountIn || 0) <= balanceValue;
+  const output = getEstimatedOutput(estimate, tokenOut);
+  const fees = useMemo(() => feeRows(estimate), [estimate]);
+  const busy = switching || status === "estimating" || status === "swapping";
 
   useEffect(() => {
     setEstimate(null);
-    setSwapResult(null);
+    setResult(null);
     setError("");
     setStatus("idle");
   }, [tokenIn, tokenOut, amountIn, slippageBps]);
 
   useEffect(() => {
-    if (copilotAction?.tool !== "prepare_swap" || !SWAP_CONFIGURED) return;
+    if (copilotAction?.tool !== "prepare_swap") return;
     const args = copilotAction.args || {};
     const nextIn = SWAP_TOKENS.includes(args.tokenIn) ? args.tokenIn : DEFAULT_TOKEN_IN;
-    const fallbackOut = SWAP_TOKENS.find((token) => token !== nextIn) || nextIn;
-    const nextOut = SWAP_TOKENS.includes(args.tokenOut) ? args.tokenOut : fallbackOut;
+    const nextOut = SWAP_TOKENS.includes(args.tokenOut) && args.tokenOut !== nextIn
+      ? args.tokenOut
+      : SWAP_TOKENS.find((token) => token !== nextIn) || DEFAULT_TOKEN_OUT;
     setTokenIn(nextIn);
-    setTokenOut(nextOut === nextIn ? fallbackOut : nextOut);
-    setAmountIn(normalizeAmount(args.amount || ""));
+    setTokenOut(nextOut);
+    setAmountIn(normalizeAmount(args.amount || "1"));
     setSlippageBps([50, 100, 300].includes(Number(args.slippageBps)) ? Number(args.slippageBps) : 100);
-    setEstimate(null);
-    setSwapResult(null);
-    setError("");
-    setStatus("idle");
   }, [copilotAction]);
 
-  const clearQuote = () => {
-    setEstimate(null);
-    setSwapResult(null);
-    setError("");
-    setStatus("idle");
-  };
+  const getClientAndParams = async () => {
+    if (!SWAP_CONFIGURED) throw new Error("Swap support is not configured for this environment.");
+    if (!walletSnapshot?.isSignedIn || !connector) throw new Error("Connect your wallet before swapping.");
+    if (!validAmount(amountIn)) throw new Error("Enter a valid swap amount.");
+    if (tokenIn === tokenOut) throw new Error("Choose two different assets.");
+    if (!enoughBalance) throw new Error(`Insufficient ${tokenIn} balance.`);
 
-  const selectInputToken = (nextToken) => {
-    if (nextToken === tokenOut) setTokenOut(tokenIn);
-    setTokenIn(nextToken);
-  };
-
-  const selectOutputToken = (nextToken) => {
-    if (nextToken === tokenIn) setTokenIn(tokenOut);
-    setTokenOut(nextToken);
-  };
-
-  const reversePair = () => {
-    setTokenIn(tokenOut);
-    setTokenOut(tokenIn);
-  };
-
-  const useMax = () => {
-    if (!inputBalanceKnown || inputBalanceValue <= 0) return;
-    setAmountIn(String(inputBalanceValue));
-  };
-
-  const ensureArcNetwork = async () => {
-    if (chainId === arcTestnet.id) return;
-    if (!switchChainAsync) throw new Error("Wallet network switching is unavailable.");
-    await switchChainAsync({ chainId: arcTestnet.id });
-  };
-
-  const getSwapParams = async () => {
-    if (!SWAP_CONFIGURED) {
-      throw new Error(
-        ARC_MAINNET_REQUESTED
-          ? "Arc Mainnet swap support is locked until Circle App Kit production support and at least two verified mainnet assets are configured."
-          : "Swap support is not configured."
-      );
-    }
-    if (!connector || !isSignedIn) throw new Error("Connect your wallet before swapping.");
-    if (!amountLooksValid) throw new Error("Enter a valid swap amount.");
-    if (!tokensValid) throw new Error("Choose two different tokens.");
-    if (!hasEnoughBalance) {
-      throw new Error(`Insufficient ${tokenIn} balance for this swap.`);
-    }
-
-    await ensureArcNetwork();
-
-    const [provider, kitKey] = await Promise.all([connector.getProvider(), loadKitKey()]);
-    if (!provider) throw new Error("Wallet provider is unavailable.");
+    if (chainId !== arcTestnet.id) await switchChainAsync({ chainId: arcTestnet.id });
+    const provider = await connector.getProvider();
+    if (!provider?.request) throw new Error("Wallet provider is unavailable.");
+    await verifyProviderChain(provider, arcTestnet.id);
     const client = await createArcAppKitClient(provider);
 
     return {
       client,
       params: {
-        from: {
-          adapter: client.adapter,
-          chain: ARC_BRIDGE_DESTINATION.appKitChain
-        },
-        tokenIn: getSwapTokenIdentifier(tokenIn),
-        tokenOut: getSwapTokenIdentifier(tokenOut),
+        from: { adapter: client.adapter, chain: ARC_BRIDGE_DESTINATION.appKitChain },
+        tokenIn: getTokenIdentifier(tokenIn),
+        tokenOut: getTokenIdentifier(tokenOut),
         amountIn,
-        config: {
-          kitKey,
-          slippageBps
-        }
+        config: { slippageBps }
       }
     };
   };
 
-  const handleEstimate = async () => {
-    setStatus("estimating");
-    setError("");
-    setSwapResult(null);
+  const runSwapOperation = async (operationName, client, params, preferredMode = "permissionless") => {
+    const operation = () => client.kit[operationName](params);
+    if (preferredMode === "legacy-proxy") {
+      const kitKey = await loadLegacyKitProxyToken();
+      if (!kitKey) throw new Error("Circle route authorization is unavailable.");
+      return proxyCircleRequest(() => client.kit[operationName]({ ...params, config: { ...params.config, kitKey } }));
+    }
 
     try {
-      const { client, params } = await getSwapParams();
-      const nextEstimate = await withCircleStablecoinProxy(() => client.kit.estimateSwap(params));
+      return await operation();
+    } catch (firstError) {
+      if (!shouldTryLegacyProxy(firstError)) throw firstError;
+      const kitKey = await loadLegacyKitProxyToken();
+      if (!kitKey) throw firstError;
+      const response = await proxyCircleRequest(() => client.kit[operationName]({ ...params, config: { ...params.config, kitKey } }));
+      setQuoteMode("legacy-proxy");
+      return response;
+    }
+  };
+
+  const handleReview = async () => {
+    setStatus("estimating");
+    setError("");
+    setResult(null);
+    try {
+      const { client, params } = await getClientAndParams();
+      const nextEstimate = await runSwapOperation("estimateSwap", client, params);
       setEstimate(nextEstimate);
       setStatus("ready");
     } catch (nextError) {
       setEstimate(null);
       setStatus("error");
-      setError(formatAppKitError(nextError, "Unable to estimate swap."));
+      setError(formatAppKitError(nextError, "No live swap route is available for this pair right now."));
     }
   };
 
   const handleSwap = async () => {
     setStatus("swapping");
     setError("");
-
     try {
-      const { client, params } = await getSwapParams();
-      const result = await withCircleStablecoinProxy(() => client.kit.swap(params));
-      setSwapResult(result);
-      setStatus(result?.state === "error" ? "error" : "success");
-
-      const hash = getSwapTxHash(result);
-      const url = getSwapExplorerUrl(result) ||
-        (hash && arcTestnet.blockExplorers?.default?.url
-          ? `${arcTestnet.blockExplorers.default.url}/tx/${hash}`
-          : "");
-      const outputAmount = result?.amountOut
-        ? `${result.amountOut} ${tokenOut}`
-        : estimateOutput || `${tokenOut} output confirmed in wallet`;
+      const { client, params } = await getClientAndParams();
+      const nextResult = await runSwapOperation("swap", client, params, quoteMode);
+      setResult(nextResult);
+      const failed = nextResult?.state === "error";
+      const hash = getTxHash(nextResult);
+      const explorerUrl = getExplorerUrl(nextResult, hash);
+      const finalStatus = failed ? "Failed" : nextResult?.state === "success" ? "Confirmed" : "Submitted";
+      setStatus(failed ? "error" : "success");
 
       onActivitySaved?.(
         createWalletActionRecord({
           walletAddress: walletSnapshot.address,
           type: "Swap",
           kind: "swap",
-          amount: `${amountIn} ${tokenIn} -> ${outputAmount}`,
-          chain: ARC_NETWORK_LABEL,
-          status: result?.state === "error" ? "Failed" : "Confirmed",
-          sender: getSwapSender(result, walletSnapshot.address),
-          receiver: getSwapReceiver(result, walletSnapshot.address),
+          amount: `${amountIn} ${tokenIn} → ${output || tokenOut}`,
+          chain: arcTestnet.name,
+          chainId: arcTestnet.id,
+          status: finalStatus,
+          sender: walletSnapshot.address,
+          receiver: walletSnapshot.address,
           txHash: hash,
-          explorerUrl: url,
-          summary: `Swapped ${amountIn} ${tokenIn} for ${outputAmount} on ${ARC_NETWORK_LABEL}.`,
-          metadata: {
-            tokenIn,
-            tokenOut,
-            estimateOutput: outputAmount,
-            slippageBps
-          }
+          explorerUrl,
+          summary: `Swapped ${amountIn} ${tokenIn} for ${output || tokenOut} on ${arcTestnet.name}.`,
+          metadata: { operation: "swap", tokenIn, tokenOut, slippageBps, estimateOutput: output }
         })
       );
     } catch (nextError) {
       setStatus("error");
-      setError(formatAppKitError(nextError, "Unable to complete swap."));
+      setError(formatAppKitError(nextError, "Unable to submit this swap."));
     }
   };
 
-  if (!isSignedIn) {
-    return (
-      <section className="card swap-panel swap-v2">
-        <div className="swap-v2-head">
-          <div><span className="swap-eyebrow">Arc Swap</span><h2>Swap tokens</h2></div>
-          <span className="swap-network-pill">{ARC_NETWORK_LABEL}</span>
-        </div>
-        <div className="swap-empty-state">
-          <strong>Connect wallet to swap</strong>
-          <p>Connect your wallet to use live Arc balances, quotes and wallet approval.</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (!SWAP_CONFIGURED) {
-    return (
-      <section className="card swap-panel swap-v2">
-        <div className="swap-v2-head">
-          <div>
-            <span className="swap-eyebrow">Arc Swap</span>
-            <h2>Swap tokens</h2>
-            <p>Swap support will unlock only after production routes and verified assets are configured.</p>
-          </div>
-          <span className="swap-network-pill">{ARC_NETWORK_LABEL}</span>
-        </div>
-        <div className="swap-empty-state">
-          <strong>{ARC_MAINNET_REQUESTED ? "Mainnet swap locked" : "Swap unavailable"}</strong>
-          <p>
-            {ARC_MAINNET_REQUESTED
-              ? "This prevents the wallet from guessing production token or Circle App Kit configuration."
-              : "Circle App Kit swap configuration is unavailable."}
-          </p>
-        </div>
-      </section>
-    );
+  if (!walletSnapshot?.isSignedIn) {
+    return <section className="wallet-v3-page-card"><div className="wallet-v3-empty"><strong>Connect your wallet to swap.</strong></div></section>;
   }
 
   return (
-    <section className="card swap-panel swap-v2">
-      <div className="swap-v2-head">
-        <div>
-          <span className="swap-eyebrow">Arc Swap</span>
-          <h2>Swap tokens</h2>
-          <p>Choose a pair, review the live quote, then confirm in your wallet.</p>
-        </div>
-        <span className="swap-network-pill">{ARC_NETWORK_LABEL}</span>
-      </div>
+    <section className="wallet-v3-page-card wallet-v3-swap-page">
+      <header className="wallet-v3-page-head">
+        <div><span className="wallet-v3-eyebrow">Arc swap</span><h2>Swap</h2><p>Get a live quote first. Nothing is signed until you confirm it in your wallet.</p></div>
+        <span className="wallet-v3-network-badge"><i />{arcTestnet.name}</span>
+      </header>
 
-      {copilotAction?.tool === "prepare_swap" ? (
-        <div className="copilot-prepared-note"><strong>Prepared by Arc AI</strong><span>Live quote is still required before signing.</span></div>
+      {!SWAP_CONFIGURED ? (
+        <div className="wallet-v3-inline-warning"><strong>Swap is not configured.</strong><span>Production chain and asset configuration is required.</span></div>
       ) : null}
 
-      <div className="swap-v2-section swap-pair-section">
-        <div className="swap-section-label">
-          <span>1</span>
-          <div><strong>Choose tokens</strong><small>Swap supported Arc assets</small></div>
+      <div className="wallet-v3-swap-box">
+        <div className="wallet-v3-token-field">
+          <div className="wallet-v3-field-label"><span>You pay</span><small>Balance {inputAsset?.balance || "syncing…"}</small></div>
+          <div className="wallet-v3-token-input">
+            <input value={amountIn} onChange={(event) => setAmountIn(normalizeAmount(event.target.value))} inputMode="decimal" placeholder="0.00" />
+            <label><span>{TOKEN_META[tokenIn]?.mark}</span><select value={tokenIn} onChange={(event) => { const next = event.target.value; if (next === tokenOut) setTokenOut(tokenIn); setTokenIn(next); }}>{SWAP_TOKENS.map((token) => <option key={token}>{token}</option>)}</select></label>
+          </div>
+          {balanceKnown ? <button type="button" className="wallet-v3-text-button" onClick={() => setAmountIn(String(balanceValue))}>Use max</button> : null}
         </div>
 
-        <div className="swap-token-box">
-          <div className="swap-token-box-head">
-            <span>You pay</span>
-            <span>Balance: <strong>{formatAvailable(inputAsset, tokenIn)}</strong></span>
-          </div>
-          <div className="swap-token-input-row">
-            <input
-              value={amountIn}
-              onChange={(event) => setAmountIn(normalizeAmount(event.target.value))}
-              inputMode="decimal"
-              placeholder="0.00"
-              aria-label={`${tokenIn} amount`}
-            />
-            <div className="swap-token-select-wrap">
-              <span className="swap-token-mark">{TOKEN_META[tokenIn]?.mark}</span>
-              <select value={tokenIn} onChange={(event) => selectInputToken(event.target.value)} aria-label="Pay token">
-                {SWAP_TOKENS.map((token) => <option key={token} value={token}>{token}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="swap-token-box-foot">
-            <span>{TOKEN_META[tokenIn]?.name}</span>
-            <button type="button" onClick={useMax} disabled={!inputBalanceKnown || inputBalanceValue <= 0}>MAX</button>
-          </div>
-        </div>
+        <button type="button" className="wallet-v3-swap-direction" onClick={() => { setTokenIn(tokenOut); setTokenOut(tokenIn); }} aria-label="Reverse swap pair"><FeatureIcon name="swap" /></button>
 
-        <button type="button" className="swap-reverse-button" onClick={reversePair} disabled={busy} aria-label="Reverse swap pair">⇅</button>
-
-        <div className="swap-token-box swap-token-box-output">
-          <div className="swap-token-box-head">
-            <span>You receive</span>
-            <span>Balance: <strong>{formatAvailable(outputAsset, tokenOut)}</strong></span>
-          </div>
-          <div className="swap-token-input-row">
-            <div className={`swap-output-value ${estimateOutput ? "is-ready" : ""}`}>{estimateOutput || "—"}</div>
-            <div className="swap-token-select-wrap">
-              <span className="swap-token-mark">{TOKEN_META[tokenOut]?.mark}</span>
-              <select value={tokenOut} onChange={(event) => selectOutputToken(event.target.value)} aria-label="Receive token">
-                {SWAP_TOKENS.map((token) => <option key={token} value={token}>{token}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="swap-token-box-foot"><span>{TOKEN_META[tokenOut]?.name}</span><span>Live quote</span></div>
+        <div className="wallet-v3-token-field is-output">
+          <div className="wallet-v3-field-label"><span>You receive</span><small>Balance {outputAsset?.balance || "syncing…"}</small></div>
+          <div className="wallet-v3-token-input"><strong className={output ? "is-ready" : ""}>{output || "—"}</strong><label><span>{TOKEN_META[tokenOut]?.mark}</span><select value={tokenOut} onChange={(event) => { const next = event.target.value; if (next === tokenIn) setTokenIn(tokenOut); setTokenOut(next); }}>{SWAP_TOKENS.map((token) => <option key={token}>{token}</option>)}</select></label></div>
         </div>
       </div>
 
-      <div className="swap-v2-section">
-        <div className="swap-section-label">
-          <span>2</span>
-          <div><strong>Swap settings</strong><small>Maximum price movement you accept</small></div>
-        </div>
-        <div className="swap-slippage-row">
-          <span>Slippage tolerance</span>
-          <div>
-            {SLIPPAGE_OPTIONS.map((option) => (
-              <button
-                type="button"
-                key={option.value}
-                className={option.value === slippageBps ? "is-active" : ""}
-                onClick={() => setSlippageBps(option.value)}
-                disabled={busy}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="wallet-v3-settings-row">
+        <span>Slippage</span>
+        {[50, 100, 300].map((value) => <button key={value} type="button" className={value === slippageBps ? "is-active" : ""} onClick={() => setSlippageBps(value)}>{value / 100}%</button>)}
       </div>
 
-      {needsArcSwitch ? (
-        <div className="swap-network-note">
-          <span>↗</span>
-          <div><strong>Arc network required</strong><p>Your wallet will switch to {ARC_NETWORK_LABEL} when you review the swap.</p></div>
-        </div>
-      ) : null}
-
-      {inputBalanceKnown && !hasEnoughBalance ? (
-        <div className="swap-funding-warning">
-          <span>!</span>
-          <div>
-            <strong>Not enough {tokenIn}</strong>
-            <p>You entered {amountIn || "0"} {tokenIn}, but your available balance is {formatAvailable(inputAsset, tokenIn)}.</p>
-          </div>
-          <button type="button" onClick={useMax}>Use max</button>
-        </div>
-      ) : null}
+      {!enoughBalance ? <div className="wallet-v3-inline-warning"><strong>Insufficient {tokenIn}</strong><span>Available: {inputAsset?.balance || "0"}</span></div> : null}
 
       {estimate ? (
-        <div className="swap-v2-section swap-quote-section">
-          <div className="swap-section-label">
-            <span>3</span>
-            <div><strong>Review quote</strong><small>Live route from Circle App Kit</small></div>
-          </div>
-          <div className="swap-v2-quote">
-            <div><span>Pay</span><strong>{amountIn} {tokenIn}</strong></div>
-            <div className="swap-quote-output"><span>Estimated receive</span><strong>{estimateOutput || tokenOut}</strong></div>
-            <div><span>Network</span><strong>{ARC_NETWORK_LABEL}</strong></div>
-            <div><span>Slippage</span><strong>{(slippageBps / 100).toFixed(slippageBps % 100 === 0 ? 0 : 1)}%</strong></div>
-            {feeRows.map((fee) => <div key={fee.id}><span>{fee.label}</span><strong>{fee.value}</strong></div>)}
-            <div><span>Wallet</span><strong>{shortAddress(walletSnapshot?.address)}</strong></div>
+        <div className="wallet-v3-review-card">
+          <div className="wallet-v3-review-head"><span>Review quote</span><strong>{amountIn} {tokenIn} → {output || tokenOut}</strong></div>
+          <div className="wallet-v3-review-grid">
+            <div><span>Network</span><strong>{arcTestnet.name}</strong></div>
+            <div><span>Slippage</span><strong>{slippageBps / 100}%</strong></div>
+            {fees.map((fee) => <div key={fee.id}><span>{fee.label}</span><strong>{fee.value}</strong></div>)}
           </div>
         </div>
       ) : null}
 
-      {error ? <p className="swap-v2-error" role="alert">{error}</p> : null}
+      {error ? <div className="wallet-v3-inline-warning is-error"><strong>Swap unavailable</strong><span>{error}</span></div> : null}
+      {result && status === "success" ? <div className="wallet-v3-success"><strong>Swap submitted</strong><span>{getTxHash(result) ? `${getTxHash(result).slice(0, 10)}…${getTxHash(result).slice(-6)}` : "Track it in Activity."}</span></div> : null}
 
-      {swapResult ? (
-        <div className="swap-v2-success">
-          <div>
-            <strong>{status === "success" ? "Swap submitted" : "Swap result"}</strong>
-            <span>{amountIn} {tokenIn} → {estimateOutput || tokenOut}</span>
-          </div>
-          {txHash ? <code>{shortHash(txHash)}</code> : null}
-          {explorerUrl ? <a href={explorerUrl} target="_blank" rel="noreferrer">View transaction</a> : null}
-        </div>
-      ) : null}
-
-      <div className="swap-v2-actions">
-        {!estimate ? (
-          <button
-            type="button"
-            className="button button-primary"
-            onClick={handleEstimate}
-            disabled={!tokensValid || !amountLooksValid || !hasEnoughBalance || busy}
-          >
-            {isSwitchingChain ? "Switching to Arc…" : status === "estimating" ? "Getting quote…" : "Review swap"}
-          </button>
-        ) : (
-          <>
-            <button type="button" className="button button-secondary" onClick={clearQuote} disabled={busy}>Edit</button>
-            <button
-              type="button"
-              className="button button-primary"
-              onClick={handleSwap}
-              disabled={!tokensValid || !amountLooksValid || !hasEnoughBalance || busy}
-            >
-              {status === "swapping" ? "Confirm in wallet…" : `Swap ${tokenIn}`}
-            </button>
-          </>
-        )}
+      <div className="wallet-v3-action-row">
+        {estimate ? <button type="button" className="wallet-v3-secondary-button" onClick={() => { setEstimate(null); setResult(null); setStatus("idle"); setError(""); }} disabled={busy}>Edit</button> : null}
+        <button
+          type="button"
+          className="wallet-v3-primary-button"
+          onClick={estimate ? handleSwap : handleReview}
+          disabled={!SWAP_CONFIGURED || !validAmount(amountIn) || tokenIn === tokenOut || !enoughBalance || busy}
+        >
+          {switching ? "Switching to Arc…" : status === "estimating" ? "Getting live quote…" : status === "swapping" ? "Confirm in wallet…" : estimate ? `Swap ${tokenIn}` : "Review swap"}
+        </button>
       </div>
-
-      <div className="swap-v2-footnote">
-        <span>Self-custodial</span><span>•</span><span>Wallet approval required</span><span>•</span><span>{ARC_NETWORK_LABEL}</span>
-      </div>
+      <p className="wallet-v3-security-note">Self-custodial · Live Circle route · Wallet approval required</p>
     </section>
   );
 }
