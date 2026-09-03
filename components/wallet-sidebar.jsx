@@ -55,7 +55,7 @@ function WalletSidebar({ activeView, onSelect, onReceive }) {
   return (
     <aside className="wallet-sidebar floating-wallet-dock pro-wallet-sidebar premium-v2-sidebar">
       <button type="button" className="premium-v2-sidebar-brand" onClick={() => onSelect?.("dashboard")}>
-        <span className="premium-v2-sidebar-logo"><Image src="/arc-ai-wallet-mark-v2.png" alt="" width={48} height={48} sizes="48px" /></span>
+        <span className="premium-v2-sidebar-logo"><Image src="/lumexa-ai-wallet-mark-v2.png" alt="" width={48} height={48} sizes="48px" /></span>
         <strong>Lumexa AI Wallet</strong>
       </button>
 
@@ -85,7 +85,7 @@ function WalletSidebar({ activeView, onSelect, onReceive }) {
       </nav>
 
       <button type="button" className="premium-v2-agent-promo" onClick={() => onSelect?.("agent")}>
-        <span className="premium-v2-agent-orb" aria-hidden="true"><Image src="/arc-ai-wallet-mark-v2.png" alt="" width={68} height={68} sizes="68px" /></span>
+        <span className="premium-v2-agent-orb" aria-hidden="true"><Image src="/lumexa-ai-wallet-mark-v2.png" alt="" width={68} height={68} sizes="68px" /></span>
         <span className="premium-v2-agent-promo-copy">
           <strong>Lumexa AI Agent</strong>
           <small>Wallet insights and actions in one place.</small>
