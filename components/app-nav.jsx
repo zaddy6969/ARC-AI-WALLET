@@ -47,7 +47,7 @@ export default function AppNav({ walletSnapshot }) {
           <Link href="/#dashboard" className="app-nav-brand" aria-label="Lumexa AI Wallet dashboard">
             <div className="app-nav-logo" aria-hidden="true">
               <Image
-                src="/arc-ai-wallet-mark-v2.png"
+                src="/lumexa-ai-wallet-mark-v2.png"
                 alt=""
                 width={42}
                 height={42}
@@ -90,7 +90,7 @@ export default function AppNav({ walletSnapshot }) {
           {isConnected ? (
             <div className="premium-wallet-account premium-v2-account">
               <span className="premium-wallet-avatar premium-v2-avatar" aria-hidden="true">
-                <Image src="/arc-ai-wallet-mark-v2.png" alt="" width={24} height={24} sizes="24px" />
+                <Image src="/lumexa-ai-wallet-mark-v2.png" alt="" width={24} height={24} sizes="24px" />
               </span>
               <span className="premium-wallet-address" title={walletSnapshot.address}>{shortAddress(walletSnapshot.address)}</span>
               <button type="button" className="premium-wallet-disconnect" onClick={walletSnapshot.disconnectWallet} title="Disconnect wallet" aria-label="Disconnect wallet">⌄</button>
