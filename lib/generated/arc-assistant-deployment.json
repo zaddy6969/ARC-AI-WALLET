@@ -1,0 +1,9 @@
+{
+  "network": "arcTestnet",
+  "chainId": 5042002,
+  "rpcUrl": "https://rpc.testnet.arc.network",
+  "assistantName": "Lumexa AI Agent",
+  "address": "",
+  "txHash": "",
+  "deployedAt": ""
+}
