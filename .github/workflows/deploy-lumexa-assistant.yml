@@ -38,6 +38,61 @@ jobs:
           node-version: 24
           cache: pnpm
 
+      - name: Remove remaining legacy product identifiers
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const roots = ['components', 'lib', 'pages', 'scripts', 'contracts', 'styles'];
+          const extraFiles = ['README.md', 'package.json', 'next.config.js', 'hardhat.config.js'];
+          const textExtensions = new Set(['.js', '.jsx', '.ts', '.tsx', '.json', '.md', '.sol', '.css']);
+          const replacements = [
+            ['./generated/arc-assistant-deployment.json', './generated/lumexa-assistant-deployment.json'],
+            ['ArcAiWalletAssistant', 'LumexaWalletAssistant'],
+            ['ARC_AI_WALLET_ASSISTANT', 'LUMEXA_WALLET_ASSISTANT'],
+            ['Arc AI Wallet', 'Lumexa AI Wallet'],
+            ['arc-ai-wallet', 'lumexa-ai-wallet']
+          ];
+
+          function updateFile(file) {
+            if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return;
+            const ext = path.extname(file);
+            if (!textExtensions.has(ext) && !extraFiles.includes(file)) return;
+            let text = fs.readFileSync(file, 'utf8');
+            const original = text;
+            for (const [from, to] of replacements) text = text.split(from).join(to);
+            if (text !== original) fs.writeFileSync(file, text);
+          }
+
+          function walk(dir) {
+            if (!fs.existsSync(dir)) return;
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const file = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(file);
+              else updateFile(file);
+            }
+          }
+
+          roots.forEach(walk);
+          extraFiles.forEach(updateFile);
+
+          const legacyDeployment = 'lib/generated/arc-assistant-deployment.json';
+          if (fs.existsSync(legacyDeployment)) fs.rmSync(legacyDeployment);
+          NODE
+
+      - name: Commit backend cleanup
+        run: |
+          if git diff --quiet; then
+            echo "No additional legacy product identifiers found."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Finish Lumexa backend identifier cleanup"
+            git push origin HEAD:main
+          fi
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
