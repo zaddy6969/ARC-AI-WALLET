@@ -156,7 +156,7 @@ function puterText(response) {
 function MessageBubble({ role, content }) {
   return (
     <div className={`assistant-message assistant-message-${role}`}>
-      <span className="field-label">{role === "assistant" ? "Arc Agent" : "You"}</span>
+      <span className="field-label">{role === "assistant" ? "Lumexa Agent" : "You"}</span>
       <p>{content || "..."}</p>
     </div>
   );
@@ -165,7 +165,7 @@ function MessageBubble({ role, content }) {
 function ThinkingBubble({ mode }) {
   return (
     <div className="assistant-message assistant-message-assistant assistant-message-thinking">
-      <span className="field-label">{mode === "free" ? "Fast Free Agent" : "Arc Agent"}</span>
+      <span className="field-label">{mode === "free" ? "Fast Free Agent" : "Lumexa Agent"}</span>
       <p>Thinking<span className="typing-dots" aria-hidden="true"><i /><i /><i /></span></p>
     </div>
   );
@@ -261,7 +261,7 @@ export default function WalletAssistant({
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hi — I’m the Arc AI Agent. Connect the free AI once, then ask me anything or ask me to inspect Arc and prepare wallet actions."
+      content: "Hi — I’m the Lumexa AI Agent. Connect the free AI once, then ask me anything or ask me to inspect Arc and prepare wallet actions."
     }
   ]);
   const [question, setQuestion] = useState("");
@@ -407,10 +407,10 @@ export default function WalletAssistant({
     {
       role: "system",
       content: [
-        "You are Arc AI Agent inside a self-custodial crypto wallet.",
+        "You are Lumexa AI Agent inside Lumexa AI Wallet, a self-custodial crypto wallet built on Arc.",
         "Answer greetings, normal questions and follow-up conversation naturally. Do not repeat a wallet summary unless the user asks about their wallet.",
         "For wallet-specific facts, use only the supplied public wallet context and live tools; never invent balances, activity or transaction status.",
-        "Arc wallet transaction support is Arc Testnet only. Arc Testnet chain ID is 5042002.",
+        "Lumexa transaction support currently uses Arc Testnet only. Arc Testnet chain ID is 5042002.",
         "USDC is Arc gas. Native USDC and ERC-20 USDC at 0x3600000000000000000000000000000000000000 expose the same underlying pool, so never add them as separate assets.",
         "Use live tools for current Arc status and current Arc Node release questions.",
         "Use wallet action tools when the user asks to send, swap, bridge, switch network, or open a wallet feature.",
@@ -512,7 +512,7 @@ export default function WalletAssistant({
           const payload = await response.json().catch(() => ({}));
           if (response.ok && payload?.mode === "ai-copilot" && payload?.answer) {
             setMessages((current) => [...current, { role: "assistant", content: payload.answer }]);
-            setNotice(payload.notice || "Arc Agent · server AI");
+            setNotice(payload.notice || "Lumexa Agent · server AI");
             setActions(Array.isArray(payload.actions) ? payload.actions : []);
             return;
           }
@@ -522,7 +522,7 @@ export default function WalletAssistant({
       }
 
       const result = await askPuterAgent(nextMessages, options.allowPopup !== false);
-      useResult(result, `${agentMode === "free" ? "Fast Free Agent" : "Arc Agent"} · Puter ${PUTER_MODEL}`);
+      useResult(result, `${agentMode === "free" ? "Fast Free Agent" : "Lumexa Agent"} · Puter ${PUTER_MODEL}`);
     } catch (nextError) {
       if (nextError?.name === "AbortError") return;
       setError(describeError(nextError));
@@ -537,7 +537,7 @@ export default function WalletAssistant({
 
     if (!serverAiReady && !puterSignedIn) {
       setQuestion(initialPrompt.text);
-      setError("Connect Free AI once, then press Ask Arc Agent to run this mission.");
+      setError("Connect Free AI once, then press Ask Lumexa Agent to run this mission.");
       return;
     }
 
@@ -582,13 +582,13 @@ export default function WalletAssistant({
 
       <div className="assistant-hero">
         <div className="ai-orb-avatar" aria-hidden="true"><span /></div>
-        <div><p className="section-kicker">Arc AI</p><h2>Real AI agent</h2></div>
+        <div><p className="section-kicker">Lumexa AI</p><h2>Real AI agent</h2></div>
         <span className={`status-badge ${puterSignedIn ? "agent-status-free" : ""}`}>{loading ? "Thinking" : providerState}</span>
       </div>
 
       <div className="agent-mode-switch" role="group" aria-label="AI agent mode">
         <button type="button" className={agentMode === "arc" ? "is-active" : ""} onClick={() => setMode("arc")} disabled={loading}>
-          <strong>Arc Agent</strong><small>{serverAiReady ? "Server AI + Puter fallback" : "Puter AI + wallet tools"}</small>
+          <strong>Lumexa Agent</strong><small>{serverAiReady ? "Server AI + Puter fallback" : "Puter AI + wallet tools"}</small>
         </button>
         <button type="button" className={agentMode === "free" ? "is-active" : ""} onClick={() => setMode("free")} disabled={loading}>
           <strong>Fast Free Agent</strong><small>{puterSignedIn ? `${PUTER_MODEL} ready` : "One-time Puter sign-in"}</small>
@@ -659,7 +659,7 @@ export default function WalletAssistant({
         />
         <div className="assistant-form-row">
           <button type="submit" className="button button-primary" disabled={loading || !question.trim() || !puterReady}>
-            {loading ? "AI thinking…" : !puterSignedIn && !serverAiReady ? "Connect & Ask Arc Agent" : agentMode === "free" ? "Ask Free AI" : "Ask Arc Agent"}
+            {loading ? "AI thinking…" : !puterSignedIn && !serverAiReady ? "Connect & Ask Lumexa Agent" : agentMode === "free" ? "Ask Free AI" : "Ask Lumexa Agent"}
           </button>
         </div>
       </form>

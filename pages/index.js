@@ -287,10 +287,10 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Arc AI Wallet | USDC, Unified Balance & AI Agent</title>
+        <title>Lumexa AI Wallet | USDC, Unified Balance & AI Agent</title>
         <meta
           name="description"
-          content="A self-custodial Arc wallet with USDC send, receive, swap, bridge, Circle App Kit Unified Balance, live Arc data, community tools and a real AI Agent that prepares wallet actions for user approval."
+          content="Lumexa AI Wallet is a self-custodial USDC wallet built on Arc, with send, receive, swap, bridge, Unified Balance, live network data, community tools and an AI Agent that prepares wallet actions for user approval."
         />
         <meta name="theme-color" content="#f3f6fb" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

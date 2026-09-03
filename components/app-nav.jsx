@@ -44,7 +44,7 @@ export default function AppNav({ walletSnapshot }) {
     <header className="app-nav-shell premium-v2-topbar-shell">
       <div className="app-nav-bar simple-wallet-nav premium-v2-topbar">
         <div className="premium-v2-topbar-left">
-          <Link href="/#dashboard" className="app-nav-brand" aria-label="Arc AI Wallet dashboard">
+          <Link href="/#dashboard" className="app-nav-brand" aria-label="Lumexa AI Wallet dashboard">
             <div className="app-nav-logo" aria-hidden="true">
               <Image
                 src="/arc-ai-wallet-mark-v2.png"
@@ -56,7 +56,7 @@ export default function AppNav({ walletSnapshot }) {
               />
             </div>
             <div className="app-nav-copy">
-              <strong>Arc AI Wallet</strong>
+              <strong>Lumexa AI Wallet</strong>
             </div>
           </Link>
           <NetworkSwitcher compact />
