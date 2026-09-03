@@ -2,8 +2,22 @@
   "network": "arcTestnet",
   "chainId": 5042002,
   "rpcUrl": "https://rpc.testnet.arc.network",
+  "explorerUrl": "https://testnet.arcscan.app",
   "assistantName": "Lumexa AI Agent",
-  "address": "0x2e564DB13Ea3B859f46d99E16C4A4451499C4f8c",
-  "txHash": "0x83ebf59e4d3170e00f71b614f33d768b8f8b24772d21f8527cac1125aebaf83e",
-  "deployedAt": "2026-09-03T11:06:48.576Z"
+  "address": "0xD11Cd53bdF4F93f78eA0c0aea35e2F8b9C2443Bd",
+  "txHash": "0x4043868a5f053d24f726b5fce4653745dace5955e2c1d09365c5856273552ee2",
+  "txExplorerUrl": "https://testnet.arcscan.app/tx/0x4043868a5f053d24f726b5fce4653745dace5955e2c1d09365c5856273552ee2",
+  "contractExplorerUrl": "https://testnet.arcscan.app/address/0xD11Cd53bdF4F93f78eA0c0aea35e2F8b9C2443Bd",
+  "deployedAt": "2026-09-03T19:13:05.000Z",
+  "sourceCommit": "2102dd37a36da1590899cff1041dba0d6fc936e9",
+  "verification": {
+    "status": "verified",
+    "receiptStatus": 1,
+    "confirmations": 1,
+    "blockNumber": 60290343,
+    "blockHash": "0x336526e7d5412eb35761f61012620686396178ce25ea324af95ff4c9fce406e1",
+    "contractAddress": "0xD11Cd53bdF4F93f78eA0c0aea35e2F8b9C2443Bd",
+    "deployer": "0x6AfF9bA99F8EeCDa330C93e528cBe588A60B8648",
+    "runtimeCodeHash": "0x779a1f3f473f8492256fbc1f58624f096262bad6b22e9a03b70e24c8c936931d"
+  }
 }
