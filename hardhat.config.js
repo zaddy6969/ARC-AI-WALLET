@@ -15,6 +15,7 @@ const networks = {
   }
 };
 
+// Lumexa contract deployments use the configured Arc Testnet deployer account.
 // Mainnet is intentionally opt-in. There is no guessed/fallback Arc mainnet RPC.
 if (ARC_MAINNET_RPC_URL) {
   networks.arcMainnet = {
