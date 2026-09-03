@@ -45,7 +45,7 @@ class ProviderErrorBoundary extends Component {
 
   componentDidCatch(error) {
     if (process.env.NODE_ENV !== "production") {
-      console.error("[arc-wallet-provider]", error);
+      console.error("[lumexa-wallet-provider]", error);
     }
   }
 
@@ -96,7 +96,7 @@ function createWalletConfig() {
       }
     ],
     {
-      appName: "arc-ai-wallet",
+      appName: "Lumexa AI Wallet",
       ...(hasWalletConnectProjectId
         ? { projectId: walletConnectProjectId }
         : {})
@@ -150,7 +150,7 @@ export default function AppProviders({ children }) {
       return { config: createWalletConfig(), error: null };
     } catch (error) {
       if (process.env.NODE_ENV !== "production") {
-        console.error("[arc-wallet-provider]", error);
+        console.error("[lumexa-wallet-provider]", error);
       }
 
       return { config: null, error };
