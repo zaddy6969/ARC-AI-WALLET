@@ -23,6 +23,7 @@ import "../styles/wallet-v3.css";
 import "../styles/wallet-v3-bridge.css";
 import "../styles/wallet-v4.css";
 import "../styles/wallet-v5.css";
+import "../styles/wallet-theme.css";
 
 export default function App({ Component, pageProps }) {
   return (
