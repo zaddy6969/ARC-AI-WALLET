@@ -171,7 +171,10 @@ async function readNetworkBalance(chain, address, prices) {
   }
 
   if (chain.id !== arcTestnet.id && nativeResult.status === "fulfilled") {
-    const nativePriceUsd = chain.nativeCurrency.symbol === "ETH" ? prices.ethUsd : 0;
+    // Testnet ETH is faucet gas and has no real USD value. Keep the balance visible,
+    // but only value native ETH in USD on real mainnet chains.
+    const nativePriceUsd =
+      !chain.testnet && chain.nativeCurrency.symbol === "ETH" ? prices.ethUsd : 0;
     assets.push({
       symbol: chain.nativeCurrency.symbol,
       name: chain.nativeCurrency.name,
@@ -179,7 +182,12 @@ async function readNetworkBalance(chain, address, prices) {
       balanceDisplay: `${formatAmount(nativeBalance, 6)} ${chain.nativeCurrency.symbol}`,
       priceUsd: nativePriceUsd,
       valueUsd: nativeBalance * nativePriceUsd,
-      valueUsdDisplay: nativePriceUsd > 0 ? formatUsd(nativeBalance * nativePriceUsd) : "Price unavailable",
+      valueUsdDisplay:
+        chain.testnet
+          ? "Testnet gas"
+          : nativePriceUsd > 0
+            ? formatUsd(nativeBalance * nativePriceUsd)
+            : "Price unavailable",
       status: "ready",
       native: true
     });
@@ -210,6 +218,7 @@ async function readNetworkBalance(chain, address, prices) {
     nativeDisplay: `${formatAmount(nativeBalance, 6)} ${chain.nativeCurrency.symbol}`,
     nativeSymbol: chain.nativeCurrency.symbol,
     pricingPartial:
+      !chain.testnet &&
       chain.id !== arcTestnet.id &&
       nativeBalance > 0 &&
       chain.nativeCurrency.symbol === "ETH" &&
