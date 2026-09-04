@@ -127,6 +127,7 @@ const WalletDashboardV4 = memo(function WalletDashboardV4({
       ? Number(crossChainBalances.data.totalUsd)
       : activePortfolioValue;
   const readyNetworkCount = networkBalances.filter((network) => network.status === "ready").length;
+  const totalAssetCount = Number(crossChainBalances.data?.totalAssetCount || assets.filter((asset) => Number(asset?.balanceValue || 0) > 0).length || assets.length || 0);
 
   const actions = [
     { id: "send", label: "Send", helper: "Transfer assets", icon: "send", click: () => onSelectView?.("send") },
@@ -158,12 +159,14 @@ const WalletDashboardV4 = memo(function WalletDashboardV4({
 
       <section className="wallet-v4-balance-hero">
         <div className="wallet-v4-balance-copy">
-          <span>Total USDC portfolio value</span>
+          <span>Total wallet value</span>
           <strong>{formatUsd(portfolioValue)}</strong>
           <div className="wallet-v4-balance-foot">
+            <span>{totalAssetCount} {totalAssetCount === 1 ? "funded asset" : "funded assets"}</span>
+            <i />
             <span>{readyNetworkCount || networkBalances.length || 1} {readyNetworkCount === 1 ? "network" : "networks"}</span>
             <i />
-            <span>{crossChainBalances.status === "loading" || crossChainBalances.status === "refreshing" ? "Syncing multichain balances" : "Live multichain wallet data"}</span>
+            <span>{crossChainBalances.status === "loading" || crossChainBalances.status === "refreshing" ? "Syncing full portfolio" : "Live multichain wallet data"}</span>
           </div>
         </div>
         <div className="wallet-v4-network-card">
@@ -176,27 +179,27 @@ const WalletDashboardV4 = memo(function WalletDashboardV4({
         </div>
       </section>
 
-      <section className="wallet-v4-crosschain" aria-label="Balances by network">
+      <section className="wallet-v4-crosschain" aria-label="Wallet value by network">
         {networkBalances.length ? networkBalances.map((network) => (
           <div
             key={network.chainId}
             className={`wallet-v4-network-balance ${Number(network.chainId) === Number(walletSnapshot?.chainId) ? "is-active" : ""}`}
           >
             <span><span>{network.name}</span><i /></span>
-            <strong>{network.status === "ready" ? network.usdcDisplay : "Unavailable"}</strong>
-            <small>{network.status === "ready" ? `${network.nativeDisplay} gas balance` : "RPC balance read unavailable"}</small>
+            <strong>{network.status === "ready" ? (network.totalUsdDisplay || formatUsd(network.totalUsd)) : "Unavailable"}</strong>
+            <small>{network.status === "ready" ? (network.assetSummary || "No funded tracked assets") : "RPC balance read unavailable"}</small>
           </div>
         )) : ["Arc", "Ethereum Sepolia", "Base Sepolia"].map((name) => (
           <div className="wallet-v4-network-balance" key={name}>
             <span><span>{name}</span><i /></span>
             <strong>{crossChainBalances.status === "error" ? "Sync failed" : "Syncing…"}</strong>
-            <small>Reading wallet balance</small>
+            <small>Reading full wallet value</small>
           </div>
         ))}
       </section>
 
       <div className="wallet-v4-crosschain-status">
-        <span>{crossChainBalances.error || "Balances are read across supported networks without forcing your wallet to switch chains."}</span>
+        <span>{crossChainBalances.error || (crossChainBalances.data?.pricingPartial ? "Balances are synced, but one or more native-asset USD prices are temporarily unavailable." : "Portfolio value includes USDC, EURC, cirBTC and supported native gas assets across your connected networks.")}</span>
         <button type="button" onClick={loadCrossChainBalances} disabled={crossChainBalances.status === "loading" || crossChainBalances.status === "refreshing"}>Refresh balances</button>
       </div>
 
