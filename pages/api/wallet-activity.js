@@ -1,4 +1,4 @@
-import { getWalletActivity } from "../../lib/wallet-activity";
+import { getMultichainWalletActivity } from "../../lib/multichain-wallet-activity";
 import { isAddress } from "viem";
 
 export default async function handler(req, res) {
@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed." });
   }
 
-  const { address } = req.query || {};
+  const { address, limit, lookbackBlocks } = req.query || {};
   const walletAddress = typeof address === "string" ? address.trim() : "";
 
   if (!walletAddress || !isAddress(walletAddress)) {
@@ -15,24 +15,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    const activity = await getWalletActivity(walletAddress);
+    const result = await getMultichainWalletActivity(walletAddress, {
+      limit: Number(limit) || undefined,
+      lookbackBlocks: Number(lookbackBlocks) || undefined
+    });
 
     if (process.env.NODE_ENV !== "production") {
-      console.info("[arc-wallet-activity]", "api-response", {
+      console.info("[wallet-activity]", "multichain-api-response", {
         address: walletAddress,
-        fetchedCount: activity.length
+        fetchedCount: result.activity.length,
+        networks: result.networks.map((network) => ({
+          chainId: network.chainId,
+          status: network.status,
+          count: network.count
+        }))
       });
     }
 
-    res.setHeader(
-      "Cache-Control",
-      "public, s-maxage=15, stale-while-revalidate=45"
-    );
-
-    return res.status(200).json({ activity });
+    res.setHeader("Cache-Control", "private, max-age=0, s-maxage=10, stale-while-revalidate=20");
+    return res.status(200).json({
+      activity: result.activity,
+      networks: result.networks,
+      scope: "multichain"
+    });
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
-      console.error("[arc-wallet-activity]", "api-error", {
+      console.error("[wallet-activity]", "multichain-api-error", {
         address: walletAddress,
         message: error instanceof Error ? error.message : "Unknown RPC error"
       });
