@@ -28,6 +28,7 @@ import "../styles/wallet-action-theme.css";
 import "../styles/ai-workspace-v2.css";
 import "../styles/transaction-light-contrast.css";
 import "../styles/header-futuristic.css";
+import "../styles/header-compact.css";
 
 export default function App({ Component, pageProps }) {
   return (
