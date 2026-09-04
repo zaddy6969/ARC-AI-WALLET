@@ -24,6 +24,7 @@ import "../styles/wallet-v3-bridge.css";
 import "../styles/wallet-v4.css";
 import "../styles/wallet-shell-theme.css";
 import "../styles/wallet-layout-final.css";
+import "../styles/wallet-action-theme.css";
 
 export default function App({ Component, pageProps }) {
   return (
