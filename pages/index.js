@@ -51,6 +51,7 @@ function copilotNetworkChainId(value) {
 function ConnectedWalletExperience({ walletSnapshot }) {
   const {
     mergedActivity,
+    liveActivityNetworks,
     liveActivityStatus,
     liveActivityError,
     saveLocalActivity,
@@ -150,7 +151,7 @@ function ConnectedWalletExperience({ walletSnapshot }) {
           ) : activeView === "agent" ? (
             <AiAgentWorkspace walletSnapshot={walletSnapshot} activityItems={mergedActivity} activityStatus={liveActivityStatus} initialPrompt={assistantPrompt} onWalletAction={handleCopilotAction} />
           ) : activeView === "activity" ? (
-            <TransactionActivity walletSnapshot={walletSnapshot} items={mergedActivity} liveStatus={liveActivityStatus} liveError={liveActivityError} onRefresh={refreshActivity} />
+            <TransactionActivity walletSnapshot={walletSnapshot} items={mergedActivity} networkStatuses={liveActivityNetworks} liveStatus={liveActivityStatus} liveError={liveActivityError} onRefresh={refreshActivity} />
           ) : activeView === "portfolio" ? (
             <PortfolioPanel walletSnapshot={walletSnapshot} activityItems={mergedActivity} />
           ) : activeView === "unified" ? (
