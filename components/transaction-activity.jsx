@@ -126,7 +126,21 @@ function ActivityRow({ item, walletAddress }) {
   );
 }
 
-export default function TransactionActivity({ walletSnapshot, items = [], liveStatus, liveError, onRefresh }) {
+function NetworkSyncHealth({ statuses = [] }) {
+  if (!statuses.length) return null;
+  return (
+    <div className="wallet-v5-network-health" aria-label="Activity network sync health">
+      {statuses.map((network) => (
+        <div key={network.chainId} className={network.status === "ready" ? "is-ready" : "is-error"} title={network.error || ""}>
+          <i />
+          <span><strong>{network.shortName || network.name}</strong><small>{network.status === "ready" ? `${network.count || 0} recent` : "Sync unavailable"}</small></span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function TransactionActivity({ walletSnapshot, items = [], networkStatuses = [], liveStatus, liveError, onRefresh }) {
   const isSignedIn = walletSnapshot?.isSignedIn;
   const walletAddress = walletSnapshot?.address || "";
   const [activeFilter, setActiveFilter] = useState("all");
@@ -174,6 +188,8 @@ export default function TransactionActivity({ walletSnapshot, items = [], liveSt
           </button>
         ) : null}
       </header>
+
+      {isSignedIn ? <NetworkSyncHealth statuses={networkStatuses} /> : null}
 
       {isSignedIn ? (
         <div className="wallet-v5-activity-toolbar">
