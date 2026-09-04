@@ -1,0 +1,192 @@
+/* Lumexa production wallet v5: intentionally small layer for multichain activity
+   and pre-sign review surfaces. Keep feature styling here until legacy CSS is
+   consolidated into a single design system. */
+
+.wallet-v5-activity-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 18px 0 22px;
+}
+
+.wallet-v5-network-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  color: rgba(225, 234, 247, 0.72);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wallet-v5-network-filter select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 38px 0 14px;
+  border: 1px solid rgba(137, 164, 204, 0.24);
+  border-radius: 12px;
+  background: #0c121d;
+  color: #f5f8fd;
+  font: inherit;
+  outline: none;
+}
+
+.wallet-v5-network-filter select:focus-visible {
+  border-color: rgba(99, 177, 255, 0.78);
+  box-shadow: 0 0 0 3px rgba(68, 151, 255, 0.12);
+}
+
+.wallet-v5-activity-title-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.wallet-v5-activity-title-line > small {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border: 1px solid rgba(123, 151, 194, 0.2);
+  border-radius: 999px;
+  background: rgba(93, 127, 183, 0.08);
+  color: rgba(205, 220, 242, 0.72);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.wallet-v5-bridge-progress {
+  display: block;
+  margin-top: 4px;
+  color: #78c9ff !important;
+  font-size: 11px !important;
+  font-weight: 700;
+}
+
+.wallet-v5-preflight-card {
+  border-color: rgba(91, 167, 255, 0.26) !important;
+  background:
+    linear-gradient(180deg, rgba(18, 32, 53, 0.98), rgba(10, 17, 29, 0.98)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.wallet-v5-balance-change {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.wallet-v5-balance-change > div,
+.wallet-v5-source-funds > div {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid rgba(126, 153, 195, 0.16);
+  border-radius: 13px;
+  background: rgba(4, 9, 17, 0.44);
+}
+
+.wallet-v5-balance-change span,
+.wallet-v5-source-funds span {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(187, 204, 229, 0.66);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.wallet-v5-balance-change strong,
+.wallet-v5-source-funds strong {
+  display: block;
+  overflow: hidden;
+  color: #f7faff;
+  font-size: 15px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wallet-v5-security-checks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(130, 157, 196, 0.14);
+}
+
+.wallet-v5-security-checks span {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: rgba(215, 226, 242, 0.79);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.wallet-v5-security-checks i {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 50%;
+  background: rgba(54, 199, 139, 0.12);
+  color: #71e0ae;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.wallet-v5-source-funds {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.wallet-v5-step-list {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.wallet-v5-bridge-result code {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+@media (max-width: 900px) {
+  .wallet-v5-activity-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .wallet-v5-network-filter {
+    min-width: 0;
+  }
+
+  .wallet-v5-balance-change,
+  .wallet-v5-source-funds,
+  .wallet-v5-security-checks {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 2000px) {
+  .wallet-v5-network-filter,
+  .wallet-v5-security-checks span {
+    font-size: 14px;
+  }
+
+  .wallet-v5-network-filter select {
+    min-height: 48px;
+  }
+
+  .wallet-v5-balance-change strong,
+  .wallet-v5-source-funds strong {
+    font-size: 17px;
+  }
+}
