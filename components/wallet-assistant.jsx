@@ -1,7 +1,13 @@
 import Script from "next/script";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FeatureIcon } from "./wallet-sidebar";
+import { ARC_NETWORK_MODE } from "../lib/arc-chain";
 
 const PUTER_MODEL = "gpt-5-nano";
+const IS_MAINNET = ARC_NETWORK_MODE === "mainnet";
+const NETWORK_VALUES = IS_MAINNET
+  ? ["arc", "ethereum-mainnet", "base-mainnet"]
+  : ["arc", "ethereum-sepolia", "base-sepolia"];
 
 const agentTools = [
   {
@@ -58,12 +64,12 @@ const agentTools = [
     type: "function",
     function: {
       name: "prepare_bridge",
-      description: "Prepare a USDC bridge between Arc, Ethereum Sepolia and Base Sepolia. User review and wallet signature are required.",
+      description: `Prepare a USDC bridge between ${NETWORK_VALUES.join(", ")}. User review and wallet signature are required.`,
       parameters: {
         type: "object",
         properties: {
-          sourceNetwork: { type: "string", enum: ["arc", "ethereum-sepolia", "base-sepolia"] },
-          destinationNetwork: { type: "string", enum: ["arc", "ethereum-sepolia", "base-sepolia"] },
+          sourceNetwork: { type: "string", enum: NETWORK_VALUES },
+          destinationNetwork: { type: "string", enum: NETWORK_VALUES },
           amount: { type: "string" }
         },
         required: ["sourceNetwork", "destinationNetwork", "amount"],
@@ -79,7 +85,7 @@ const agentTools = [
       parameters: {
         type: "object",
         properties: {
-          network: { type: "string", enum: ["arc", "ethereum-sepolia", "base-sepolia"] }
+          network: { type: "string", enum: NETWORK_VALUES }
         },
         required: ["network"],
         additionalProperties: false
@@ -104,6 +110,20 @@ const agentTools = [
       }
     }
   }
+];
+
+const STARTER_PROMPTS = [
+  { label: "Analyze my wallet", prompt: "Analyze my wallet and tell me the three most useful things to know right now.", icon: "portfolio" },
+  { label: "Explain latest transaction", prompt: "Explain my latest transaction in plain English.", icon: "activity" },
+  { label: "Check Arc network", prompt: "Check the current Arc network status and tell me if everything looks healthy.", icon: "community" },
+  { label: "What should I review?", prompt: "Review my visible wallet activity and tell me if anything deserves attention.", icon: "ai" }
+];
+
+const QUICK_VIEWS = [
+  { view: "send", label: "Send", icon: "send" },
+  { view: "swap", label: "Swap", icon: "swap" },
+  { view: "bridge", label: "Bridge", icon: "bridge" },
+  { view: "activity", label: "Activity", icon: "activity" }
 ];
 
 function describeError(error) {
@@ -185,12 +205,69 @@ async function runTool(toolCall) {
   return { data: { error: "Unsupported tool." } };
 }
 
+function shortValue(value, start = 6, end = 4) {
+  const text = String(value || "");
+  if (!text) return "—";
+  if (text.length <= start + end + 3) return text;
+  return `${text.slice(0, start)}…${text.slice(-end)}`;
+}
+
+function formatUsd(value) {
+  const numeric = Number(value || 0);
+  if (!Number.isFinite(numeric)) return "$0.00";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: numeric >= 1000 ? 0 : 2
+  }).format(numeric);
+}
+
 function Message({ role, content }) {
+  const assistant = role === "assistant";
   return (
-    <div className={`wallet-v3-ai-message is-${role}`}>
-      <span>{role === "assistant" ? "Lumexa" : "You"}</span>
-      <p>{content}</p>
-    </div>
+    <article className={`lumexa-ai-message is-${role}`}>
+      <div className="lumexa-ai-avatar" aria-hidden="true">{assistant ? "✦" : "Y"}</div>
+      <div className="lumexa-ai-message-body">
+        <div className="lumexa-ai-message-meta">
+          <strong>{assistant ? "Lumexa" : "You"}</strong>
+          {assistant ? <span>Wallet Copilot</span> : null}
+        </div>
+        <div className="lumexa-ai-message-text">
+          {String(content || "").split("\n").map((line, index) => (
+            line ? <span key={`${line.slice(0, 20)}-${index}`}>{line}</span> : <br key={`break-${index}`} />
+          ))}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function actionDetails(action) {
+  const args = action?.args || {};
+  if (action?.tool === "prepare_send") {
+    return { icon: "send", title: `Send ${args.amount || ""} USDC`.trim(), meta: `To ${shortValue(args.recipient, 8, 6)}`, cta: "Review send" };
+  }
+  if (action?.tool === "prepare_swap") {
+    return { icon: "swap", title: `${args.tokenIn || "Token"} → ${args.tokenOut || "Token"}`, meta: `${args.amount || ""} ${args.tokenIn || ""}`.trim(), cta: "Review swap" };
+  }
+  if (action?.tool === "prepare_bridge") {
+    return { icon: "bridge", title: `Bridge ${args.amount || ""} USDC`.trim(), meta: `${args.sourceNetwork || "Source"} → ${args.destinationNetwork || "Destination"}`, cta: "Review bridge" };
+  }
+  if (action?.tool === "switch_network") {
+    return { icon: "community", title: "Switch network", meta: args.network || "Select network", cta: "Switch" };
+  }
+  return { icon: "activity", title: action?.label || "Open wallet", meta: "Prepared by Lumexa", cta: "Open" };
+}
+
+function PreparedAction({ action, onOpen }) {
+  const detail = actionDetails(action);
+  return (
+    <button type="button" className="lumexa-ai-action-card" onClick={() => onOpen?.(action)}>
+      <span className="lumexa-ai-action-icon"><FeatureIcon name={detail.icon} /></span>
+      <span className="lumexa-ai-action-copy"><strong>{detail.title}</strong><small>{detail.meta}</small></span>
+      <span className="lumexa-ai-action-cta">{detail.cta}<b>→</b></span>
+    </button>
   );
 }
 
@@ -201,19 +278,21 @@ export default function WalletAssistant({
   initialPrompt,
   onWalletAction
 }) {
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "How can I help with your wallet? I can explain activity, check Arc, or prepare a send, swap, bridge, or network switch for your review." }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [actions, setActions] = useState([]);
   const [puterReady, setPuterReady] = useState(false);
   const [puterSignedIn, setPuterSignedIn] = useState(false);
+  const [fallbackNeeded, setFallbackNeeded] = useState(false);
   const [serverAiReady, setServerAiReady] = useState(false);
+  const [serverAiChecked, setServerAiChecked] = useState(false);
   const externalPromptRef = useRef("");
   const threadRef = useRef(null);
   const requestRef = useRef(null);
+  const requestIdRef = useRef(0);
+  const textareaRef = useRef(null);
 
   const syncPuterState = () => {
     if (typeof window === "undefined") return;
@@ -233,10 +312,28 @@ export default function WalletAssistant({
     let active = true;
     fetch("/api/ai", { cache: "no-store" })
       .then((response) => response.json())
-      .then((payload) => { if (active) setServerAiReady(Boolean(payload?.ready)); })
-      .catch(() => { if (active) setServerAiReady(false); });
+      .then((payload) => {
+        if (!active) return;
+        const ready = Boolean(payload?.ready);
+        setServerAiReady(ready);
+        setServerAiChecked(true);
+        if (!ready) setFallbackNeeded(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setServerAiReady(false);
+        setServerAiChecked(true);
+        setFallbackNeeded(true);
+      });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    const input = textareaRef.current;
+    if (!input) return;
+    input.style.height = "0px";
+    input.style.height = `${Math.min(Math.max(input.scrollHeight, 48), 132)}px`;
+  }, [question]);
 
   const context = useMemo(() => {
     const assets = Array.isArray(walletSnapshot?.assets) ? walletSnapshot.assets : [];
@@ -254,22 +351,38 @@ export default function WalletAssistant({
       },
       portfolio: {
         totalValueUsd,
-        assets: assets.map((asset) => ({ symbol: asset.symbol, balance: asset.balance, valueUsd: Number(asset.valueUsd) || 0 }))
+        assets: assets.slice(0, 8).map((asset) => ({
+          symbol: asset.symbol,
+          balance: asset.balance,
+          balanceLabel: asset.balanceLabel,
+          name: asset.name,
+          valueUsd: Number(asset.valueUsd) || 0,
+          allocation: Number(asset.allocation) || 0,
+          hasValue: asset.hasValue !== false
+        }))
       },
       activity: {
         status: activityStatus || "idle",
-        items: Array.isArray(activityItems) ? activityItems.slice(0, 12) : []
+        items: Array.isArray(activityItems) ? activityItems.slice(0, 8) : []
       }
     };
   }, [activityItems, activityStatus, walletSnapshot]);
 
   const publicWalletContext = useMemo(() => ({
-    wallet: context.wallet,
+    wallet: {
+      connected: context.wallet.connected,
+      chainId: context.wallet.chainId,
+      network: context.wallet.network,
+      onArc: context.wallet.onArc,
+      usdcBalance: context.wallet.usdcBalance,
+      nativeBalance: context.wallet.nativeBalance,
+      balanceStatus: context.wallet.balanceStatus
+    },
     portfolio: context.portfolio,
     activity: {
       status: context.activity.status,
       count: context.activity.items.length,
-      items: context.activity.items.slice(0, 6).map((item) => ({
+      items: context.activity.items.slice(0, 5).map((item) => ({
         type: item.type,
         kind: item.kind,
         amount: item.amount,
@@ -280,10 +393,24 @@ export default function WalletAssistant({
     }
   }), [context]);
 
-  const ensurePuterSession = async (allowPopup = true) => {
-    if (typeof window === "undefined" || !window.puter?.ai?.chat || !window.puter?.auth) {
-      throw new Error("Fallback AI is still loading. Try again in a moment.");
+  const totalValue = context.portfolio.totalValueUsd;
+  const latestActivity = context.activity.items[0] || null;
+  const activityCount = Array.isArray(activityItems) ? activityItems.length : 0;
+
+  const waitForPuter = async () => {
+    setFallbackNeeded(true);
+    for (let index = 0; index < 40; index += 1) {
+      if (typeof window !== "undefined" && window.puter?.ai?.chat && window.puter?.auth) {
+        syncPuterState();
+        return true;
+      }
+      await new Promise((resolve) => globalThis.setTimeout(resolve, 100));
     }
+    throw new Error("Fallback AI is still loading. Try again in a moment.");
+  };
+
+  const ensurePuterSession = async (allowPopup = true) => {
+    await waitForPuter();
     if (window.puter.auth.isSignedIn?.()) {
       setPuterSignedIn(true);
       return true;
@@ -300,15 +427,16 @@ export default function WalletAssistant({
     {
       role: "system",
       content: [
-        "You are Lumexa Assistant inside Lumexa AI Wallet, a self-custodial wallet built on Arc.",
-        "Be concise and useful. Use supplied wallet context only for wallet-specific facts.",
+        "You are Lumexa Wallet Copilot inside Lumexa AI Wallet, a self-custodial wallet built on Arc.",
+        "Be concise, practical, and transaction-aware. Prefer short paragraphs or short bullet-style lines.",
+        "Use supplied wallet context only for wallet-specific facts.",
         "Use live tools for current Arc status. Use wallet action tools when the user asks to send, swap, bridge, switch network, or open a feature.",
         "Wallet action tools only prepare actions. Never claim an action was signed or confirmed before the wallet/onchain result says so.",
         "Never request seed phrases, private keys, passwords, or signing secrets.",
         `Wallet context: ${JSON.stringify(publicWalletContext)}`
       ].join(" ")
     },
-    ...nextMessages.slice(-10).map((item) => ({ role: item.role, content: item.content }))
+    ...nextMessages.slice(-8).map((item) => ({ role: item.role, content: item.content }))
   ]);
 
   const callPuterAgent = async (nextMessages, allowPopup) => {
@@ -347,7 +475,9 @@ export default function WalletAssistant({
     const trimmed = String(nextQuestion || "").trim();
     if (!trimmed || loading) return;
 
-    const nextMessages = [...messages, { role: "user", content: trimmed }];
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const nextMessages = [...messages.slice(-20), { role: "user", content: trimmed }];
     setMessages(nextMessages);
     setQuestion("");
     setLoading(true);
@@ -363,38 +493,43 @@ export default function WalletAssistant({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             signal: requestRef.current.signal,
-            body: JSON.stringify({ question: trimmed, messages: nextMessages.slice(-10), context, stream: false })
+            body: JSON.stringify({ question: trimmed, messages: nextMessages.slice(-8), context, stream: false })
           });
           const payload = await response.json().catch(() => ({}));
+          if (requestId !== requestIdRef.current) return;
           if (response.ok && payload?.answer) {
-            setMessages((current) => [...current, { role: "assistant", content: payload.answer }]);
+            setMessages((current) => [...current.slice(-21), { role: "assistant", content: payload.answer }]);
             setActions(Array.isArray(payload.actions) ? payload.actions : []);
             return;
           }
+          setFallbackNeeded(true);
         } catch (serverError) {
           if (serverError?.name === "AbortError") throw serverError;
+          setFallbackNeeded(true);
         }
       }
 
       const result = await callPuterAgent(nextMessages, allowPopup);
-      setMessages((current) => [...current, { role: "assistant", content: result.answer }]);
+      if (requestId !== requestIdRef.current) return;
+      setMessages((current) => [...current.slice(-21), { role: "assistant", content: result.answer }]);
       setActions(result.actions || []);
     } catch (nextError) {
+      if (requestId !== requestIdRef.current) return;
       if (nextError?.name !== "AbortError") setError(describeError(nextError));
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     if (!initialPrompt?.id || !initialPrompt?.text || externalPromptRef.current === initialPrompt.id) return;
     externalPromptRef.current = initialPrompt.id;
-    if (!serverAiReady && !puterSignedIn) {
+    if (!serverAiReady && !puterSignedIn && !serverAiChecked) {
       setQuestion(initialPrompt.text);
       return;
     }
     void askAssistant(initialPrompt.text, { allowPopup: false });
-  }, [initialPrompt, puterSignedIn, serverAiReady]);
+  }, [initialPrompt, puterSignedIn, serverAiChecked, serverAiReady]);
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
@@ -405,62 +540,172 @@ export default function WalletAssistant({
     await askAssistant(question, { allowPopup: true });
   };
 
+  const stopAssistant = () => {
+    requestIdRef.current += 1;
+    requestRef.current?.abort();
+    setLoading(false);
+  };
+
+  const clearConversation = () => {
+    stopAssistant();
+    setMessages([]);
+    setQuestion("");
+    setActions([]);
+    setError("");
+  };
+
+  const openView = (view) => {
+    onWalletAction?.({
+      id: `quick-${view}-${Date.now()}`,
+      kind: "wallet-action",
+      tool: "open_wallet_view",
+      label: `Open ${view}`,
+      args: { view }
+    });
+  };
+
   const providerReady = serverAiReady || puterSignedIn;
+  const providerLabel = serverAiReady ? "Lumexa AI" : puterSignedIn ? "Fallback AI" : serverAiChecked ? "AI offline" : "Checking AI";
+  const showStarter = messages.length === 0 && !loading;
+  const showFallbackScript = fallbackNeeded || (serverAiChecked && !serverAiReady);
 
   return (
-    <section className="wallet-v3-ai-shell">
-      <Script
-        src="https://js.puter.com/v2/"
-        strategy="afterInteractive"
-        onLoad={syncPuterState}
-        onReady={syncPuterState}
-        onError={() => setPuterReady(false)}
-      />
-
-      <div className="wallet-v3-ai-statusbar">
-        <div><span className="wallet-v3-ai-orb">✦</span><div><strong>Lumexa Assistant</strong><small>{walletSnapshot?.activeChainName || "Wallet intelligence"}</small></div></div>
-        <span className={`wallet-v3-ai-status ${providerReady ? "is-ready" : ""}`}><i />{loading ? "Thinking" : providerReady ? "Ready" : "Connect AI"}</span>
-      </div>
-
-      {!serverAiReady && !puterSignedIn ? (
-        <div className="wallet-v3-ai-connect">
-          <div><strong>Connect the fallback AI once</strong><span>Your wallet remains self-custodial. Lumexa never gets signing access.</span></div>
-          <button type="button" className="wallet-v3-secondary-button" onClick={() => ensurePuterSession(true).catch((nextError) => setError(describeError(nextError)))} disabled={!puterReady || loading}>{puterReady ? "Connect AI" : "Loading…"}</button>
-        </div>
-      ) : null}
-
-      <div className="wallet-v3-ai-thread" ref={threadRef}>
-        {messages.map((message, index) => <Message key={`${message.role}-${index}`} role={message.role} content={message.content} />)}
-        {loading ? <div className="wallet-v3-ai-message is-assistant is-thinking"><span>Lumexa</span><p>Thinking<span className="wallet-v3-dots">…</span></p></div> : null}
-      </div>
-
-      {actions.length ? (
-        <div className="wallet-v3-ai-actions">
-          {actions.map((action) => (
-            <button key={action.id} type="button" className="wallet-v3-primary-button" onClick={() => onWalletAction?.(action)}>{action.label || "Review action"}</button>
-          ))}
-        </div>
-      ) : null}
-
-      <form className="wallet-v3-ai-composer" onSubmit={handleSubmit}>
-        <textarea
-          value={question}
-          onChange={(event) => setQuestion(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              if (question.trim() && !loading) void askAssistant(question, { allowPopup: true });
-            }
-          }}
-          placeholder="Ask Lumexa about your wallet or prepare an action…"
-          rows={2}
-          aria-label="Ask Lumexa"
+    <section className="lumexa-ai-workspace">
+      {showFallbackScript ? (
+        <Script
+          src="https://js.puter.com/v2/"
+          strategy="afterInteractive"
+          onLoad={syncPuterState}
+          onReady={syncPuterState}
+          onError={() => setPuterReady(false)}
         />
-        <button type="submit" aria-label="Send message" disabled={loading || !question.trim()}>↑</button>
-      </form>
+      ) : null}
 
-      <div className="wallet-v3-ai-foot">AI never signs transactions. Review every amount, recipient, quote, and network in your wallet.</div>
-      {error ? <div className="wallet-v3-inline-warning is-error"><strong>Assistant unavailable</strong><span>{error}</span></div> : null}
+      <aside className="lumexa-ai-context-panel">
+        <div className="lumexa-ai-identity">
+          <span className="lumexa-ai-logo">✦</span>
+          <div><strong>Lumexa Copilot</strong><small>Wallet-aware AI</small></div>
+          <span className={`lumexa-ai-live ${providerReady ? "is-ready" : ""}`}><i />{providerLabel}</span>
+        </div>
+
+        <div className="lumexa-ai-context-grid">
+          <article><span>Portfolio</span><strong>{formatUsd(totalValue)}</strong><small>{context.portfolio.assets.length} visible assets</small></article>
+          <article><span>Network</span><strong>{walletSnapshot?.activeChainName || "Wallet"}</strong><small>Chain {walletSnapshot?.chainId || "—"}</small></article>
+          <article><span>Activity</span><strong>{activityCount}</strong><small>{activityStatus === "loading" ? "Syncing" : "transactions loaded"}</small></article>
+          <article><span>Wallet</span><strong>{shortValue(walletSnapshot?.address)}</strong><small>Self-custodial</small></article>
+        </div>
+
+        <div className="lumexa-ai-rail-section">
+          <div className="lumexa-ai-rail-title"><strong>Quick actions</strong><span>No AI round-trip</span></div>
+          <div className="lumexa-ai-quick-grid">
+            {QUICK_VIEWS.map((item) => (
+              <button key={item.view} type="button" onClick={() => openView(item.view)}>
+                <span><FeatureIcon name={item.icon} /></span><strong>{item.label}</strong>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="lumexa-ai-rail-section is-latest">
+          <div className="lumexa-ai-rail-title"><strong>Latest activity</strong><span>{latestActivity?.timeLabel || "—"}</span></div>
+          {latestActivity ? (
+            <button type="button" className="lumexa-ai-latest-card" onClick={() => askAssistant("Explain my latest transaction in plain English.", { allowPopup: true })}>
+              <span className="lumexa-ai-latest-icon"><FeatureIcon name={latestActivity.kind === "sent" ? "send" : latestActivity.kind === "received" ? "receive" : latestActivity.kind === "swap" ? "swap" : latestActivity.kind?.includes("bridge") ? "bridge" : "activity"} /></span>
+              <span><strong>{latestActivity.type || "Transaction"}</strong><small>{latestActivity.amount || latestActivity.txHashShort || "Tracked onchain"}</small></span>
+              <b>→</b>
+            </button>
+          ) : <div className="lumexa-ai-empty-mini">No transaction loaded yet.</div>}
+        </div>
+
+        <div className="lumexa-ai-privacy-note"><span>✓</span><div><strong>Private by design</strong><small>Lumexa cannot sign transactions or access your keys.</small></div></div>
+      </aside>
+
+      <div className="lumexa-ai-chat-panel">
+        <header className="lumexa-ai-chat-head">
+          <div>
+            <span className="lumexa-ai-chat-orb">✦</span>
+            <div><strong>Ask Lumexa</strong><small>{loading ? "Working on your request…" : "Wallet context is available for this session"}</small></div>
+          </div>
+          <div className="lumexa-ai-chat-tools">
+            <span className={`lumexa-ai-provider-pill ${providerReady ? "is-ready" : ""}`}><i />{providerLabel}</span>
+            {messages.length ? <button type="button" onClick={clearConversation}>New chat</button> : null}
+          </div>
+        </header>
+
+        {!serverAiReady && serverAiChecked && !puterSignedIn ? (
+          <div className="lumexa-ai-fallback-bar">
+            <div><strong>Server AI is unavailable</strong><span>Connect the privacy-safe fallback once to keep the assistant working.</span></div>
+            <button type="button" onClick={() => ensurePuterSession(true).catch((nextError) => setError(describeError(nextError)))} disabled={loading || (fallbackNeeded && !puterReady)}>{puterReady ? "Connect fallback" : "Loading…"}</button>
+          </div>
+        ) : null}
+
+        <div className="lumexa-ai-thread" ref={threadRef}>
+          {showStarter ? (
+            <div className="lumexa-ai-starter">
+              <span className="lumexa-ai-starter-mark">✦</span>
+              <h3>What do you want to do?</h3>
+              <p>Ask about balances, activity, networks, or prepare wallet actions. Lumexa never signs for you.</p>
+              <div className="lumexa-ai-starter-grid">
+                {STARTER_PROMPTS.map((item) => (
+                  <button key={item.label} type="button" onClick={() => askAssistant(item.prompt, { allowPopup: true })}>
+                    <span><FeatureIcon name={item.icon} /></span>
+                    <strong>{item.label}</strong>
+                    <small>{item.prompt}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {messages.map((message, index) => <Message key={`${message.role}-${index}`} role={message.role} content={message.content} />)}
+          {loading ? (
+            <article className="lumexa-ai-message is-assistant is-thinking">
+              <div className="lumexa-ai-avatar">✦</div>
+              <div className="lumexa-ai-message-body">
+                <div className="lumexa-ai-message-meta"><strong>Lumexa</strong><span>Analyzing</span></div>
+                <div className="lumexa-ai-thinking"><i /><i /><i /></div>
+              </div>
+            </article>
+          ) : null}
+        </div>
+
+        {actions.length ? (
+          <div className="lumexa-ai-prepared-actions">
+            <div className="lumexa-ai-prepared-head"><strong>Prepared for review</strong><span>Your wallet still controls the final signature</span></div>
+            <div className="lumexa-ai-action-stack">
+              {actions.map((action) => <PreparedAction key={action.id} action={action} onOpen={onWalletAction} />)}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="lumexa-ai-composer-wrap">
+          <form className="lumexa-ai-composer" onSubmit={handleSubmit}>
+            <div className="lumexa-ai-composer-context"><span>✦</span><strong>Wallet context</strong><small>{walletSnapshot?.activeChainName || "Connected wallet"}</small></div>
+            <textarea
+              ref={textareaRef}
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  if (question.trim() && !loading) void askAssistant(question, { allowPopup: true });
+                }
+              }}
+              placeholder="Ask about your wallet, a transaction, or prepare an action…"
+              rows={1}
+              aria-label="Ask Lumexa"
+            />
+            {loading ? (
+              <button type="button" className="lumexa-ai-stop" aria-label="Stop response" onClick={stopAssistant}>■</button>
+            ) : (
+              <button type="submit" className="lumexa-ai-send" aria-label="Send message" disabled={!question.trim()}>↑</button>
+            )}
+          </form>
+          <div className="lumexa-ai-composer-foot"><span>Enter to send · Shift + Enter for a new line</span><span>Never share seed phrases or private keys.</span></div>
+        </div>
+
+        {error ? <div className="lumexa-ai-error"><strong>Assistant unavailable</strong><span>{error}</span><button type="button" onClick={() => setError("")}>Dismiss</button></div> : null}
+      </div>
     </section>
   );
 }
