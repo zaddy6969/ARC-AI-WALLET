@@ -1,0 +1,594 @@
+/* Lumexa wallet theme switcher.
+   Imported last so the active light theme can intentionally override the v4 dark surfaces. */
+
+.wallet-v5-theme-toggle {
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  background: #0e141f;
+  color: #dbe5f3;
+  font-size: 13px;
+  font-weight: 760;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, color .16s ease, transform .16s ease;
+}
+
+.wallet-v5-theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(139, 161, 255, 0.42);
+  background: #151e2d;
+  color: #fff;
+}
+
+.wallet-v5-theme-toggle svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+}
+
+html[data-lumexa-theme="light"] {
+  --wallet-v4-bg: #f4f7fb;
+  --wallet-v4-surface: #ffffff;
+  --wallet-v4-surface-2: #f8fafc;
+  --wallet-v4-surface-3: #eef3f8;
+  --wallet-v4-border: rgba(15, 23, 42, 0.10);
+  --wallet-v4-border-strong: rgba(15, 23, 42, 0.16);
+  --wallet-v4-text: #101828;
+  --wallet-v4-muted: #667085;
+  --wallet-v4-blue: #2563eb;
+  --wallet-v4-blue-bright: #1d4ed8;
+  --wallet-v4-green: #10b981;
+  --wallet-v4-red: #d92d20;
+  --wallet-v4-shadow: 0 16px 44px rgba(15, 23, 42, 0.07);
+  color-scheme: light;
+}
+
+html[data-lumexa-theme="light"] body {
+  background: #f4f7fb !important;
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .page-shell {
+  background:
+    radial-gradient(circle at 92% 0%, rgba(37, 99, 235, 0.07), transparent 30%),
+    radial-gradient(circle at 14% 100%, rgba(14, 165, 233, 0.05), transparent 30%),
+    #f4f7fb !important;
+  color: #101828 !important;
+}
+
+/* Connected wallet shell */
+html[data-lumexa-theme="light"] .wallet-v3-topbar {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-bottom-color: #e3e8ef !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v3-brand,
+html[data-lumexa-theme="light"] .wallet-v3-brand strong {
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v3-brand small {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v3-brand-mark {
+  background: #f2f6fc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v3-network-switcher label,
+html[data-lumexa-theme="light"] .wallet-v3-account,
+html[data-lumexa-theme="light"] .wallet-v5-theme-toggle {
+  background: #ffffff !important;
+  border-color: #d7dee8 !important;
+  color: #344054 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v3-network-switcher select,
+html[data-lumexa-theme="light"] .wallet-v3-account strong {
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v3-network-switcher option {
+  background: #ffffff !important;
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v3-account small,
+html[data-lumexa-theme="light"] .wallet-v3-account button {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v5-theme-toggle:hover {
+  background: #eff6ff !important;
+  border-color: #b9d0ff !important;
+  color: #175cd3 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-sidebar,
+html[data-lumexa-theme="light"] .wallet-v3-sidebar {
+  background: #ffffff !important;
+  border-color: #e3e8ef !important;
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.05) !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-sidebar nav button,
+html[data-lumexa-theme="light"] .wallet-v3-sidebar nav button {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-sidebar nav button:hover,
+html[data-lumexa-theme="light"] .wallet-v3-sidebar nav button:hover {
+  background: #f8fafc !important;
+  color: #1d2939 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-sidebar nav button.is-active,
+html[data-lumexa-theme="light"] .wallet-v3-sidebar nav button.is-active {
+  background: #eff6ff !important;
+  color: #175cd3 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-sidebar-security,
+html[data-lumexa-theme="light"] .wallet-v3-sidebar-security {
+  border-top-color: #e3e8ef !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-sidebar-security strong,
+html[data-lumexa-theme="light"] .wallet-v3-sidebar-security strong {
+  color: #344054 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-sidebar-security small,
+html[data-lumexa-theme="light"] .wallet-v3-sidebar-security small {
+  color: #98a2b3 !important;
+}
+
+/* Guardian banner used above Send / Swap / Bridge */
+html[data-lumexa-theme="light"] .pro-guardian,
+html[data-lumexa-theme="light"] .wallet-guardian,
+html[data-lumexa-theme="light"] .transaction-guardian {
+  background: #f8fbff !important;
+  border-color: #dce7fb !important;
+  color: #101828 !important;
+  box-shadow: none !important;
+}
+
+html[data-lumexa-theme="light"] .pro-guardian strong,
+html[data-lumexa-theme="light"] .wallet-guardian strong,
+html[data-lumexa-theme="light"] .transaction-guardian strong {
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .pro-guardian p,
+html[data-lumexa-theme="light"] .pro-guardian small,
+html[data-lumexa-theme="light"] .wallet-guardian p,
+html[data-lumexa-theme="light"] .transaction-guardian p {
+  color: #667085 !important;
+}
+
+/* Send */
+html[data-lumexa-theme="light"] .send-v2 {
+  background: #ffffff !important;
+  border-color: #e3e8ef !important;
+  color: #101828 !important;
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.07) !important;
+}
+
+html[data-lumexa-theme="light"] .send-v2-head h2,
+html[data-lumexa-theme="light"] .send-section-label strong,
+html[data-lumexa-theme="light"] .send-empty-state strong {
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .send-v2-head p,
+html[data-lumexa-theme="light"] .send-section-label small,
+html[data-lumexa-theme="light"] .send-available-line,
+html[data-lumexa-theme="light"] .send-v2-footnote,
+html[data-lumexa-theme="light"] .send-empty-state p {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .send-eyebrow {
+  color: #2563eb !important;
+}
+
+html[data-lumexa-theme="light"] .send-network-pill {
+  background: #eff6ff !important;
+  border-color: #cfe0ff !important;
+  color: #175cd3 !important;
+}
+
+html[data-lumexa-theme="light"] .send-v2-section {
+  background: #ffffff !important;
+  border-color: #e3e8ef !important;
+}
+
+html[data-lumexa-theme="light"] .send-section-label > span {
+  background: #eff6ff !important;
+  border-color: #cfe0ff !important;
+  color: #175cd3 !important;
+}
+
+html[data-lumexa-theme="light"] .send-address-field,
+html[data-lumexa-theme="light"] .send-amount-field > div,
+html[data-lumexa-theme="light"] .send-route-summary,
+html[data-lumexa-theme="light"] .send-review-grid,
+html[data-lumexa-theme="light"] .send-empty-state {
+  background: #f8fafc !important;
+  border-color: #d7dee8 !important;
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .send-address-field:focus-within,
+html[data-lumexa-theme="light"] .send-amount-field > div:focus-within {
+  background: #ffffff !important;
+  border-color: #8fb5ff !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10) !important;
+}
+
+html[data-lumexa-theme="light"] .send-address-field input,
+html[data-lumexa-theme="light"] .send-amount-field input {
+  color: #101828 !important;
+  -webkit-text-fill-color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .send-address-field input::placeholder,
+html[data-lumexa-theme="light"] .send-amount-field input::placeholder {
+  color: #98a2b3 !important;
+  -webkit-text-fill-color: #98a2b3 !important;
+}
+
+html[data-lumexa-theme="light"] .send-amount-field > div > strong,
+html[data-lumexa-theme="light"] .send-route-summary strong,
+html[data-lumexa-theme="light"] .send-review-grid strong {
+  color: #344054 !important;
+}
+
+html[data-lumexa-theme="light"] .send-route-summary span,
+html[data-lumexa-theme="light"] .send-review-grid span {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .send-route-network,
+html[data-lumexa-theme="light"] .send-review-grid > div {
+  border-color: #e9edf2 !important;
+}
+
+html[data-lumexa-theme="light"] .send-warning {
+  background: #fffaeb !important;
+  border-color: #fedf89 !important;
+}
+
+html[data-lumexa-theme="light"] .send-success {
+  background: #ecfdf3 !important;
+  border-color: #abefc6 !important;
+  color: #067647 !important;
+}
+
+html[data-lumexa-theme="light"] .send-v2-actions .button-primary {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+html[data-lumexa-theme="light"] .send-v2-actions .button-secondary {
+  background: #ffffff !important;
+  border-color: #d7dee8 !important;
+  color: #344054 !important;
+}
+
+/* Swap + Bridge shared transaction shell */
+html[data-lumexa-theme="light"] .wallet-v4-transaction-card {
+  background: #ffffff !important;
+  border-color: #e3e8ef !important;
+  color: #101828 !important;
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.07) !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-page-head h2 {
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-page-head p {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-page-head > div:first-child > span {
+  color: #2563eb !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-network-pill,
+html[data-lumexa-theme="light"] .wallet-v4-route-pill {
+  background: #f8fafc !important;
+  border-color: #d7dee8 !important;
+  color: #344054 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-network-pill small,
+html[data-lumexa-theme="light"] .wallet-v4-route-pill span {
+  color: #667085 !important;
+}
+
+/* Swap form */
+html[data-lumexa-theme="light"] .wallet-v4-swap-shell,
+html[data-lumexa-theme="light"] .wallet-v4-token-box,
+html[data-lumexa-theme="light"] .wallet-v4-token-box.is-output {
+  background: #f8fafc !important;
+  border-color: #d7dee8 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-token-box header span,
+html[data-lumexa-theme="light"] .wallet-v4-token-box header small {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-token-box input,
+html[data-lumexa-theme="light"] .wallet-v4-token-box select,
+html[data-lumexa-theme="light"] .wallet-v4-token-box strong {
+  color: #101828 !important;
+  -webkit-text-fill-color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-token-box input::placeholder {
+  color: #98a2b3 !important;
+  -webkit-text-fill-color: #98a2b3 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-token-box label {
+  background: #ffffff !important;
+  border-color: #d7dee8 !important;
+  color: #344054 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-token-box select option {
+  background: #ffffff !important;
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-token-box > button,
+html[data-lumexa-theme="light"] .wallet-v4-swap-arrow {
+  color: #2563eb !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-swap-arrow {
+  background: #ffffff !important;
+  border-color: #d7dee8 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-slippage {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-slippage button {
+  background: #ffffff !important;
+  border-color: #d7dee8 !important;
+  color: #475467 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-slippage button.is-active {
+  background: #eff6ff !important;
+  border-color: #b9d0ff !important;
+  color: #175cd3 !important;
+}
+
+/* Bridge route */
+html[data-lumexa-theme="light"] .wallet-v4-bridge-grid,
+html[data-lumexa-theme="light"] .wallet-v4-route-box,
+html[data-lumexa-theme="light"] .wallet-v4-amount-card {
+  background: #f8fafc !important;
+  border-color: #d7dee8 !important;
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-route-box > label,
+html[data-lumexa-theme="light"] .wallet-v4-amount-card label,
+html[data-lumexa-theme="light"] .wallet-v4-amount-card > div:first-child > span {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-chain-list button {
+  background: #ffffff !important;
+  border-color: #d7dee8 !important;
+  color: #344054 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-chain-list button:hover:not(:disabled) {
+  background: #f2f7ff !important;
+  border-color: #bfd4ff !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-chain-list button.is-active {
+  background: #eff6ff !important;
+  border-color: #9ec1ff !important;
+  color: #175cd3 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-chain-list button strong {
+  color: inherit !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-chain-list button small {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-route-swap {
+  background: #ffffff !important;
+  border-color: #d7dee8 !important;
+  color: #2563eb !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-amount-card > div:nth-child(2) {
+  background: #ffffff !important;
+  border-color: #d7dee8 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-amount-card input,
+html[data-lumexa-theme="light"] .wallet-v4-amount-card strong {
+  color: #101828 !important;
+  -webkit-text-fill-color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-amount-card input::placeholder {
+  color: #98a2b3 !important;
+  -webkit-text-fill-color: #98a2b3 !important;
+}
+
+/* Review / quote / result panels */
+html[data-lumexa-theme="light"] .wallet-v4-review-card,
+html[data-lumexa-theme="light"] .wallet-v5-preflight-card,
+html[data-lumexa-theme="light"] .wallet-v4-result {
+  background: #f8fafc !important;
+  border-color: #d7dee8 !important;
+  color: #101828 !important;
+  box-shadow: none !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-review-card header,
+html[data-lumexa-theme="light"] .wallet-v4-review-card header span,
+html[data-lumexa-theme="light"] .wallet-v4-review-card p,
+html[data-lumexa-theme="light"] .wallet-v4-result span {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-review-card header strong,
+html[data-lumexa-theme="light"] .wallet-v4-review-route strong,
+html[data-lumexa-theme="light"] .wallet-v4-result strong,
+html[data-lumexa-theme="light"] .wallet-v4-result code {
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-review-card .is-ready {
+  color: #067647 !important;
+  background: #ecfdf3 !important;
+  border-color: #abefc6 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-review-route,
+html[data-lumexa-theme="light"] .wallet-v4-fees,
+html[data-lumexa-theme="light"] .wallet-v4-fees > div {
+  border-color: #e3e8ef !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-fees > div {
+  background: #ffffff !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-fees span {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-fees strong {
+  color: #344054 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-result a {
+  color: #2563eb !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-alert {
+  background: #fffaeb !important;
+  border-color: #fedf89 !important;
+  color: #93370d !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-alert.is-error {
+  background: #fef3f2 !important;
+  border-color: #fecdca !important;
+  color: #b42318 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-alert strong {
+  color: inherit !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-alert span {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-primary {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18) !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-secondary {
+  background: #ffffff !important;
+  border-color: #d7dee8 !important;
+  color: #344054 !important;
+  box-shadow: none !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v4-primary:disabled,
+html[data-lumexa-theme="light"] .wallet-v4-secondary:disabled {
+  opacity: .52;
+}
+
+/* v5 preflight pieces used inside all three action pages */
+html[data-lumexa-theme="light"] .wallet-v5-balance-change > div,
+html[data-lumexa-theme="light"] .wallet-v5-source-funds > div {
+  background: #ffffff !important;
+  border-color: #e3e8ef !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v5-balance-change span,
+html[data-lumexa-theme="light"] .wallet-v5-source-funds span {
+  color: #667085 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v5-balance-change strong,
+html[data-lumexa-theme="light"] .wallet-v5-source-funds strong {
+  color: #101828 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v5-security-checks {
+  border-top-color: #e3e8ef !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v5-security-checks span {
+  color: #475467 !important;
+}
+
+html[data-lumexa-theme="light"] .wallet-v5-security-checks i {
+  background: #ecfdf3 !important;
+  color: #067647 !important;
+}
+
+/* Keep light mode stable during autofill. */
+html[data-lumexa-theme="light"] input:-webkit-autofill,
+html[data-lumexa-theme="light"] input:-webkit-autofill:hover,
+html[data-lumexa-theme="light"] input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #101828 !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+@media (max-width: 1180px) {
+  .wallet-v5-theme-toggle span {
+    display: none;
+  }
+
+  .wallet-v5-theme-toggle {
+    width: 50px;
+    padding: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .wallet-v5-theme-toggle {
+    width: 44px;
+    min-height: 44px;
+    border-radius: 12px;
+  }
+
+  html[data-lumexa-theme="light"] .wallet-v4-transaction-card,
+  html[data-lumexa-theme="light"] .send-v2 {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05) !important;
+  }
+}
