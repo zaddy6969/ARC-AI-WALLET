@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { WALLET_ACTIVITY_NETWORKS } from "../lib/wallet-networks";
 import { FeatureIcon } from "./wallet-sidebar";
 
 const FILTERS = [
@@ -82,11 +83,19 @@ function getCounterparty(item, walletAddress, category) {
   return item?.counterparty || "";
 }
 
+function getBridgeProgress(item) {
+  const steps = Array.isArray(item?.metadata?.bridgeSteps) ? item.metadata.bridgeSteps : [];
+  if (!steps.length) return "";
+  const complete = steps.filter((step) => ["success", "confirmed", "complete"].includes(String(step?.state || "").toLowerCase())).length;
+  return `${complete}/${steps.length} bridge steps`;
+}
+
 function ActivityRow({ item, walletAddress }) {
   const category = getActivityCategory(item, walletAddress);
   const counterparty = getCounterparty(item, walletAddress, category);
   const title = getActivityTitle(item, category);
   const status = item?.status || "Confirmed";
+  const bridgeProgress = category === "bridge" ? getBridgeProgress(item) : "";
 
   return (
     <article className="wallet-v3-activity-row">
@@ -94,8 +103,9 @@ function ActivityRow({ item, walletAddress }) {
         <FeatureIcon name={getActivityIcon(category)} />
       </span>
       <div className="wallet-v3-activity-main">
-        <strong>{title}</strong>
+        <div className="wallet-v5-activity-title-line"><strong>{title}</strong><small>{item?.chain || "Wallet"}</small></div>
         <span>{item?.summary || counterparty || item?.chain || "Wallet transaction"}</span>
+        {bridgeProgress ? <small className="wallet-v5-bridge-progress">{bridgeProgress}</small> : null}
       </div>
       <div className="wallet-v3-activity-route">
         <span>{counterparty ? shortenValue(counterparty) : item?.chain || "—"}</span>
@@ -120,11 +130,15 @@ export default function TransactionActivity({ walletSnapshot, items = [], liveSt
   const isSignedIn = walletSnapshot?.isSignedIn;
   const walletAddress = walletSnapshot?.address || "";
   const [activeFilter, setActiveFilter] = useState("all");
+  const [networkFilter, setNetworkFilter] = useState("all");
 
   const filteredItems = useMemo(() => {
-    if (activeFilter === "all") return items;
-    return items.filter((item) => getActivityCategory(item, walletAddress) === activeFilter);
-  }, [activeFilter, items, walletAddress]);
+    return items.filter((item) => {
+      const categoryMatches = activeFilter === "all" || getActivityCategory(item, walletAddress) === activeFilter;
+      const networkMatches = networkFilter === "all" || Number(item?.chainId) === Number(networkFilter);
+      return categoryMatches && networkMatches;
+    });
+  }, [activeFilter, items, networkFilter, walletAddress]);
 
   const counts = useMemo(() => {
     const result = { all: items.length, sent: 0, received: 0, swap: 0, bridge: 0 };
@@ -135,13 +149,19 @@ export default function TransactionActivity({ walletSnapshot, items = [], liveSt
     return result;
   }, [items, walletAddress]);
 
+  const visibleNetworks = useMemo(() => {
+    const used = new Set(items.map((item) => Number(item?.chainId)).filter(Boolean));
+    const supported = WALLET_ACTIVITY_NETWORKS.filter((network) => used.has(network.id));
+    return supported.length ? supported : WALLET_ACTIVITY_NETWORKS;
+  }, [items]);
+
   return (
     <section className="wallet-v3-page-card wallet-v3-activity-page">
       <header className="wallet-v3-page-head">
         <div>
-          <span className="wallet-v3-eyebrow">Transaction history</span>
+          <span className="wallet-v3-eyebrow">Multichain transaction history</span>
           <h2>Activity</h2>
-          <p>Onchain transfers and Lumexa wallet actions in one timeline.</p>
+          <p>Arc, Ethereum and Base USDC activity plus Lumexa swap and bridge actions in one timeline.</p>
         </div>
         {isSignedIn ? (
           <button
@@ -156,38 +176,47 @@ export default function TransactionActivity({ walletSnapshot, items = [], liveSt
       </header>
 
       {isSignedIn ? (
-        <div className="wallet-v3-filter-tabs" role="tablist" aria-label="Activity filters">
-          {FILTERS.map((filter) => (
-            <button
-              key={filter.id}
-              type="button"
-              className={activeFilter === filter.id ? "is-active" : ""}
-              onClick={() => setActiveFilter(filter.id)}
-            >
-              {filter.label}<span>{counts[filter.id] || 0}</span>
-            </button>
-          ))}
+        <div className="wallet-v5-activity-toolbar">
+          <div className="wallet-v3-filter-tabs" role="tablist" aria-label="Activity filters">
+            {FILTERS.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                className={activeFilter === filter.id ? "is-active" : ""}
+                onClick={() => setActiveFilter(filter.id)}
+              >
+                {filter.label}<span>{counts[filter.id] || 0}</span>
+              </button>
+            ))}
+          </div>
+          <label className="wallet-v5-network-filter">
+            <span>Network</span>
+            <select value={networkFilter} onChange={(event) => setNetworkFilter(event.target.value)}>
+              <option value="all">All networks</option>
+              {visibleNetworks.map((network) => <option key={network.id} value={network.id}>{network.name}</option>)}
+            </select>
+          </label>
         </div>
       ) : null}
 
       {!isSignedIn ? (
         <div className="wallet-v3-empty"><strong>Connect a wallet to view activity.</strong></div>
       ) : liveStatus === "loading" && !items.length ? (
-        <div className="wallet-v3-empty"><strong>Loading wallet activity…</strong><span>Reading recent onchain events.</span></div>
+        <div className="wallet-v3-empty"><strong>Loading multichain activity…</strong><span>Reading recent USDC events across supported networks.</span></div>
       ) : !filteredItems.length ? (
         <div className="wallet-v3-empty">
-          <strong>No {activeFilter === "all" ? "wallet" : activeFilter} activity yet.</strong>
-          <span>Completed Lumexa actions will appear here immediately and reconcile with onchain data.</span>
+          <strong>No matching activity yet.</strong>
+          <span>Try another filter or complete a Lumexa wallet action.</span>
         </div>
       ) : (
         <div className="wallet-v3-activity-table">
           <div className="wallet-v3-activity-header"><span>Activity</span><span>Route / counterparty</span><span>Amount</span><span /></div>
-          {filteredItems.map((item) => <ActivityRow key={item.id} item={item} walletAddress={walletAddress} />)}
+          {filteredItems.map((item) => <ActivityRow key={`${item.chainId || "chain"}-${item.id}`} item={item} walletAddress={walletAddress} />)}
         </div>
       )}
 
       {liveStatus === "error" ? (
-        <div className="wallet-v3-inline-warning"><strong>Live Arc sync is unavailable.</strong><span>{liveError || "Local Lumexa actions are still shown."}</span></div>
+        <div className="wallet-v3-inline-warning"><strong>Live multichain sync is partially unavailable.</strong><span>{liveError || "Local Lumexa actions are still shown."}</span></div>
       ) : null}
     </section>
   );
