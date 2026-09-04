@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { FeatureIcon } from "./wallet-sidebar";
 
 function formatUsd(value) {
@@ -49,9 +49,52 @@ const WalletDashboardV4 = memo(function WalletDashboardV4({
   onReceive
 }) {
   const assets = readyAssets(walletSnapshot);
-  const portfolioValue = useMemo(() => assets.reduce((sum, asset) => sum + (Number(asset?.valueUsd) || 0), 0), [assets]);
+  const activePortfolioValue = useMemo(
+    () => assets.reduce((sum, asset) => sum + (Number(asset?.valueUsd) || 0), 0),
+    [assets]
+  );
   const recent = activityItems.slice(0, 6);
   const [networkStatus, setNetworkStatus] = useState(null);
+  const [crossChainBalances, setCrossChainBalances] = useState({
+    status: "idle",
+    data: null,
+    error: ""
+  });
+
+  const loadCrossChainBalances = useCallback(async () => {
+    if (!walletSnapshot?.address) {
+      setCrossChainBalances({ status: "idle", data: null, error: "" });
+      return;
+    }
+
+    setCrossChainBalances((current) => ({
+      ...current,
+      status: current.data ? "refreshing" : "loading",
+      error: ""
+    }));
+
+    try {
+      const response = await fetch(
+        `/api/wallet-balances?address=${encodeURIComponent(walletSnapshot.address)}`,
+        { cache: "no-store" }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Balance sync failed.");
+      setCrossChainBalances({ status: "ready", data: payload, error: "" });
+    } catch (error) {
+      setCrossChainBalances((current) => ({
+        ...current,
+        status: current.data ? "ready" : "error",
+        error: error instanceof Error ? error.message : "Could not sync multichain balances."
+      }));
+    }
+  }, [walletSnapshot?.address]);
+
+  useEffect(() => {
+    void loadCrossChainBalances();
+    const timer = window.setInterval(loadCrossChainBalances, 30000);
+    return () => window.clearInterval(timer);
+  }, [loadCrossChainBalances]);
 
   useEffect(() => {
     if (!walletSnapshot?.onArc) {
@@ -75,6 +118,15 @@ const WalletDashboardV4 = memo(function WalletDashboardV4({
       window.clearInterval(timer);
     };
   }, [walletSnapshot?.onArc]);
+
+  const networkBalances = Array.isArray(crossChainBalances.data?.networks)
+    ? crossChainBalances.data.networks
+    : [];
+  const portfolioValue =
+    crossChainBalances.status === "ready" && Number.isFinite(Number(crossChainBalances.data?.totalUsd))
+      ? Number(crossChainBalances.data.totalUsd)
+      : activePortfolioValue;
+  const readyNetworkCount = networkBalances.filter((network) => network.status === "ready").length;
 
   const actions = [
     { id: "send", label: "Send", helper: "Transfer assets", icon: "send", click: () => onSelectView?.("send") },
@@ -106,12 +158,12 @@ const WalletDashboardV4 = memo(function WalletDashboardV4({
 
       <section className="wallet-v4-balance-hero">
         <div className="wallet-v4-balance-copy">
-          <span>Total portfolio value</span>
+          <span>Total USDC portfolio value</span>
           <strong>{formatUsd(portfolioValue)}</strong>
           <div className="wallet-v4-balance-foot">
-            <span>{assets.length} {assets.length === 1 ? "asset" : "assets"}</span>
+            <span>{readyNetworkCount || networkBalances.length || 1} {readyNetworkCount === 1 ? "network" : "networks"}</span>
             <i />
-            <span>{walletSnapshot?.balanceStatus === "loading" || walletSnapshot?.balanceStatus === "refreshing" ? "Syncing balances" : "Live wallet data"}</span>
+            <span>{crossChainBalances.status === "loading" || crossChainBalances.status === "refreshing" ? "Syncing multichain balances" : "Live multichain wallet data"}</span>
           </div>
         </div>
         <div className="wallet-v4-network-card">
@@ -123,6 +175,30 @@ const WalletDashboardV4 = memo(function WalletDashboardV4({
           </div>
         </div>
       </section>
+
+      <section className="wallet-v4-crosschain" aria-label="Balances by network">
+        {networkBalances.length ? networkBalances.map((network) => (
+          <div
+            key={network.chainId}
+            className={`wallet-v4-network-balance ${Number(network.chainId) === Number(walletSnapshot?.chainId) ? "is-active" : ""}`}
+          >
+            <span><span>{network.name}</span><i /></span>
+            <strong>{network.status === "ready" ? network.usdcDisplay : "Unavailable"}</strong>
+            <small>{network.status === "ready" ? `${network.nativeDisplay} gas balance` : "RPC balance read unavailable"}</small>
+          </div>
+        )) : ["Arc", "Ethereum Sepolia", "Base Sepolia"].map((name) => (
+          <div className="wallet-v4-network-balance" key={name}>
+            <span><span>{name}</span><i /></span>
+            <strong>{crossChainBalances.status === "error" ? "Sync failed" : "Syncing…"}</strong>
+            <small>Reading wallet balance</small>
+          </div>
+        ))}
+      </section>
+
+      <div className="wallet-v4-crosschain-status">
+        <span>{crossChainBalances.error || "Balances are read across supported networks without forcing your wallet to switch chains."}</span>
+        <button type="button" onClick={loadCrossChainBalances} disabled={crossChainBalances.status === "loading" || crossChainBalances.status === "refreshing"}>Refresh balances</button>
+      </div>
 
       <div className="wallet-v4-action-grid">
         {actions.map((action) => (
@@ -136,7 +212,7 @@ const WalletDashboardV4 = memo(function WalletDashboardV4({
 
       <div className="wallet-v4-content-grid">
         <article className="wallet-v4-panel wallet-v4-assets-panel">
-          <header><div><span>Assets</span><h2>Your balances</h2></div><button type="button" onClick={() => onSelectView?.("portfolio")}>View all</button></header>
+          <header><div><span>Active network assets</span><h2>{walletSnapshot?.activeChainName || "Your balances"}</h2></div><button type="button" onClick={() => onSelectView?.("portfolio")}>View all</button></header>
           <div className="wallet-v4-assets-table">
             <div className="wallet-v4-assets-head"><span>Asset</span><span>Balance</span><span>Value</span></div>
             {assets.length ? assets.map((asset) => (
@@ -145,7 +221,7 @@ const WalletDashboardV4 = memo(function WalletDashboardV4({
                 <span><strong>{asset.balance || "0"}</strong><small>{walletSnapshot?.activeChainName}</small></span>
                 <span><strong>{asset.priceUsd ? formatUsd(asset.valueUsd) : "—"}</strong><small>{asset.native ? "Gas asset" : asset.priceUsd ? "Estimated value" : "Balance only"}</small></span>
               </button>
-            )) : <div className="wallet-v4-empty"><strong>{walletSnapshot?.balanceStatus === "loading" ? "Syncing balances…" : "No assets found on this network."}</strong></div>}
+            )) : <div className="wallet-v4-empty"><strong>{walletSnapshot?.balanceStatus === "loading" || walletSnapshot?.balanceStatus === "refreshing" ? "Syncing active-network balances…" : "No assets found on this network."}</strong>{walletSnapshot?.balanceError ? <span>{walletSnapshot.balanceError}</span> : null}</div>}
           </div>
         </article>
 
