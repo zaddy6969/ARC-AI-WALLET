@@ -29,6 +29,7 @@ import "../styles/ai-workspace-v2.css";
 import "../styles/transaction-light-contrast.css";
 import "../styles/header-futuristic.css";
 import "../styles/header-compact.css";
+import "../styles/wallet-product-grade.css";
 
 export default function App({ Component, pageProps }) {
   return (
