@@ -1,6 +1,5 @@
-/* Lumexa production wallet v5: intentionally small layer for multichain activity
-   and pre-sign review surfaces. Keep feature styling here until legacy CSS is
-   consolidated into a single design system. */
+/* Lumexa production wallet v5: intentionally small layer for multichain activity,
+   pre-sign review and approval security surfaces. */
 
 .wallet-v5-network-health {
   display: flex;
@@ -116,8 +115,7 @@
 
 .wallet-v5-preflight-card {
   border-color: rgba(91, 167, 255, 0.26) !important;
-  background:
-    linear-gradient(180deg, rgba(18, 32, 53, 0.98), rgba(10, 17, 29, 0.98)) !important;
+  background: linear-gradient(180deg, rgba(18, 32, 53, 0.98), rgba(10, 17, 29, 0.98)) !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
@@ -209,6 +207,202 @@
   white-space: normal;
 }
 
+.wallet-v5-approval-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.wallet-v5-approval-summary > div {
+  padding: 15px 16px;
+  border: 1px solid rgba(128, 157, 200, 0.16);
+  border-radius: 14px;
+  background: rgba(8, 14, 24, 0.65);
+}
+
+.wallet-v5-approval-summary span,
+.wallet-v5-approval-summary strong {
+  display: block;
+}
+
+.wallet-v5-approval-summary span {
+  margin-bottom: 5px;
+  color: rgba(185, 203, 228, 0.66);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.wallet-v5-approval-summary strong {
+  color: #f4f8ff;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.wallet-v5-approval-summary .is-warning {
+  border-color: rgba(244, 167, 75, 0.3);
+  background: rgba(94, 54, 16, 0.18);
+}
+
+.wallet-v5-approval-summary .is-warning strong {
+  color: #ffc177;
+}
+
+.wallet-v5-security-note {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(82, 174, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(27, 74, 116, 0.12);
+}
+
+.wallet-v5-security-note > svg {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  color: #74caff;
+}
+
+.wallet-v5-security-note strong,
+.wallet-v5-security-note span {
+  display: block;
+}
+
+.wallet-v5-security-note strong {
+  color: #f1f7ff;
+  font-size: 14px;
+}
+
+.wallet-v5-security-note span {
+  margin-top: 3px;
+  color: rgba(195, 213, 237, 0.7);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.wallet-v5-approval-list {
+  overflow: hidden;
+  border: 1px solid rgba(129, 155, 196, 0.16);
+  border-radius: 16px;
+  background: rgba(7, 12, 20, 0.56);
+}
+
+.wallet-v5-approval-row {
+  display: grid;
+  grid-template-columns: 42px minmax(115px, 0.7fr) minmax(190px, 1.2fr) minmax(160px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 84px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(129, 155, 196, 0.12);
+}
+
+.wallet-v5-approval-row:last-child {
+  border-bottom: 0;
+}
+
+.wallet-v5-token-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(99, 183, 255, 0.26);
+  border-radius: 50%;
+  background: rgba(46, 126, 198, 0.12);
+  color: #8ed0ff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.wallet-v5-approval-token strong,
+.wallet-v5-approval-token span,
+.wallet-v5-approval-spender span,
+.wallet-v5-approval-spender strong,
+.wallet-v5-approval-amount span,
+.wallet-v5-approval-amount strong,
+.wallet-v5-approval-amount small {
+  display: block;
+}
+
+.wallet-v5-approval-token strong,
+.wallet-v5-approval-spender strong,
+.wallet-v5-approval-amount strong {
+  color: #f1f6fd;
+  font-size: 13px;
+}
+
+.wallet-v5-approval-token span,
+.wallet-v5-approval-spender span,
+.wallet-v5-approval-amount span {
+  margin-bottom: 3px;
+  color: rgba(183, 202, 228, 0.58);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wallet-v5-approval-spender a {
+  display: inline-block;
+  margin-top: 3px;
+  color: #75c5ff;
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.wallet-v5-approval-amount small {
+  width: max-content;
+  margin-top: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(77, 202, 143, 0.11);
+  color: #75dca8;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.wallet-v5-approval-amount small.is-high {
+  background: rgba(237, 139, 57, 0.13);
+  color: #ffbd73;
+}
+
+.wallet-v5-revoke-button {
+  min-width: 86px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 109, 109, 0.25);
+  border-radius: 11px;
+  background: rgba(125, 34, 34, 0.13);
+  color: #ff9a9a;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wallet-v5-revoke-button:hover:not(:disabled) {
+  border-color: rgba(255, 109, 109, 0.48);
+  background: rgba(125, 34, 34, 0.24);
+}
+
+.wallet-v5-revoke-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 1100px) {
+  .wallet-v5-approval-row {
+    grid-template-columns: 42px 1fr 1fr auto;
+  }
+
+  .wallet-v5-approval-amount {
+    grid-column: 2 / 4;
+  }
+}
+
 @media (max-width: 900px) {
   .wallet-v5-activity-toolbar {
     align-items: stretch;
@@ -221,14 +415,31 @@
 
   .wallet-v5-balance-change,
   .wallet-v5-source-funds,
-  .wallet-v5-security-checks {
+  .wallet-v5-security-checks,
+  .wallet-v5-approval-summary {
     grid-template-columns: 1fr;
+  }
+
+  .wallet-v5-approval-row {
+    grid-template-columns: 40px 1fr;
+  }
+
+  .wallet-v5-approval-spender,
+  .wallet-v5-approval-amount,
+  .wallet-v5-revoke-button {
+    grid-column: 2;
+  }
+
+  .wallet-v5-revoke-button {
+    justify-self: start;
   }
 }
 
 @media (min-width: 2000px) {
   .wallet-v5-network-filter,
-  .wallet-v5-security-checks span {
+  .wallet-v5-security-checks span,
+  .wallet-v5-security-note span,
+  .wallet-v5-revoke-button {
     font-size: 14px;
   }
 
@@ -237,7 +448,14 @@
   }
 
   .wallet-v5-balance-change strong,
-  .wallet-v5-source-funds strong {
+  .wallet-v5-source-funds strong,
+  .wallet-v5-approval-token strong,
+  .wallet-v5-approval-spender strong,
+  .wallet-v5-approval-amount strong {
     font-size: 17px;
+  }
+
+  .wallet-v5-approval-row {
+    min-height: 98px;
   }
 }
