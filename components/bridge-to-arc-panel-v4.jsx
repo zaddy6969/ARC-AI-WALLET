@@ -65,6 +65,14 @@ function resultState(result) {
   return "Submitted";
 }
 
+function forwardingDestination(destination, address) {
+  return {
+    chain: destination.appKitChain,
+    recipientAddress: address,
+    useForwarder: true
+  };
+}
+
 export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, copilotAction }) {
   const { connector } = useAccount();
   const chainId = useChainId();
@@ -77,6 +85,7 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [balance, setBalance] = useState({ status: "idle", value: 0 });
 
   const source = useMemo(() => optionById(sourceId), [sourceId]);
@@ -114,6 +123,7 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
     setResult(null);
     setStatus("idle");
     setError("");
+    setNotice("");
   }, [copilotAction]);
 
   useEffect(() => {
@@ -141,6 +151,7 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
     setResult(null);
     setStatus("idle");
     setError("");
+    setNotice("");
   };
 
   const ensureSource = async () => {
@@ -157,16 +168,17 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
     const client = await createArcBridgeClient(provider);
     const nextQuote = await client.kit.estimateBridge({
       from: { adapter: client.adapter, chain: source.appKitChain },
-      to: { adapter: client.adapter, chain: destination.appKitChain, recipientAddress: walletSnapshot.address },
+      to: forwardingDestination(destination, walletSnapshot.address),
       amount
     });
     setQuote(nextQuote);
     setStatus("ready");
-    return { client, quote: nextQuote };
+    return nextQuote;
   };
 
   const handleReview = async () => {
     setError("");
+    setNotice("");
     setResult(null);
     try {
       await buildQuote();
@@ -177,16 +189,33 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
     }
   };
 
+  const switchToDestination = async ({ silent = false } = {}) => {
+    if (!destinationChain) return false;
+    if (!silent) setNotice("");
+    setStatus("destination-switching");
+    try {
+      await switchWalletNetwork({ connector, chain: destinationChain, switchChainAsync });
+      setStatus(result?.state === "success" ? "success" : "submitted");
+      setNotice(`Wallet switched to ${destination.shortName}. Destination balances will refresh automatically.`);
+      return true;
+    } catch {
+      setStatus(result?.state === "success" ? "success" : "submitted");
+      setNotice(`Bridge was submitted, but your wallet stayed on ${source.shortName}. Use the network selector to open ${destination.shortName} and view the destination balance.`);
+      return false;
+    }
+  };
+
   const handleBridge = async () => {
-    if (!canReview || insufficient) return;
+    if (!quote || !canReview || insufficient) return;
     setError("");
+    setNotice("");
     try {
       const provider = await ensureSource();
       const client = await createArcBridgeClient(provider);
       setStatus("bridging");
       const nextResult = await client.kit.bridge({
         from: { adapter: client.adapter, chain: source.appKitChain },
-        to: { adapter: client.adapter, chain: destination.appKitChain, recipientAddress: walletSnapshot.address },
+        to: forwardingDestination(destination, walletSnapshot.address),
         amount
       });
       setResult(nextResult);
@@ -208,24 +237,23 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
         txHash: hash,
         explorerUrl,
         summary: `Bridge ${amount} USDC from ${source.name} to ${destination.name}`,
-        metadata: { operation: "bridge", sourceChainId: source.id, destinationChainId: destination.id, sourceNetwork: source.name, destinationNetwork: destination.name }
+        metadata: {
+          operation: "bridge",
+          provider: "Circle App Kit / CCTP Forwarding Service",
+          sourceChainId: source.id,
+          destinationChainId: destination.id,
+          sourceNetwork: source.name,
+          destinationNetwork: destination.name
+        }
       }));
-      if (finalStatus === "Failed") setError("Circle returned a failed bridge result. No success is being claimed.");
+      if (finalStatus === "Failed") {
+        setError("Circle returned a failed bridge result. No success is being claimed.");
+        return;
+      }
+      setNotice(`Circle accepted the bridge. Switching your wallet to ${destination.shortName}…`);
+      await switchToDestination({ silent: true });
     } catch (nextError) {
       setStatus("error");
-      setError(formatBridgeError(nextError));
-    }
-  };
-
-  const switchToDestination = async () => {
-    if (!destinationChain) return;
-    setError("");
-    setStatus("destination-switching");
-    try {
-      await switchWalletNetwork({ connector, chain: destinationChain, switchChainAsync });
-      setStatus(result?.state === "success" ? "success" : "submitted");
-    } catch (nextError) {
-      setStatus(result?.state === "success" ? "success" : "submitted");
       setError(formatBridgeError(nextError));
     }
   };
@@ -233,7 +261,7 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
   return (
     <section className="wallet-v4-transaction-card">
       <header className="wallet-v4-page-head">
-        <div><span>Cross-chain USDC</span><h2>Bridge</h2><p>Review the route and fees first. Lumexa always switches the wallet to the exact source chain before Circle prepares or submits the bridge.</p></div>
+        <div><span>Cross-chain USDC</span><h2>Bridge</h2><p>Lumexa switches to the source chain, your wallet signs the source transaction, and Circle Forwarding Service handles the destination mint without asking you to sign again on the destination chain.</p></div>
         <div className="wallet-v4-route-pill"><b>{chainMark(source.id)}</b>{source.shortName}<span>→</span><b>{chainMark(destination.id)}</b>{destination.shortName}</div>
       </header>
 
@@ -251,15 +279,16 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
         {insufficient ? <small className="is-error">Amount exceeds the USDC balance on {source.shortName}.</small> : null}
       </div>
 
-      {quote ? <div className="wallet-v4-review-card"><header><div><span>Route review</span><strong>{amount} USDC</strong></div><span className="is-ready">Quote ready</span></header><div className="wallet-v4-review-route"><strong>{source.name}</strong><span>→</span><strong>{destination.name}</strong></div><div className="wallet-v4-fees">{feeLabel(quote).map((row, index) => <div key={`${row.label}-${index}`}><span>{row.label}</span><strong>{row.value}</strong></div>)}</div><p>Final execution is still controlled by your wallet. Review every approval and signature.</p></div> : null}
+      {quote ? <div className="wallet-v4-review-card"><header><div><span>Route review</span><strong>{amount} USDC</strong></div><span className="is-ready">Quote ready</span></header><div className="wallet-v4-review-route"><strong>{source.name}</strong><span>→</span><strong>{destination.name}</strong></div><div className="wallet-v4-fees">{feeLabel(quote).map((row, index) => <div key={`${row.label}-${index}`}><span>{row.label}</span><strong>{row.value}</strong></div>)}</div><p>Circle Forwarding Service completes the destination-chain mint. Your wallet still controls and signs the source-chain transaction.</p></div> : null}
 
       {error ? <div className="wallet-v4-alert is-error"><strong>Bridge needs attention</strong><span>{error}</span></div> : null}
+      {notice ? <div className="wallet-v4-alert"><strong>Bridge update</strong><span>{notice}</span></div> : null}
 
-      {result ? <div className="wallet-v4-result"><div><span>Bridge status</span><strong>{resultState(result)}</strong></div>{getPrimaryTxHash(result) ? <div><span>Transaction</span><code>{getPrimaryTxHash(result)}</code></div> : null}{getPrimaryExplorerUrl(result) ? <a href={getPrimaryExplorerUrl(result)} target="_blank" rel="noreferrer">Open transaction ↗</a> : null}<button type="button" className="wallet-v4-secondary" onClick={switchToDestination} disabled={busy}>Switch wallet to {destination.shortName}</button></div> : null}
+      {result ? <div className="wallet-v4-result"><div><span>Bridge status</span><strong>{resultState(result)}</strong></div>{getPrimaryTxHash(result) ? <div><span>Transaction</span><code>{getPrimaryTxHash(result)}</code></div> : null}{getPrimaryExplorerUrl(result) ? <a href={getPrimaryExplorerUrl(result)} target="_blank" rel="noreferrer">Open transaction ↗</a> : null}<button type="button" className="wallet-v4-secondary" onClick={() => switchToDestination()} disabled={busy}>Switch wallet to {destination.shortName}</button></div> : null}
 
       <div className="wallet-v4-actions">
         <button type="button" className="wallet-v4-secondary" onClick={handleReview} disabled={!canReview || insufficient || busy}>{status === "quoting" || status === "switching" ? "Preparing review…" : quote ? "Refresh quote" : "Review bridge"}</button>
-        <button type="button" className="wallet-v4-primary" onClick={handleBridge} disabled={!quote || insufficient || busy}>{status === "bridging" ? "Bridging…" : "Confirm in wallet"}</button>
+        <button type="button" className="wallet-v4-primary" onClick={handleBridge} disabled={!quote || insufficient || busy}>{status === "bridging" ? "Bridging…" : status === "destination-switching" ? `Opening ${destination.shortName}…` : "Confirm in wallet"}</button>
       </div>
     </section>
   );
