@@ -25,6 +25,7 @@ const PortfolioPanel = dynamic(() => import("../components/wallet-feature-panels
 const SendUsdcPanel = dynamic(() => import("../components/send-usdc-panel"), { loading: PanelLoading });
 const SwapUsdcPanel = dynamic(() => import("../components/swap-usdc-panel-v4"), { loading: PanelLoading });
 const TransactionActivity = dynamic(() => import("../components/transaction-activity"), { loading: PanelLoading });
+const TokenApprovalsPanel = dynamic(() => import("../components/token-approvals-panel"), { loading: PanelLoading });
 const AiAgentWorkspace = dynamic(() => import("../components/ai-agent-workspace"), { ssr: false, loading: PanelLoading });
 const ReceiveModal = dynamic(() => import("../components/wallet/ReceiveModal"), { ssr: false });
 const UnifiedBalancePanel = dynamic(() => import("../components/unified-balance-panel"), { loading: PanelLoading });
@@ -33,7 +34,7 @@ const TransactionGuardianBanner = dynamic(() => import("../components/wallet-pro
 const PaymentRequestPanel = dynamic(() => import("../components/wallet-pro-suite").then((module) => module.PaymentRequestPanel), { loading: PanelLoading });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://lumexa-aiwallet.vercel.app";
-const SUPPORTED_VIEWS = new Set(["dashboard", "send", "receive", "swap", "bridge", "unified", "activity", "portfolio", "community", "request", "agent"]);
+const SUPPORTED_VIEWS = new Set(["dashboard", "send", "receive", "swap", "bridge", "unified", "activity", "approvals", "portfolio", "community", "request", "agent"]);
 
 function copilotNetworkChainId(value) {
   const normalized = String(value || "").toLowerCase();
@@ -51,6 +52,7 @@ function copilotNetworkChainId(value) {
 function ConnectedWalletExperience({ walletSnapshot }) {
   const {
     mergedActivity,
+    liveActivityNetworks,
     liveActivityStatus,
     liveActivityError,
     saveLocalActivity,
@@ -150,7 +152,9 @@ function ConnectedWalletExperience({ walletSnapshot }) {
           ) : activeView === "agent" ? (
             <AiAgentWorkspace walletSnapshot={walletSnapshot} activityItems={mergedActivity} activityStatus={liveActivityStatus} initialPrompt={assistantPrompt} onWalletAction={handleCopilotAction} />
           ) : activeView === "activity" ? (
-            <TransactionActivity walletSnapshot={walletSnapshot} items={mergedActivity} liveStatus={liveActivityStatus} liveError={liveActivityError} onRefresh={refreshActivity} />
+            <TransactionActivity walletSnapshot={walletSnapshot} items={mergedActivity} networkStatuses={liveActivityNetworks} liveStatus={liveActivityStatus} liveError={liveActivityError} onRefresh={refreshActivity} />
+          ) : activeView === "approvals" ? (
+            <TokenApprovalsPanel walletSnapshot={walletSnapshot} onActivitySaved={saveLocalActivity} />
           ) : activeView === "portfolio" ? (
             <PortfolioPanel walletSnapshot={walletSnapshot} activityItems={mergedActivity} />
           ) : activeView === "unified" ? (
@@ -189,7 +193,7 @@ export default function Home() {
     <>
       <Head>
         <title>Lumexa AI Wallet | USDC, Unified Balance & AI Assistant</title>
-        <meta name="description" content="Lumexa AI Wallet is a self-custodial multichain USDC wallet built on Arc, with send, receive, swap, bridge, Unified Balance, activity tracking and one AI Assistant that prepares wallet actions for user approval." />
+        <meta name="description" content="Lumexa AI Wallet is a self-custodial multichain USDC wallet built on Arc, with send, receive, swap, bridge, Unified Balance, activity tracking, token approval security and one AI Assistant that prepares wallet actions for user approval." />
         <meta name="theme-color" content="#070b12" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="canonical" href={SITE_URL} />

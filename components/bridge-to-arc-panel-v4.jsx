@@ -6,22 +6,33 @@ import {
   APP_KIT_EVM_CHAIN_OPTIONS,
   ARC_APP_KIT_READY,
   ARC_MAINNET_REQUESTED,
-  ARC_USDC_ERC20_ADDRESS,
   MULTICHAIN_WALLET_CHAINS,
   arcTestnet
 } from "../lib/arc-chain";
-import { createArcBridgeClient, formatBridgeError, summarizeBridgeFees } from "../lib/arc-bridge";
+import {
+  createArcBridgeClient,
+  formatBridgeError,
+  normalizeBridgeSteps,
+  summarizeBridgeFees
+} from "../lib/arc-bridge";
 import { createWalletActionRecord } from "../lib/local-activity";
 import { switchWalletNetwork } from "../lib/wallet-network";
+import { USDC_ADDRESS_BY_CHAIN_ID } from "../lib/wallet-networks";
 import { FeatureIcon } from "./wallet-sidebar";
 
 const OPTIONS = APP_KIT_EVM_CHAIN_OPTIONS;
-const CONFIGURED = (!ARC_MAINNET_REQUESTED || ARC_APP_KIT_READY) && OPTIONS.length >= 2 && OPTIONS.every((item) => item.appKitChain);
-const USDC_BY_CHAIN = ARC_MAINNET_REQUESTED
-  ? { [arcTestnet.id]: ARC_USDC_ERC20_ADDRESS, 1: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", 8453: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" }
-  : { [arcTestnet.id]: ARC_USDC_ERC20_ADDRESS, 11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", 84532: "0x036CbD53842c5426634e7929541eC2318f3dCF7e" };
+const CONFIGURED =
+  (!ARC_MAINNET_REQUESTED || ARC_APP_KIT_READY) &&
+  OPTIONS.length >= 2 &&
+  OPTIONS.every((item) => item.appKitChain);
 
-const BALANCE_ABI = [{ type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "account", type: "address" }], outputs: [{ name: "", type: "uint256" }] }];
+const BALANCE_ABI = [{
+  type: "function",
+  name: "balanceOf",
+  stateMutability: "view",
+  inputs: [{ name: "account", type: "address" }],
+  outputs: [{ name: "", type: "uint256" }]
+}];
 
 function cleanAmount(value) {
   const next = String(value || "").replace(/[^\d.]/g, "");
@@ -65,6 +76,30 @@ function resultState(result) {
   return "Submitted";
 }
 
+function formatBalance(value, digits = 6) {
+  const numeric = Number(value || 0);
+  if (!Number.isFinite(numeric)) return "0";
+  return numeric.toLocaleString(undefined, { maximumFractionDigits: digits });
+}
+
+function bridgeTxMetadata(steps) {
+  const withHashes = steps.filter((step) => step.txHash);
+  const sourceStep = withHashes[0] || null;
+  const destinationStep = withHashes.length > 1 ? withHashes[withHashes.length - 1] : null;
+  return {
+    sourceTxHash: sourceStep?.txHash || "",
+    destinationTxHash:
+      destinationStep && destinationStep.txHash !== sourceStep?.txHash
+        ? destinationStep.txHash
+        : "",
+    sourceExplorerUrl: sourceStep?.explorerUrl || "",
+    destinationExplorerUrl:
+      destinationStep && destinationStep.txHash !== sourceStep?.txHash
+        ? destinationStep.explorerUrl || ""
+        : ""
+  };
+}
+
 export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, copilotAction }) {
   const { connector } = useAccount();
   const chainId = useChainId();
@@ -77,7 +112,7 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
   const [result, setResult] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
-  const [balance, setBalance] = useState({ status: "idle", value: 0 });
+  const [balance, setBalance] = useState({ status: "idle", usdc: 0, gas: 0 });
 
   const source = useMemo(() => optionById(sourceId), [sourceId]);
   const destination = useMemo(() => optionById(destinationId), [destinationId]);
@@ -86,7 +121,12 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
   const publicClient = usePublicClient({ chainId: source.id });
   const busy = switching || ["switching", "quoting", "bridging", "destination-switching"].includes(status);
   const canReview = CONFIGURED && Boolean(connector && walletSnapshot?.address && validAmount(amount) && source.id !== destination.id);
-  const insufficient = balance.status === "ready" && Number(amount || 0) > Number(balance.value || 0) + 0.0000001;
+  const insufficient = balance.status === "ready" && Number(amount || 0) > Number(balance.usdc || 0) + 0.0000001;
+  const sourceNeedsExternalGas = Number(source.id) !== Number(arcTestnet.id);
+  const sourceGasMissing = balance.status === "ready" && sourceNeedsExternalGas && Number(balance.gas || 0) <= 0;
+  const remainingUsdc = Math.max(0, Number(balance.usdc || 0) - Number(amount || 0));
+  const quoteFees = useMemo(() => feeLabel(quote), [quote]);
+  const steps = useMemo(() => normalizeBridgeSteps(result), [result]);
 
   useEffect(() => {
     if (!OPTIONS.some((item) => item.id === chainId) || busy || quote || result) return;
@@ -119,22 +159,31 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const token = USDC_BY_CHAIN[source.id];
+      const token = USDC_ADDRESS_BY_CHAIN_ID[source.id];
       if (!walletSnapshot?.address || !publicClient || !token) {
-        setBalance({ status: "idle", value: 0 });
+        setBalance({ status: "idle", usdc: 0, gas: 0 });
         return;
       }
       setBalance((current) => ({ ...current, status: "loading" }));
       try {
-        const raw = await publicClient.readContract({ address: token, abi: BALANCE_ABI, functionName: "balanceOf", args: [walletSnapshot.address] });
-        if (!cancelled) setBalance({ status: "ready", value: Number(formatUnits(raw, 6)) });
+        const [rawUsdc, rawGas] = await Promise.all([
+          publicClient.readContract({ address: token, abi: BALANCE_ABI, functionName: "balanceOf", args: [walletSnapshot.address] }),
+          publicClient.getBalance({ address: walletSnapshot.address })
+        ]);
+        if (!cancelled) {
+          setBalance({
+            status: "ready",
+            usdc: Number(formatUnits(rawUsdc, 6)),
+            gas: Number(formatUnits(rawGas, sourceChain?.nativeCurrency?.decimals || 18))
+          });
+        }
       } catch {
-        if (!cancelled) setBalance({ status: "error", value: 0 });
+        if (!cancelled) setBalance({ status: "error", usdc: 0, gas: 0 });
       }
     }
     void load();
     return () => { cancelled = true; };
-  }, [walletSnapshot?.address, publicClient, source.id]);
+  }, [walletSnapshot?.address, publicClient, source.id, sourceChain?.nativeCurrency?.decimals]);
 
   const resetQuote = () => {
     setQuote(null);
@@ -151,13 +200,18 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
   };
 
   const buildQuote = async () => {
-    if (!canReview || insufficient) throw new Error(insufficient ? `Insufficient USDC on ${source.shortName}.` : "Enter a valid USDC amount and route.");
+    if (!canReview || insufficient || sourceGasMissing) {
+      if (insufficient) throw new Error(`Insufficient USDC on ${source.shortName}.`);
+      if (sourceGasMissing) throw new Error(`You need ${source.gasToken} on ${source.shortName} for source-chain gas.`);
+      throw new Error("Enter a valid USDC amount and route.");
+    }
     const provider = await ensureSource();
     setStatus("quoting");
     const client = await createArcBridgeClient(provider);
     const nextQuote = await client.kit.estimateBridge({
       from: { adapter: client.adapter, chain: source.appKitChain },
       to: { adapter: client.adapter, chain: destination.appKitChain, recipientAddress: walletSnapshot.address },
+      token: "USDC",
       amount
     });
     setQuote(nextQuote);
@@ -178,7 +232,7 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
   };
 
   const handleBridge = async () => {
-    if (!canReview || insufficient) return;
+    if (!canReview || insufficient || sourceGasMissing || !quote) return;
     setError("");
     try {
       const provider = await ensureSource();
@@ -187,6 +241,7 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
       const nextResult = await client.kit.bridge({
         from: { adapter: client.adapter, chain: source.appKitChain },
         to: { adapter: client.adapter, chain: destination.appKitChain, recipientAddress: walletSnapshot.address },
+        token: "USDC",
         amount
       });
       setResult(nextResult);
@@ -194,6 +249,9 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
       setStatus(finalStatus === "Failed" ? "error" : finalStatus === "Confirmed" ? "success" : "submitted");
       const hash = getPrimaryTxHash(nextResult);
       const explorerUrl = getPrimaryExplorerUrl(nextResult);
+      const bridgeSteps = normalizeBridgeSteps(nextResult);
+      const lifecycleTxs = bridgeTxMetadata(bridgeSteps);
+
       onActivitySaved?.(createWalletActionRecord({
         walletAddress: walletSnapshot.address,
         type: "Bridge",
@@ -208,8 +266,19 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
         txHash: hash,
         explorerUrl,
         summary: `Bridge ${amount} USDC from ${source.name} to ${destination.name}`,
-        metadata: { operation: "bridge", sourceChainId: source.id, destinationChainId: destination.id, sourceNetwork: source.name, destinationNetwork: destination.name }
+        metadata: {
+          operation: "bridge",
+          token: "USDC",
+          sourceChainId: source.id,
+          destinationChainId: destination.id,
+          sourceNetwork: source.name,
+          destinationNetwork: destination.name,
+          bridgeState: nextResult?.state || "submitted",
+          bridgeSteps,
+          ...lifecycleTxs
+        }
       }));
+
       if (finalStatus === "Failed") setError("Circle returned a failed bridge result. No success is being claimed.");
     } catch (nextError) {
       setStatus("error");
@@ -233,7 +302,7 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
   return (
     <section className="wallet-v4-transaction-card">
       <header className="wallet-v4-page-head">
-        <div><span>Cross-chain USDC</span><h2>Bridge</h2><p>Review the route and fees first. Lumexa always switches the wallet to the exact source chain before Circle prepares or submits the bridge.</p></div>
+        <div><span>Cross-chain USDC</span><h2>Bridge</h2><p>Review source funds, route and fees first. Lumexa switches to the exact source network before Circle prepares or submits the bridge.</p></div>
         <div className="wallet-v4-route-pill"><b>{chainMark(source.id)}</b>{source.shortName}<span>→</span><b>{chainMark(destination.id)}</b>{destination.shortName}</div>
       </header>
 
@@ -245,21 +314,53 @@ export default function BridgeToArcPanelV4({ walletSnapshot, onActivitySaved, co
         <div className="wallet-v4-route-box"><label>To</label><div className="wallet-v4-chain-list">{OPTIONS.map((item) => <button key={item.id} type="button" disabled={busy || source.id === item.id} className={destination.id === item.id ? "is-active" : ""} onClick={() => { setDestinationId(item.id); resetQuote(); }}><b>{chainMark(item.id)}</b><span><strong>{item.shortName}</strong><small>{item.id === source.id ? "Source" : "Destination"}</small></span></button>)}</div></div>
       </div>
 
-      <div className="wallet-v4-amount-card">
-        <div><label>Amount</label><span>{balance.status === "ready" ? `Available ${balance.value.toLocaleString(undefined, { maximumFractionDigits: 6 })} USDC` : "Checking source balance…"}</span></div>
-        <div><input value={amount} onChange={(event) => { setAmount(cleanAmount(event.target.value)); resetQuote(); }} inputMode="decimal" placeholder="0.00" /><strong>USDC</strong></div>
-        {insufficient ? <small className="is-error">Amount exceeds the USDC balance on {source.shortName}.</small> : null}
+      <div className="wallet-v5-source-funds">
+        <div><span>Source USDC</span><strong>{balance.status === "loading" ? "Checking…" : `${formatBalance(balance.usdc)} USDC`}</strong></div>
+        <div><span>Source gas</span><strong>{balance.status === "loading" ? "Checking…" : `${formatBalance(balance.gas, 8)} ${source.gasToken}`}</strong></div>
+        <div><span>Wallet network</span><strong>{Number(chainId) === Number(source.id) ? source.shortName : walletSnapshot?.activeChainName || "Other"}</strong></div>
       </div>
 
-      {quote ? <div className="wallet-v4-review-card"><header><div><span>Route review</span><strong>{amount} USDC</strong></div><span className="is-ready">Quote ready</span></header><div className="wallet-v4-review-route"><strong>{source.name}</strong><span>→</span><strong>{destination.name}</strong></div><div className="wallet-v4-fees">{feeLabel(quote).map((row, index) => <div key={`${row.label}-${index}`}><span>{row.label}</span><strong>{row.value}</strong></div>)}</div><p>Final execution is still controlled by your wallet. Review every approval and signature.</p></div> : null}
+      <div className="wallet-v4-amount-card">
+        <div><label>Amount</label><span>{balance.status === "ready" ? `Available ${formatBalance(balance.usdc)} USDC` : "Checking source balance…"}</span></div>
+        <div><input value={amount} onChange={(event) => { setAmount(cleanAmount(event.target.value)); resetQuote(); }} inputMode="decimal" placeholder="0.00" /><strong>USDC</strong></div>
+        {insufficient ? <small className="is-error">Amount exceeds the USDC balance on {source.shortName}.</small> : null}
+        {sourceGasMissing ? <small className="is-error">Add {source.gasToken} on {source.shortName} before bridging.</small> : null}
+      </div>
+
+      {quote ? (
+        <div className="wallet-v4-review-card wallet-v5-preflight-card">
+          <header><div><span>Pre-sign bridge review</span><strong>{amount} USDC</strong></div><span className="is-ready">Circle quote ready</span></header>
+          <div className="wallet-v4-review-route"><strong>{source.name}</strong><span>→</span><strong>{destination.name}</strong></div>
+          <div className="wallet-v5-balance-change">
+            <div><span>Source balance</span><strong>{formatBalance(balance.usdc)} USDC</strong></div>
+            <div><span>Bridge amount</span><strong>-{amount} USDC</strong></div>
+            <div><span>Before quoted fees</span><strong>≈ {formatBalance(remainingUsdc)} USDC remains</strong></div>
+          </div>
+          <div className="wallet-v4-fees">{quoteFees.map((row, index) => <div key={`${row.label}-${index}`}><span>{row.label}</span><strong>{row.value}</strong></div>)}</div>
+          <div className="wallet-v5-security-checks">
+            <span><i>✓</i> Source network verified before signing</span>
+            <span><i>✓</i> Destination is your same wallet address</span>
+            <span><i>✓</i> Live Circle fees displayed before approval</span>
+            <span><i>✓</i> Activity stores the bridge lifecycle steps</span>
+          </div>
+        </div>
+      ) : null}
 
       {error ? <div className="wallet-v4-alert is-error"><strong>Bridge needs attention</strong><span>{error}</span></div> : null}
 
-      {result ? <div className="wallet-v4-result"><div><span>Bridge status</span><strong>{resultState(result)}</strong></div>{getPrimaryTxHash(result) ? <div><span>Transaction</span><code>{getPrimaryTxHash(result)}</code></div> : null}{getPrimaryExplorerUrl(result) ? <a href={getPrimaryExplorerUrl(result)} target="_blank" rel="noreferrer">Open transaction ↗</a> : null}<button type="button" className="wallet-v4-secondary" onClick={switchToDestination} disabled={busy}>Switch wallet to {destination.shortName}</button></div> : null}
+      {result ? (
+        <div className="wallet-v4-result wallet-v5-bridge-result">
+          <div><span>Bridge status</span><strong>{resultState(result)}</strong></div>
+          {getPrimaryTxHash(result) ? <div><span>Source transaction</span><code>{getPrimaryTxHash(result)}</code></div> : null}
+          {steps.length ? <div className="wallet-v5-step-list"><span>Lifecycle</span><strong>{steps.filter((step) => ["success", "confirmed", "complete"].includes(String(step.state).toLowerCase())).length}/{steps.length} steps complete</strong></div> : null}
+          {getPrimaryExplorerUrl(result) ? <a href={getPrimaryExplorerUrl(result)} target="_blank" rel="noreferrer">Open transaction ↗</a> : null}
+          <button type="button" className="wallet-v4-secondary" onClick={switchToDestination} disabled={busy || Number(chainId) === Number(destination.id)}>{Number(chainId) === Number(destination.id) ? `${destination.shortName} active` : `Switch wallet to ${destination.shortName}`}</button>
+        </div>
+      ) : null}
 
       <div className="wallet-v4-actions">
-        <button type="button" className="wallet-v4-secondary" onClick={handleReview} disabled={!canReview || insufficient || busy}>{status === "quoting" || status === "switching" ? "Preparing review…" : quote ? "Refresh quote" : "Review bridge"}</button>
-        <button type="button" className="wallet-v4-primary" onClick={handleBridge} disabled={!quote || insufficient || busy}>{status === "bridging" ? "Bridging…" : "Confirm in wallet"}</button>
+        <button type="button" className="wallet-v4-secondary" onClick={handleReview} disabled={!canReview || insufficient || sourceGasMissing || busy}>{status === "quoting" || status === "switching" ? "Preparing review…" : quote ? "Refresh quote" : "Review bridge"}</button>
+        <button type="button" className="wallet-v4-primary" onClick={handleBridge} disabled={!quote || insufficient || sourceGasMissing || busy}>{status === "bridging" ? "Confirming in wallet…" : "Confirm in wallet"}</button>
       </div>
     </section>
   );

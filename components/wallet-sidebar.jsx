@@ -9,7 +9,8 @@ const ACTIONS = [
   { id: "unified", label: "Unified", icon: "unified" },
   { id: "request", label: "Request", icon: "request" },
   { id: "portfolio", label: "Assets", icon: "portfolio" },
-  { id: "activity", label: "Activity", icon: "activity" }
+  { id: "activity", label: "Activity", icon: "activity" },
+  { id: "approvals", label: "Approvals", icon: "security" }
 ];
 
 export function FeatureIcon({ name }) {
@@ -28,6 +29,7 @@ export function FeatureIcon({ name }) {
     case "request": return <svg {...commonProps}><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M8 9h8" /><path d="M8 13h5" /><path d="M8 17h3" /></svg>;
     case "community": return <svg {...commonProps}><circle cx="9" cy="9" r="3" /><circle cx="17" cy="8" r="2" /><path d="M4 19c.6-3 2.3-5 5-5s4.4 2 5 5" /><path d="M14 14c2.8-.3 4.8 1.2 5.5 4" /></svg>;
     case "unified": return <svg {...commonProps}><circle cx="8" cy="8" r="4" /><circle cx="16" cy="16" r="4" /><path d="M10.8 10.8 13.2 13.2" /><path d="M13 7h4v4" /></svg>;
+    case "security": return <svg {...commonProps}><path d="M12 3 5 6v5c0 4.7 2.8 8.2 7 10 4.2-1.8 7-5.3 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-5" /></svg>;
     case "ai": return <svg {...commonProps}><path d="M12 3v3" /><path d="M12 18v3" /><path d="M3 12h3" /><path d="M18 12h3" /><path d="m5.6 5.6 2.1 2.1" /><path d="m16.3 16.3 2.1 2.1" /><path d="m18.4 5.6-2.1 2.1" /><path d="m7.7 16.3-2.1 2.1" /><circle cx="12" cy="12" r="3.5" /></svg>;
     case "send": return <svg {...commonProps}><path d="M5 12h13" /><path d="m13 6 6 6-6 6" /><path d="M5 18v-3.5" /></svg>;
     case "swap": return <svg {...commonProps}><path d="M7 7h10" /><path d="m14 4 3 3-3 3" /><path d="M17 17H7" /><path d="m10 14-3 3 3 3" /></svg>;
