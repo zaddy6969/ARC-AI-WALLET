@@ -58,55 +58,27 @@ function outputAmount(estimate, tokenOut) {
   return value ? String(value) : "";
 }
 
+function minimumOutput(estimate, tokenOut) {
+  const stop = estimate?.stopLimit || estimate?.minimumOutput || estimate?.minOutput;
+  if (stop?.amount) return `${stop.amount} ${stop.token || tokenOut}`;
+  if (typeof stop === "string" || typeof stop === "number") return `${stop} ${tokenOut}`;
+  return "";
+}
+
 function feeRows(estimate) {
   const rows = Array.isArray(estimate?.fees) ? estimate.fees : [];
-  return rows.map((fee, index) => ({ id: `${fee?.type || fee?.name || "fee"}-${index}`, label: fee?.name || fee?.type || "Fee", value: fee?.amount ? `${fee.amount}${fee.token ? ` ${fee.token}` : ""}` : fee?.formatted || "Included" }));
+  return rows.map((fee, index) => ({
+    id: `${fee?.type || fee?.name || "fee"}-${index}`,
+    label: fee?.name || fee?.type || "Fee",
+    value: fee?.amount ? `${fee.amount}${fee.token ? ` ${fee.token}` : ""}` : fee?.formatted || "Included"
+  }));
 }
 
-async function loadProxyKitKey() {
-  const response = await fetch("/api/app-kit-config", { cache: "no-store" });
-  const payload = await response.json().catch(() => ({}));
-  return response.ok && payload?.hasKitKey && payload?.kitKey ? payload.kitKey : "";
-}
-
-function shouldUseProxy(error) {
-  const text = String(error?.message || error || "").toLowerCase();
-  return text.includes("kit key") || text.includes("api key") || text.includes("unauthorized") || text.includes("401") || text.includes("stablecoinkit");
-}
-
-async function withCircleProxy(operation) {
-  if (typeof window === "undefined") return operation();
-  const originalFetch = globalThis.fetch.bind(globalThis);
-  globalThis.fetch = async (input, init = {}) => {
-    const requestUrl = typeof input === "string" ? input : input instanceof URL ? input.toString() : input?.url;
-    if (typeof requestUrl === "string" && requestUrl.startsWith("https://api.circle.com/v1/stablecoinKits/")) {
-      const url = new URL(requestUrl);
-      let body = typeof init?.body === "string" ? init.body : undefined;
-      if (!body && typeof Request !== "undefined" && input instanceof Request) {
-        try { body = await input.clone().text(); } catch { body = undefined; }
-      }
-      return originalFetch("/api/circle-stablecoin-proxy", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: `${url.pathname}${url.search}`, method: init?.method || input?.method || "GET", body }) });
-    }
-    return originalFetch(input, init);
-  };
-  try { return await operation(); } finally { globalThis.fetch = originalFetch; }
-}
-
-async function runKitOperation(client, name, params, useProxyFirst = false) {
-  const direct = () => client.kit[name](params);
-  if (useProxyFirst) {
-    const key = await loadProxyKitKey();
-    if (!key) return direct();
-    return withCircleProxy(() => client.kit[name]({ ...params, config: { ...params.config, kitKey: key } }));
-  }
-  try {
-    return await direct();
-  } catch (error) {
-    if (!shouldUseProxy(error)) throw error;
-    const key = await loadProxyKitKey();
-    if (!key) throw error;
-    return withCircleProxy(() => client.kit[name]({ ...params, config: { ...params.config, kitKey: key } }));
-  }
+function resultLabel(result) {
+  if (!result) return "";
+  if (result?.state === "error") return "Failed";
+  if (result?.state === "success") return "Confirmed";
+  return "Submitted";
 }
 
 export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copilotAction }) {
@@ -128,6 +100,7 @@ export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copil
   const balance = Number(inputAsset?.balanceValue || 0);
   const insufficient = balanceKnown && Number(amount || 0) > balance + 0.0000001;
   const output = outputAmount(quote, tokenOut);
+  const minimum = minimumOutput(quote, tokenOut);
   const fees = useMemo(() => feeRows(quote), [quote]);
   const busy = switching || status === "switching" || status === "quoting" || status === "swapping";
   const canReview = CONFIGURED && walletSnapshot?.isSignedIn && connector && validAmount(amount) && tokenIn !== tokenOut && !insufficient;
@@ -143,7 +116,9 @@ export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copil
     if (copilotAction?.tool !== "prepare_swap") return;
     const args = copilotAction.args || {};
     const nextIn = TOKENS.includes(args.tokenIn) ? args.tokenIn : DEFAULT_IN;
-    const nextOut = TOKENS.includes(args.tokenOut) && args.tokenOut !== nextIn ? args.tokenOut : TOKENS.find((item) => item !== nextIn) || DEFAULT_OUT;
+    const nextOut = TOKENS.includes(args.tokenOut) && args.tokenOut !== nextIn
+      ? args.tokenOut
+      : TOKENS.find((item) => item !== nextIn) || DEFAULT_OUT;
     setTokenIn(nextIn);
     setTokenOut(nextOut);
     setAmount(cleanAmount(args.amount || "1"));
@@ -154,6 +129,7 @@ export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copil
     if (!canReview) throw new Error(insufficient ? `Insufficient ${tokenIn} balance.` : "Enter a valid swap amount and pair.");
     const arcChain = MULTICHAIN_WALLET_CHAINS.find((item) => item.id === arcTestnet.id);
     if (!arcChain) throw new Error("Arc network configuration is unavailable.");
+
     setStatus("switching");
     const { provider } = await switchWalletNetwork({ connector, chain: arcChain, switchChainAsync });
     setStatus("quoting");
@@ -163,7 +139,10 @@ export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copil
       tokenIn: tokenIdentifier(tokenIn),
       tokenOut: tokenIdentifier(tokenOut),
       amountIn: amount,
-      config: { slippageBps }
+      config: {
+        slippageBps,
+        allowanceStrategy: "permit"
+      }
     };
     return { client, params };
   };
@@ -173,7 +152,7 @@ export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copil
     setResult(null);
     try {
       const { client, params } = await prepare();
-      const nextQuote = await runKitOperation(client, "estimateSwap", params);
+      const nextQuote = await client.kit.estimateSwap(params);
       setQuote(nextQuote);
       setStatus("ready");
     } catch (nextError) {
@@ -189,13 +168,14 @@ export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copil
     try {
       const { client, params } = await prepare();
       setStatus("swapping");
-      const nextResult = await runKitOperation(client, "swap", params);
+      const nextResult = await client.kit.swap(params);
       setResult(nextResult);
       const failed = nextResult?.state === "error";
       const hash = txHash(nextResult);
       const link = explorerUrl(nextResult, hash);
-      const finalStatus = failed ? "Failed" : nextResult?.state === "success" ? "Confirmed" : "Submitted";
-      setStatus(failed ? "error" : "success");
+      const finalStatus = resultLabel(nextResult);
+      setStatus(failed ? "error" : nextResult?.state === "success" ? "success" : "submitted");
+
       onActivitySaved?.(createWalletActionRecord({
         walletAddress: walletSnapshot.address,
         type: "Swap",
@@ -209,8 +189,18 @@ export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copil
         txHash: hash,
         explorerUrl: link,
         summary: `Swap ${amount} ${tokenIn} for ${output || tokenOut} on ${arcTestnet.name}`,
-        metadata: { operation: "swap", tokenIn, tokenOut, slippageBps, estimateOutput: output }
+        metadata: {
+          operation: "swap",
+          tokenIn,
+          tokenOut,
+          slippageBps,
+          estimateOutput: output,
+          minimumOutput: minimum,
+          allowanceStrategy: "permit",
+          fees
+        }
       }));
+
       if (failed) setError("Circle returned a failed swap result. No success is being claimed.");
     } catch (nextError) {
       setStatus("error");
@@ -218,12 +208,14 @@ export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copil
     }
   };
 
-  if (!walletSnapshot?.isSignedIn) return <section className="wallet-v4-transaction-card"><div className="wallet-v4-empty"><strong>Connect your wallet to swap.</strong></div></section>;
+  if (!walletSnapshot?.isSignedIn) {
+    return <section className="wallet-v4-transaction-card"><div className="wallet-v4-empty"><strong>Connect your wallet to swap.</strong></div></section>;
+  }
 
   return (
     <section className="wallet-v4-transaction-card">
       <header className="wallet-v4-page-head">
-        <div><span>Arc liquidity</span><h2>Swap</h2><p>Get a live quote first, review output and fees, then approve the actual transaction in your wallet.</p></div>
+        <div><span>Arc liquidity</span><h2>Swap</h2><p>Get a live quote first, review minimum output and fees, then approve the actual transaction in your wallet.</p></div>
         <div className="wallet-v4-network-pill"><i />{arcTestnet.name}{Number(chainId) !== Number(arcTestnet.id) ? <small>Switches on review</small> : null}</div>
       </header>
 
@@ -248,12 +240,35 @@ export default function SwapUsdcPanelV4({ walletSnapshot, onActivitySaved, copil
 
       {insufficient ? <div className="wallet-v4-alert is-error"><strong>Insufficient {tokenIn}</strong><span>Available {inputAsset?.balance || "0"}</span></div> : null}
 
-      {quote ? <div className="wallet-v4-review-card"><header><div><span>Swap review</span><strong>{amount} {tokenIn} → {output || tokenOut}</strong></div><span className="is-ready">Live quote</span></header><div className="wallet-v4-fees">{fees.length ? fees.map((row) => <div key={row.id}><span>{row.label}</span><strong>{row.value}</strong></div>) : <div><span>Slippage limit</span><strong>{slippageBps / 100}%</strong></div>}</div><p>Nothing is signed until you confirm the transaction in your connected wallet.</p></div> : null}
+      {quote ? (
+        <div className="wallet-v4-review-card wallet-v5-preflight-card">
+          <header><div><span>Pre-sign review</span><strong>{amount} {tokenIn} → {output || tokenOut}</strong></div><span className="is-ready">Live Circle quote</span></header>
+          <div className="wallet-v5-balance-change">
+            <div><span>You spend</span><strong>-{amount} {tokenIn}</strong></div>
+            <div><span>Estimated receive</span><strong>+{output || tokenOut}</strong></div>
+            <div><span>Minimum receive</span><strong>{minimum || `Protected by ${slippageBps / 100}% slippage`}</strong></div>
+          </div>
+          <div className="wallet-v4-fees">
+            <div><span>Network</span><strong>{arcTestnet.name}</strong></div>
+            <div><span>Max slippage</span><strong>{slippageBps / 100}%</strong></div>
+            {fees.map((row) => <div key={row.id}><span>{row.label}</span><strong>{row.value}</strong></div>)}
+          </div>
+          <div className="wallet-v5-security-checks">
+            <span><i>✓</i> Live quote returned before signing</span>
+            <span><i>✓</i> Permit approval preferred</span>
+            <span><i>✓</i> Wallet may fall back to token approval only if required</span>
+            <span><i>✓</i> Your wallet controls the final signature</span>
+          </div>
+        </div>
+      ) : null}
 
-      {result ? <div className="wallet-v4-result"><div><span>Swap status</span><strong>{result?.state === "error" ? "Failed" : result?.state === "success" ? "Confirmed" : "Submitted"}</strong></div>{txHash(result) ? <div><span>Transaction</span><code>{txHash(result)}</code></div> : null}{explorerUrl(result, txHash(result)) ? <a href={explorerUrl(result, txHash(result))} target="_blank" rel="noreferrer">Open transaction ↗</a> : null}</div> : null}
+      {result ? <div className="wallet-v4-result"><div><span>Swap status</span><strong>{resultLabel(result)}</strong></div>{txHash(result) ? <div><span>Transaction</span><code>{txHash(result)}</code></div> : null}{explorerUrl(result, txHash(result)) ? <a href={explorerUrl(result, txHash(result))} target="_blank" rel="noreferrer">Open transaction ↗</a> : null}</div> : null}
       {error ? <div className="wallet-v4-alert is-error"><strong>Swap needs attention</strong><span>{error}</span></div> : null}
 
-      <div className="wallet-v4-actions"><button type="button" className="wallet-v4-secondary" onClick={handleReview} disabled={!canReview || busy}>{status === "quoting" || status === "switching" ? "Preparing quote…" : quote ? "Refresh quote" : "Review swap"}</button><button type="button" className="wallet-v4-primary" onClick={handleSwap} disabled={!quote || !canReview || busy}>{status === "swapping" ? "Swapping…" : "Confirm in wallet"}</button></div>
+      <div className="wallet-v4-actions">
+        <button type="button" className="wallet-v4-secondary" onClick={handleReview} disabled={!canReview || busy}>{status === "quoting" || status === "switching" ? "Preparing quote…" : quote ? "Refresh quote" : "Review swap"}</button>
+        <button type="button" className="wallet-v4-primary" onClick={handleSwap} disabled={!quote || !canReview || busy}>{status === "swapping" ? "Confirming in wallet…" : "Confirm in wallet"}</button>
+      </div>
     </section>
   );
 }
