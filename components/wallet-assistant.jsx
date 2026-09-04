@@ -215,12 +215,17 @@ function shortValue(value, start = 6, end = 4) {
 function formatUsd(value) {
   const numeric = Number(value || 0);
   if (!Number.isFinite(numeric)) return "$0.00";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: numeric >= 1000 ? 0 : 2
-  }).format(numeric);
+  const fractionDigits = Math.abs(numeric) >= 1000 ? 0 : 2;
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits
+    }).format(numeric);
+  } catch {
+    return `$${numeric.toFixed(fractionDigits)}`;
+  }
 }
 
 function Message({ role, content }) {

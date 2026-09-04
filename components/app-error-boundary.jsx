@@ -1,5 +1,4 @@
 import { Component } from "react";
-import WalletLoginScreen from "./wallet-login-screen";
 
 export default class AppErrorBoundary extends Component {
   constructor(props) {
@@ -17,13 +16,25 @@ export default class AppErrorBoundary extends Component {
     }
   }
 
+  handleRetry = () => {
+    this.setState({ error: null });
+  };
+
   render() {
     if (this.state.error) {
       return (
-        <WalletLoginScreen
-          providerUnavailable
-          providerError="The wallet UI recovered from an unexpected issue. Refresh and connect again when ready."
-        />
+        <main className="page-shell">
+          <section className="wallet-login-screen" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "24px" }}>
+            <div className="wallet-login-card" style={{ maxWidth: "560px", width: "100%" }}>
+              <span className="wallet-login-eyebrow">Lumexa recovered safely</span>
+              <h1>Wallet session is still connected</h1>
+              <p>A wallet screen hit a display error. Your connection and keys were not affected.</p>
+              <button type="button" className="primary-button" onClick={this.handleRetry}>Retry wallet screen</button>
+              <button type="button" className="secondary-button" onClick={() => window.location.reload()}>Reload app</button>
+              <small>Never reconnect just because a UI component failed.</small>
+            </div>
+          </section>
+        </main>
       );
     }
 
