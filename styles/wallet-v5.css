@@ -2,6 +2,57 @@
    and pre-sign review surfaces. Keep feature styling here until legacy CSS is
    consolidated into a single design system. */
 
+.wallet-v5-network-health {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 4px;
+}
+
+.wallet-v5-network-health > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 7px 11px;
+  border: 1px solid rgba(123, 151, 194, 0.16);
+  border-radius: 12px;
+  background: rgba(9, 15, 25, 0.66);
+}
+
+.wallet-v5-network-health > div > i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #f0a34b;
+  box-shadow: 0 0 0 4px rgba(240, 163, 75, 0.08);
+}
+
+.wallet-v5-network-health > div.is-ready > i {
+  background: #54d89b;
+  box-shadow: 0 0 0 4px rgba(84, 216, 155, 0.08);
+}
+
+.wallet-v5-network-health span,
+.wallet-v5-network-health strong,
+.wallet-v5-network-health small {
+  display: block;
+}
+
+.wallet-v5-network-health strong {
+  color: #eef4fc;
+  font-size: 12px;
+  line-height: 1.15;
+}
+
+.wallet-v5-network-health small {
+  margin-top: 2px;
+  color: rgba(183, 200, 225, 0.62);
+  font-size: 10px;
+  line-height: 1.15;
+}
+
 .wallet-v5-activity-toolbar {
   display: flex;
   align-items: center;
